@@ -46,7 +46,6 @@
 #include "memory_align.h"
 
 #include "codec_app_def.h"
-#include "set_mb_syn_cabac.h"
 
 using namespace WelsCommon;
 
@@ -99,7 +98,6 @@ uint8_t*        pBsStackBufPtr; // current writing position
 uint32_t        uiBsStackCurBits;
 int32_t         iBsStackLeftBits;
 
-SCabacCtx       sStoredCabac;
 int32_t         iMbSkipRunStack;
 uint8_t         uiLastMbQp;
 uint8_t*        pRestoreBuffer;

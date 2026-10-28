@@ -44,8 +44,8 @@ def sandbox() -> modal.Sandbox:
     return sb
 
 
-def exec_(sb: modal.Sandbox, command: str, stdin: bytes | None = None) -> int:
-    p = sb.exec("sh", "-c", command)
+def exec_(sb: modal.Sandbox, command: str, stdin: bytes | None = None, env: dict | None = None) -> int:
+    p = sb.exec("sh", "-c", command, env=env)
     if stdin is not None:
         for i in range(0, len(stdin), 1 << 20):  # the client buffers at most a few MB
             p.stdin.write(stdin[i:i + (1 << 20)])
@@ -66,8 +66,12 @@ def sync(sb: modal.Sandbox) -> None:
         for name in files:
             if os.path.exists(os.path.join(REPO, name)):
                 tar.add(os.path.join(REPO, name), arcname=name)
-    # Extracted with their mtimes, so make rebuilds only what changed.
-    exec_(sb, "tar -xzf - -C /", stdin=buf.getvalue())
+    # Extracted with their mtimes, so make rebuilds only what changed; files
+    # deleted here are deleted there, or make's wildcards would build them.
+    want = "\n".join(sorted(n for n in files if os.path.exists(os.path.join(REPO, n))))
+    exec_(sb, "tar -xzf - -C / && cd / && find h264 bench -type f ! -path 'h264/build/*' | sort > /tmp/have"
+              " && printf '%s\\n' \"$WANT\" | sort > /tmp/want && comm -23 /tmp/have /tmp/want | xargs -r rm -f",
+          stdin=buf.getvalue(), env={"WANT": want})
 
 
 def main() -> int:

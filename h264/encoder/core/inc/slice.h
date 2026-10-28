@@ -41,7 +41,6 @@
 #include "picture.h"
 #include "parameter_sets.h"
 #include "svc_enc_slice_segment.h"
-#include "set_mb_syn_cabac.h"
 #include "nal_encap.h"
 
 namespace WelsEnc {
@@ -196,8 +195,6 @@ uint32_t        uiSliceFMECostDown;//TODO: for FME switch under MT, to opt after
 
 uint8_t         uiReservedFillByte;     // reserved to meet 4 bytes alignment
 
-SCabacCtx       sCabacCtx;
-int32_t         iCabacInitIdc;
 int32_t         iMbSkipRun;
 
 int32_t         iCountMbNumInSlice;

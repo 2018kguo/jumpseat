@@ -31,15 +31,12 @@
  */
 
 #include "WelsFrameWork.h"
-#include "../denoise/denoise.h"
-#include "../downsample/downsample.h"
 #include "../scrolldetection/ScrollDetection.h"
 #include "../scenechangedetection/SceneChangeDetection.h"
 #include "../vaacalc/vaacalculation.h"
 #include "../backgrounddetection/BackgroundDetection.h"
 #include "../adaptivequantization/AdaptiveQuantization.h"
 #include "../complexityanalysis/ComplexityAnalysis.h"
-#include "../imagerotate/imagerotate.h"
 #include "util.h"
 
 /* interface API implement */
@@ -261,18 +258,12 @@ IStrategy* CVpFrameWork::CreateStrategy (EMethods m_eMethod, int32_t iCpuFlag) {
   case METHOD_COLORSPACE_CONVERT:
     //not support yet
     break;
-  case METHOD_DENOISE:
-    pStrategy = WelsDynamicCast (IStrategy*, new CDenoiser (iCpuFlag));
-    break;
   case METHOD_SCROLL_DETECTION:
     pStrategy = WelsDynamicCast (IStrategy*, new CScrollDetection (iCpuFlag));
     break;
   case METHOD_SCENE_CHANGE_DETECTION_VIDEO:
   case METHOD_SCENE_CHANGE_DETECTION_SCREEN:
     pStrategy = BuildSceneChangeDetection (m_eMethod, iCpuFlag);
-    break;
-  case METHOD_DOWNSAMPLE:
-    pStrategy = WelsDynamicCast (IStrategy*, new CDownsampling (iCpuFlag));
     break;
   case METHOD_VAA_STATISTICS:
     pStrategy = WelsDynamicCast (IStrategy*, new CVAACalculation (iCpuFlag));
@@ -288,9 +279,6 @@ IStrategy* CVpFrameWork::CreateStrategy (EMethods m_eMethod, int32_t iCpuFlag) {
     break;
   case METHOD_COMPLEXITY_ANALYSIS_SCREEN:
     pStrategy = WelsDynamicCast (IStrategy*, new CComplexityAnalysisScreen (iCpuFlag));
-    break;
-  case METHOD_IMAGE_ROTATE:
-    pStrategy = WelsDynamicCast (IStrategy*, new CImageRotating (iCpuFlag));
     break;
   default:
     break;

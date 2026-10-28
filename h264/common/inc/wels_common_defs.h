@@ -43,7 +43,6 @@ namespace WelsCommon {
 /*common use table*/
 
 #define  CTX_NA 0
-#define  WELS_CONTEXT_COUNT 460
 #define LEVEL_NUMBER 17
 typedef struct TagLevelLimits {
   ELevelIdc uiLevelIdc;  // level idc
@@ -73,9 +72,6 @@ extern const ALIGNED_DECLARE (uint16_t, g_kuiDequantCoeff[52][8], 16);
 extern const ALIGNED_DECLARE (uint16_t, g_kuiDequantCoeff8x8[52][64], 16);
 extern const uint8_t g_kuiChromaQpTable[52];
 
-extern const uint8_t g_kuiCabacRangeLps[64][4];
-extern const int8_t g_kiCabacGlobalContextIdx[WELS_CONTEXT_COUNT][4][2];
-extern const uint8_t g_kuiStateTransTable[64][2];
 extern const uint32_t g_kuiGolombUELength[256];
 /*
  *  NAL Unit Type (5 Bits)

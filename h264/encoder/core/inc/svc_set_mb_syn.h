@@ -47,7 +47,6 @@
 #include "md.h"
 #include "slice.h"
 #include "set_mb_syn_cavlc.h"
-#include "set_mb_syn_cabac.h"
 
 namespace WelsEnc {
 
@@ -58,13 +57,9 @@ int32_t WelsWriteMbResidual (SWelsFuncPtrList* pFuncList, SMbCache* sMbCacheInfo
 void WelsSpatialWriteSubMbPred (sWelsEncCtx* pEncCtx, SSlice* pSlice, SMB* pCurMb);
 
 void WelsSpatialWriteMbPred (sWelsEncCtx* pEncCtx, SSlice* pSlice, SMB* pCurMb);
-void WelsInitSliceCabac(sWelsEncCtx* pEncCtx,SSlice* pSlice);
-void WelsCabacInit(void *pCtx);
 void WelsWriteSliceEndSyn(SSlice *pSlice,bool bEntropyCodingModeFlag);
 //for Base Layer CAVLC writing
 int32_t WelsSpatialWriteMbSyn (sWelsEncCtx* Ctx, SSlice* pSlice, SMB* pCurMb);
-int32_t WelsSpatialWriteMbSynCabac (sWelsEncCtx* pCtx, SSlice* pSlice, SMB* pCurMb);
 int32_t GetBsPosCavlc(SSlice *pSlice);
-int32_t GetBsPosCabac(SSlice *pSlice);
 }
 #endif

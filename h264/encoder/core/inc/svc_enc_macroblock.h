@@ -72,7 +72,6 @@ uint8_t         uiChromaQp;
 uint16_t        uiSliceIdc;     // 2^16=65536 > MaxFS(36864) of level 5.1; AVC: iFirstMbInSlice?; SVC: (iFirstMbInSlice << 7) | ((uiDependencyId << 4) | uiQualityId);
 uint32_t        uiChromPredMode;
 int32_t         iLumaDQp;
-SMVUnitXY       sMvd[MB_BLOCK4x4_NUM]; //only for CABAC writing; storage structure the same as sMv, in 4x4 scan order.
 int32_t         iCbpDc;
 //uint8_t         reserved_filling_bytes[1];      // not deleting this line for further changes of this structure. filling bytes reserved to make structure aligned with 4 bytes, higher cache hit on less structure size by 2 cache lines( 2 * 64 bytes) once hit
 } SMB, *PMb;

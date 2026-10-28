@@ -311,7 +311,7 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
     iLoopFilterDisableIdc       = pCodingParam.iLoopFilterDisableIdc;      // 0: on, 1: off, 2: on except for slice boundaries,
     iLoopFilterAlphaC0Offset    = pCodingParam.iLoopFilterAlphaC0Offset;   // AlphaOffset: valid range [-6, 6], default 0
     iLoopFilterBetaOffset       = pCodingParam.iLoopFilterBetaOffset;      // BetaOffset:  valid range [-6, 6], default 0
-    iEntropyCodingModeFlag      = pCodingParam.iEntropyCodingModeFlag;
+    iEntropyCodingModeFlag      = 0; // jumpseat: CAVLC only (CABAC removed)
     bEnableFrameCroppingFlag    = pCodingParam.bEnableFrameCroppingFlag;
 
     /* Rate Control */

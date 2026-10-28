@@ -1639,12 +1639,6 @@ int32_t RequestMemorySvc (sWelsEncCtx** ppCtx, SExistingParasetList* pExistingPa
   (*ppCtx)->iPosBsBuffer = 0;
 
   // for dynamic slice mode&& CABAC,allocate slice buffer to restore slice data
-  if (bDynamicSlice && pParam->iEntropyCodingModeFlag) {
-    for (int32_t iIdx = 0; iIdx < MAX_THREADS_NUM; iIdx++) {
-      (*ppCtx)->pDynamicBsBuffer[iIdx] = (uint8_t*)pMa->WelsMalloc (iMaxSliceBufferSize, "DynamicSliceBs");
-      WELS_VERIFY_RETURN_IF (1, (NULL == (*ppCtx)->pDynamicBsBuffer[iIdx]))
-    }
-  }
   // for pSlice bs buffers
   if (pParam->iMultipleThreadIdc > 1
       && RequestMtResource (ppCtx, pParam, iCountBsLen, iMaxSliceBufferSize, bDynamicSlice)) {
@@ -2347,8 +2341,6 @@ int32_t WelsInitEncoderExt (sWelsEncCtx** ppCtx, SWelsSvcCodingParam* pCodingPar
     return iRet;
   }
 
-  if (pCodingParam->iEntropyCodingModeFlag)
-    WelsCabacInit (pCtx);
   WelsRcInitModule (pCtx,  pCtx->pSvcParam->iRCMode);
 
   pCtx->pVpp = CWelsPreProcess::CreatePreProcess (pCtx);
