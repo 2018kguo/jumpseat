@@ -36,9 +36,18 @@ one thread (its default four slice threads cost more CPU).
 
 | | bits vs x264 | CPU vs x264 |
 |---|---|---|
-| scrolling text | **-38%** | **0.91x** |
+| scrolling text | **-40%** | **0.90x** |
 | typing | **-26%** | **0.68x** |
-| animation | **-1.3%** | **0.97x** |
+| animation | **-10%** | **0.90x** |
+
+At the streamer's settings (QP floor 17 against x264 crf 25), and after the
+motion stops (`rest=60`: the quality left on screen):
+
+| | ours kbit/s, dB, at rest | x264 kbit/s, dB, at rest |
+|---|---|---|
+| scrolling text | 849, 53.1, 53.3 | 1206, 47.6, 50.8 |
+| typing | 542, 53.8, 53.6 | 640, 50.4, 51.7 |
+| animation | 3471, 50.5, 54.2 | 3750, 50.1, 54.1 |
 
 `h264/README.md` lists what changed from OpenH264 to get there; stock
 OpenH264's screen mode scrolled at 1.6x x264's CPU, and its first frame was

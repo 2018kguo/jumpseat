@@ -41,7 +41,9 @@
  *
  *
  *************************************************************************/
+#include <math.h>
 #include "rc.h"
+#include "wels_preprocess.h"
 #include "encoder_context.h"
 #include "utils.h"
 #include "svc_enc_golomb.h"
@@ -1179,6 +1181,24 @@ int32_t RcCalculateCascadingQp (struct TagWelsEncCtx* pEncCtx, int32_t iQp) {
   return iTemporalQp;
 }
 
+// jumpseat: x264's CRF rule (qscale ~ complexity^(1 - qcomp), qcomp 0.6) on
+// a floor: frames whose moving content costs more than MOTION_SAD_KNEE per
+// macroblock get a coarser QP, as detail in motion goes unseen; typing and
+// scrolling stay at the floor. Animation: QP 17 -> 23, 55.8 -> 50.5 dB, as
+// x264 crf 25. What comes to rest is refined (MdInterSCDPskipProcess).
+#define MOTION_SAD_KNEE 64
+static void RcRaiseQpForMotion (sWelsEncCtx* pEncCtx) {
+  SWelsSvcRc* pWelsSvcRc = &pEncCtx->pWelsSvcRc[pEncCtx->uiDependencyId];
+  const int32_t kiSad = static_cast<SVAAFrameInfoExt*> (pEncCtx->pVaa)->iMovingSadPerMb;
+  if (kiSad <= MOTION_SAD_KNEE)
+    return;
+  const int32_t kiFloor = WELS_MIN (pEncCtx->pSvcParam->iMinQp + (int32_t) (2.4 * log2 ((double)kiSad / MOTION_SAD_KNEE) + 0.5),
+                                    pWelsSvcRc->iMaxQp);
+  pEncCtx->iGlobalQp = WELS_MAX (pEncCtx->iGlobalQp, kiFloor);
+  pWelsSvcRc->iMinFrameQp = WELS_MAX (pWelsSvcRc->iMinFrameQp, kiFloor);
+  pWelsSvcRc->iMaxFrameQp = WELS_MAX (pWelsSvcRc->iMaxFrameQp, kiFloor);
+}
+
 void  WelsRcPictureInitGom (sWelsEncCtx* pEncCtx, long long uiTimeStamp) {
   SWelsSvcRc* pWelsSvcRc           = &pEncCtx->pWelsSvcRc[pEncCtx->uiDependencyId];
   const int32_t kiSliceNum         = pEncCtx->pCurDqLayer->iMaxSliceNum;
@@ -1213,6 +1233,8 @@ void  WelsRcPictureInitGom (sWelsEncCtx* pEncCtx, long long uiTimeStamp) {
     RcCalculateIdrQp (pEncCtx);
   } else {
     RcCalculatePictureQp (pEncCtx);
+    if (pEncCtx->pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME)
+      RcRaiseQpForMotion (pEncCtx);
   }
   RcInitSliceInformation (pEncCtx);
   RcInitGomParameters (pEncCtx);

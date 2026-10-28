@@ -38,7 +38,16 @@ streams, 32-bit ARM, MIPS and LoongArch.
   (`svc_base_layer_md.cpp`). Medium complexity keeps both: 8% fewer
   animation bits for ~30% more of its CPU.
 
-All but the last two leave the output bit-identical on the bench.
+- **Motion QP and rest refinement** (`ratectl.cpp`, `wels_preprocess.cpp`,
+  `svc_mode_decision.cpp`): x264's CRF rule on a floor: frames whose moving
+  content (neither static nor scrolled) costs more than 64 SAD a macroblock
+  get QP floor + 2.4 log2(cost / 64), as detail in motion goes unseen, so
+  animation runs at x264's quality (50.5 dB) for fewer bits while typing and
+  scrolling keep the floor. A static block coded more than 3 QP coarser than
+  now is coded again, so what comes to rest sharpens (animation 54 dB at
+  rest); OpenH264 refined only above QP 26.
+
+All but the last three leave the output bit-identical on the bench.
 
 Measure every change with bench/ (BD-rate and CPU against x264 on recorded
 desktop frames): `bench/local.sh rd usage=1`, `bench/modal_lab.py rd usage=1`.

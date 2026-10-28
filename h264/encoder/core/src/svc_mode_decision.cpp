@@ -477,7 +477,10 @@ bool MdInterSCDPskipProcess (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SSlice* pSl
   bool bSkipFlag = pJudeSkip[eSkipMode] (pEncCtx, pCurMb, pMbCache, pWelsMd);
 
   if (bSkipFlag) {
-    bool bQpSimilarFlag = (kiRefMbQp - kiCurMbQp <= DELTA_QP_SCD_THD || kiRefMbQp <= 26);
+    // jumpseat: a static block coded coarser than now is coded again (motion
+    // QP, a slow link recovering): what comes to rest sharpens. OpenH264
+    // refined only above QP 26.
+    bool bQpSimilarFlag = (kiRefMbQp - kiCurMbQp <= 3);
     SMVUnitXY sVaaPredSkipMv = {0, 0}, sCurMbMv[2] = {{0, 0}, {0, 0}};
     PredSkipMv (pMbCache, &sVaaPredSkipMv);
 

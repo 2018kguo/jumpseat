@@ -8,7 +8,8 @@
 //   keys: enc (0 OpenH264, 1 x264 as the streamer sets it up), crf and
 //         xthreads (x264; 0 = auto, as the streamer runs it),
 //         usage (0 camera, 1 screen), complexity, loopfilter, qp, refs,
-//         scd, bg, aq, ltr, threads, fps, repeat
+//         scd, bg, aq, ltr, threads, fps, repeat, rest (then encode the last
+//         frame that many more times: the quality left once motion stops)
 // "cpu" is process CPU time per frame: x264 runs sliced threads, so its
 // wall time understates what it costs.
 #include <math.h>
@@ -72,6 +73,8 @@ int main(int argc, char **argv) {
   free(bgrx);
 
   int qp = opt(argc, argv, "qp", 17), fps = opt(argc, argv, "fps", 60), repeat = opt(argc, argv, "repeat", 1);
+  int rest = opt(argc, argv, "rest", 0);
+  double last_psnr = 0;
   int use_x264 = opt(argc, argv, "enc", 0), perframe = opt(argc, argv, "perframe", 0);
   void *x = use_x264 ? x264_side_open(W, H, fps, opt(argc, argv, "crf", 25), opt(argc, argv, "xthreads", 0)) : 0;
   if (use_x264 && !x) { fprintf(stderr, "x264 open failed\n"); return 1; }
@@ -111,14 +114,15 @@ int main(int argc, char **argv) {
   long bytes = 0, decoded = 0, encoded = 0;
   uint8_t *bitstream = malloc(W * H * 2);
   for (int r = 0; r < repeat; r++) {
-    for (long f = 0; f < frames; f++) {
+    for (long n = 0; n < frames + (r == repeat - 1 ? rest : 0); n++) {
+      long f = n < frames ? n : frames - 1;
       uint8_t *y = i420 + f * isize;
       SSourcePicture pic;
       memset(&pic, 0, sizeof pic);
       pic.iColorFormat = videoFormatI420; pic.iPicWidth = W; pic.iPicHeight = H;
       pic.iStride[0] = W; pic.iStride[1] = W / 2; pic.iStride[2] = W / 2;
       pic.pData[0] = y; pic.pData[1] = y + W * H; pic.pData[2] = y + W * H * 5 / 4;
-      pic.uiTimeStamp = (long long)(r * frames + f) * 1000 / fps;
+      pic.uiTimeStamp = (long long)(r * frames + n) * 1000 / fps;
       SFrameBSInfo info;
       memset(&info, 0, sizeof info);
       uint8_t *nal = 0;
@@ -157,6 +161,7 @@ int main(int argc, char **argv) {
             frame += d * d;
           }
         squared += frame;
+        last_psnr = 10 * log10(255.0 * 255.0 * W * H / (frame > 1e-9 ? frame : 1e-9));
         if (perframe) fprintf(stderr, "frame %ld %d bytes psnr %.2f\n", f, size,
                               10 * log10(255.0 * 255.0 * W * H / (frame > 1e-9 ? frame : 1e-9)));
         decoded++;
@@ -164,6 +169,7 @@ int main(int argc, char **argv) {
     }
   }
   double mse = squared / ((double)decoded * W * H);
+  if (rest) printf("at rest %.2f dB  ", last_psnr);
   printf("frames %ld  encode %.3f ms/frame (cpu %.3f, worst %.1f)  %.0f kbit/s at %d fps  psnr %.2f dB\n",
          encoded, encode_ms / encoded, encode_cpu / encoded, worst, bytes * 8.0 / (encoded / (double)fps) / 1000, fps,
          10 * log10(255.0 * 255.0 / (mse > 1e-9 ? mse : 1e-9)));

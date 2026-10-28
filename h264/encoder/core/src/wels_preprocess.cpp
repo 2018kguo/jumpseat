@@ -1190,6 +1190,9 @@ ESceneChangeIdc CWelsPreProcessScreen::DetectSceneChange (SPicture* pCurPicture,
       const int64_t iFrameComplexity = sSceneChangeResult.iFrameComplexity;
       const int32_t iSceneDetectIdc = sSceneChangeResult.eSceneChangeIdc;
       const int32_t iMotionBlockNum = sSceneChangeResult.iMotionBlockNum;
+      if (0 == iScdIdx)
+        pVaaExt->iMovingSadPerMb = static_cast<int32_t> (iFrameComplexity / ((pCurPicture->iWidthInPixel >> 4) *
+                                   (pCurPicture->iHeightInPixel >> 4)));
 
       const bool bCurRefIsSceneLtr = pRefPic->bIsSceneLTR;
       const int32_t iRefPicAvQP = pRefPic->iFrameAverageQp;

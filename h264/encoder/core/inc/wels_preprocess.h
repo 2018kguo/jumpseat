@@ -113,6 +113,9 @@ typedef struct SVAAFrameInfoExt_t: public SVAAFrameInfo {
   int32_t     iVaaBestRefFrameNum;
   uint8_t*    pVaaBestBlockStaticIdc;//pointer
   uint8_t*    pVaaBlockStaticIdc[16];//real memory,
+  // jumpseat: SAD per 16x16 of what neither stays put nor scrolls against
+  // the reference (scene change detection), for the rate control's motion QP.
+  int32_t     iMovingSadPerMb;
 } SVAAFrameInfoExt;
 
 class CWelsPreProcess {
