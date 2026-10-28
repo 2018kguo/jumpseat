@@ -408,25 +408,6 @@ bool WelsUpdateRefList (sWelsEncCtx* pCtx) {
   return true;
 }
 
-bool CheckCurMarkFrameNumUsed (sWelsEncCtx* pCtx) {
-  SLTRState* pLtr = &pCtx->pLtr[pCtx->uiDependencyId];
-  SRefList* pRefList = pCtx->ppRefPicListExt[pCtx->uiDependencyId];
-  SPicture** pLongRefList = pRefList->pLongRefList;
-  int32_t iGoPFrameNumInterval = ((pCtx->pSvcParam->uiGopSize >> 1) > 1) ? (pCtx->pSvcParam->uiGopSize >> 1) : (1);
-  int32_t iMaxFrameNumPlus1 = (1 << pCtx->pSps->uiLog2MaxFrameNum);
-  SSpatialLayerInternal* pParamInternal = &pCtx->pSvcParam->sDependencyLayers[pCtx->uiDependencyId];
-  int32_t i;
-
-  for (i = 0; i < pRefList->uiLongRefCount; i++) {
-    if ((pParamInternal->iFrameNum == pLongRefList[i]->iFrameNum && pLtr->iLTRMarkMode == LTR_DIRECT_MARK) ||
-        (CompareFrameNum (pParamInternal->iFrameNum + iGoPFrameNumInterval, pLongRefList[i]->iFrameNum,
-                          iMaxFrameNumPlus1) == FRAME_NUM_EQUAL  && pLtr->iLTRMarkMode == LTR_DELAY_MARK)) {
-      return false;
-    }
-  }
-
-  return true;
-}
 
 static inline void WelsMarkMMCORefInfoWithBase (SSlice** ppSliceList,
     SSlice* pBaseSlice,
@@ -461,23 +442,6 @@ void WelsMarkPic (sWelsEncCtx* pCtx) {
   WelsMarkMMCORefInfo (pCtx, pLtr, pCtx->pCurDqLayer->ppSliceInLayer, kiCountSliceNum);
 }
 
-int32_t FilterLTRRecoveryRequest (sWelsEncCtx* pCtx, SLTRRecoverRequest* pLTRRecoverRequest) {
-  //if disable LTR, force IDR
-  for (int32_t iDid = 0; iDid < pCtx->pSvcParam->iSpatialLayerNum; iDid++) {
-    SSpatialLayerInternal* pParamInternal = &pCtx->pSvcParam->sDependencyLayers[iDid];
-    pParamInternal->bEncCurFrmAsIdrFlag = true;
-  }
-
-  return true;
-}
-void FilterLTRMarkingFeedback (sWelsEncCtx* pCtx, SLTRMarkingFeedback* pLTRMarkingFeedback) {
-  int32_t iLayerId = pLTRMarkingFeedback->iLayerId;
-  if ((iLayerId < 0) || (iLayerId >= pCtx->pSvcParam->iSpatialLayerNum)) {
-    return;
-  }
-  SLTRState* pLtr = &pCtx->pLtr[iLayerId];
-  assert (pLTRMarkingFeedback);
-}
 
 /*
  *  build reference picture list

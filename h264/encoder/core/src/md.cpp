@@ -653,28 +653,6 @@ void MeRefineFracPixel (sWelsEncCtx* pEncCtx, uint8_t* pMemPredInterMb, SWelsME*
                                 iInterBlk4Stride);
 }
 
-void InitBlkStrideWithRef (int32_t* pBlkStride, const int32_t kiStrideRef) {
-  static const uint8_t kuiStrideX[16] = {
-    0, 4 , 0, 4 ,
-    8, 12, 8, 12,
-    0, 4 , 0, 4 ,
-    8, 12, 8, 12
-  };
-  static const uint8_t kuiStrideY[16] = {
-    0, 0, 4 , 4 ,
-    0, 0, 4 , 4 ,
-    8, 8, 12, 12,
-    8, 8, 12, 12
-  };
-  int32_t i;
-
-  for (i = 0; i < 16; i += 4) {
-    pBlkStride[i  ] = kuiStrideX[i  ] + kuiStrideY[i  ] * kiStrideRef;
-    pBlkStride[i + 1] = kuiStrideX[i + 1] + kuiStrideY[i + 1] * kiStrideRef;
-    pBlkStride[i + 2] = kuiStrideX[i + 2] + kuiStrideY[i + 2] * kiStrideRef;
-    pBlkStride[i + 3] = kuiStrideX[i + 3] + kuiStrideY[i + 3] * kiStrideRef;
-  }
-}
 
 /*
  * iMvdSz = (648*2+1) or (972*2+1);

@@ -227,53 +227,6 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
     iBitsVaryPercentage = 10;
   }
 
-  int32_t ParamBaseTranscode (const SEncParamBase& pCodingParam) {
-
-    fMaxFrameRate  = WELS_CLIP3 (pCodingParam.fMaxFrameRate, MIN_FRAME_RATE, MAX_FRAME_RATE);
-    iTargetBitrate = pCodingParam.iTargetBitrate;
-    iUsageType  = SCREEN_CONTENT_REAL_TIME; // jumpseat: the one configuration kept (h264/README.md)
-    iPicWidth   = pCodingParam.iPicWidth;
-    iPicHeight  = pCodingParam.iPicHeight;
-
-    SUsedPicRect.iLeft = 0;
-    SUsedPicRect.iTop  = 0;
-    SUsedPicRect.iWidth = ((iPicWidth >> 1) * (1 << 1));
-    SUsedPicRect.iHeight = ((iPicHeight >> 1) * (1 << 1));
-
-    iRCMode = pCodingParam.iRCMode;    // rc mode
-
-    int8_t iIdxSpatial = 0;
-    EProfileIdc uiProfileIdc = PRO_UNKNOWN;
-    if (iEntropyCodingModeFlag)
-      uiProfileIdc = PRO_MAIN;
-    SSpatialLayerInternal* pDlp = &sDependencyLayers[0];
-
-    while (iIdxSpatial < iSpatialLayerNum) {
-
-      sSpatialLayers->uiProfileIdc              = uiProfileIdc;
-      sSpatialLayers->uiLevelIdc                = LEVEL_UNKNOWN;
-      sSpatialLayers[iIdxSpatial].fFrameRate    = WELS_CLIP3 (pCodingParam.fMaxFrameRate,
-          MIN_FRAME_RATE, MAX_FRAME_RATE);
-      pDlp->fInputFrameRate =
-        pDlp->fOutputFrameRate = WELS_CLIP3 (sSpatialLayers[iIdxSpatial].fFrameRate, MIN_FRAME_RATE,
-                                             MAX_FRAME_RATE);
-      pDlp->iActualWidth = sSpatialLayers[iIdxSpatial].iVideoWidth = iPicWidth;
-      pDlp->iActualHeight = sSpatialLayers[iIdxSpatial].iVideoHeight = iPicHeight;
-
-      sSpatialLayers->iSpatialBitrate =
-        sSpatialLayers[iIdxSpatial].iSpatialBitrate = pCodingParam.iTargetBitrate; // target bitrate for current spatial layer
-
-      sSpatialLayers->iMaxSpatialBitrate = UNSPECIFIED_BIT_RATE;
-      sSpatialLayers->iDLayerQp = SVC_QUALITY_BASE_QP;
-
-      uiProfileIdc = (!bSimulcastAVC) ? PRO_SCALABLE_BASELINE : uiProfileIdc;
-      ++ pDlp;
-      ++ iIdxSpatial;
-    }
-    SetActualPicResolution();
-
-    return 0;
-  }
   void GetBaseParams (SEncParamBase* pCodingParam) {
     pCodingParam->iUsageType     = iUsageType;
     pCodingParam->iPicWidth      = iPicWidth;
@@ -306,9 +259,9 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
     bEnableFrameCroppingFlag    = pCodingParam.bEnableFrameCroppingFlag;
 
     /* Rate Control */
-    iRCMode = pCodingParam.iRCMode;    // rc mode
+    iRCMode = RC_QUALITY_MODE; // jumpseat: the one rate control kept
     bSimulcastAVC = pCodingParam.bSimulcastAVC;
-    iPaddingFlag = pCodingParam.iPaddingFlag;
+    iPaddingFlag = 0;
 
     iTargetBitrate      = pCodingParam.iTargetBitrate;  // target bitrate
     iMaxBitrate         = pCodingParam.iMaxBitrate;
@@ -319,7 +272,7 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
     iMinQp = pCodingParam.iMinQp;
     uiMaxNalSize          = pCodingParam.uiMaxNalSize;
     /* Denoise Control */
-    bEnableDenoise = pCodingParam.bEnableDenoise ? true : false;    // Denoise Control  // only support 0 or 1 now
+    bEnableDenoise = false;
 
     /* Scene change detection control */
     bEnableSceneChangeDetect   = pCodingParam.bEnableSceneChangeDetect;
@@ -331,7 +284,7 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
     bEnableAdaptiveQuant       = false;
 
     /* Frame skipping */
-    bEnableFrameSkip           = pCodingParam.bEnableFrameSkip ? true : false;
+    bEnableFrameSkip           = false; // jumpseat: flow control drops frames, not the encoder
 
     /* Enable int32_t term reference */
     bEnableLongTermReference   = false;

@@ -50,34 +50,8 @@
 
 WELSVP_NAMESPACE_BEGIN
 
-typedef  void (GOMSadFunc) (uint32_t* pGomSad, int32_t* pGomForegroundBlockNum, int32_t* pSad8x8,
-                            uint8_t pBackgroundMbFlag);
 
-typedef GOMSadFunc*   PGOMSadFunc;
 
-GOMSadFunc      GomSampleSad;
-GOMSadFunc      GomSampleSadExceptBackground;
-
-class CComplexityAnalysis : public IStrategy {
- public:
-  CComplexityAnalysis (int32_t iCpuFlag);
-  ~CComplexityAnalysis();
-
-  EResult Process (int32_t iType, SPixMap* pSrc, SPixMap* pRef);
-  EResult Set (int32_t iType, void* pParam);
-  EResult Get (int32_t iType, void* pParam);
-
- private:
-  void AnalyzeFrameComplexityViaSad (SPixMap* pSrc, SPixMap* pRef);
-  int32_t GetFrameSadExcludeBackground (SPixMap* pSrc, SPixMap* pRef);
-
-  void AnalyzeGomComplexityViaSad (SPixMap* pSrc, SPixMap* pRef);
-  void AnalyzeGomComplexityViaVar (SPixMap* pSrc, SPixMap* pRef);
-
- private:
-  PGOMSadFunc m_pfGomSad;
-  SComplexityAnalysisParam m_sComplexityAnalysisParam;
-};
 
 
 //for screen content

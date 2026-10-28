@@ -399,20 +399,6 @@ void WelsScan4x4Ac_c (int16_t* pLevel, int16_t* pDct) {
   pLevel[15] = 0;
 }
 
-void WelsScan4x4Dc (int16_t* pLevel, int16_t* pDct) {
-  ST32 (pLevel, LD32 (pDct));
-  pLevel[2] = pDct[4];
-  pLevel[3] = pDct[8];
-  pLevel[4] = pDct[5];
-  ST32 (pLevel + 5, LD32 (pDct + 2));
-  pLevel[7] = pDct[6];
-  pLevel[8] = pDct[9];
-  ST32 (pLevel + 9, LD32 (pDct + 12));
-  pLevel[11] = pDct[10];
-  pLevel[12] = pDct[7];
-  pLevel[13] = pDct[11];
-  ST32 (pLevel + 14, LD32 (pDct + 14));
-}
 
 //refer to JVT-O079
 int32_t WelsCalculateSingleCtr4x4_c (int16_t* pDct) {

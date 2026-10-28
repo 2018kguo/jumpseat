@@ -152,7 +152,6 @@ void InitMeRefinePointer (SMeRefinePointer* pMeRefine, SMbCache* pMbCache, int32
 void MeRefineFracPixel (sWelsEncCtx* pEncCtx, uint8_t* pMemPredInterMb, SWelsME* pMe,
                         SMeRefinePointer* pMeRefine, int32_t iWidth, int32_t iHeight);
 
-void InitBlkStrideWithRef (int32_t* pBlkStride, const int32_t kiStrideRef);
 
 void UpdateMbMv_c (SMVUnitXY* pMvBuffer, const SMVUnitXY ksMv);
 

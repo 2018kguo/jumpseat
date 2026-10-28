@@ -170,47 +170,6 @@ inline bool IsCostLessEqualSkipCost (int32_t iCurCost, const int32_t iPredPskipS
            pRef->pMbSkipSad[iMbXy] > iSmallestInvisibleTh &&
            iCurCost >= (pRef->pMbSkipSad[iMbXy])));
 }
-bool CheckChromaCost (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMbCache* pMbCache, const int32_t iCurMbXy) {
-#define KNOWN_CHROMA_TOO_LARGE 640
-#define SMALLEST_INVISIBLE 128 //2*64, 2 in pixel maybe the smallest not visible for luma
-
-  PSampleSadSatdCostFunc* pSad = pEncCtx->pFuncList->sSampleDealingFuncs.pfSampleSad;
-  SDqLayer* pCurDqLayer = pEncCtx->pCurDqLayer;
-
-  uint8_t* pCbEnc = pMbCache->SPicData.pEncMb[1];
-  uint8_t* pCrEnc = pMbCache->SPicData.pEncMb[2];
-  uint8_t* pCbRef = pMbCache->SPicData.pRefMb[1];
-  uint8_t* pCrRef = pMbCache->SPicData.pRefMb[2];
-
-  const int32_t iCbEncStride         = pCurDqLayer->iEncStride[1];
-  const int32_t iCrEncStride         = pCurDqLayer->iEncStride[2];
-  const int32_t iChromaRefStride     = pCurDqLayer->pRefPic->iLineSize[1];
-
-  const int32_t iCbSad = GetChromaCost (pSad, pCbEnc, iCbEncStride, pCbRef, iChromaRefStride);
-  const int32_t iCrSad = GetChromaCost (pSad, pCrEnc, iCrEncStride, pCrRef, iChromaRefStride);
-
-  //01/17/13
-  //the in-question error area is
-  //from: (yellow) Y=212, V=023, U=145
-  //to:     (grey)    Y=213, V=136, U=124
-  //visible difference can be seen on the U plane
-  //so the allowing chroma difference should be at least no larger than
-  //20*8*8 = 1280 for U or V
-  //one local test case show that "either one >640" will become a too strict criteria, which will appear when QP is large(36) and maybe no much harm for visual
-  //another local test case show that "either one >960" will be a moderate criteria, an area is changed from light green to light pink, but without careful observation it won't be obvious, but people will feel the unclean area (and note that, the color visible criteria is also related to the luma of them!)
-  //another case show that color changed from black to very dark red can be visible even under the threshold 960, the color difference is about 13*64=832 (U123V145->U129V132)
-  //TODO:
-  //OPTI-ABLE: the visible color criteria may be related to luma (very bright or very dark), or related to the ratio of U/V rather than the absolute value
-  const bool bChromaTooLarge = (iCbSad > KNOWN_CHROMA_TOO_LARGE || iCrSad > KNOWN_CHROMA_TOO_LARGE);
-
-  const int32_t iChromaSad = iCbSad + iCrSad;
-  PredictSadSkip (pMbCache->sMvComponents.iRefIndexCache, pMbCache->bMbTypeSkip, pMbCache->iSadCostSkip, 0,
-                  & (pWelsMd->iSadPredSkip));
-  const bool bChromaCostCannotSkip = IsCostLessEqualSkipCost (iChromaSad, pWelsMd->iSadPredSkip, pMbCache->uiRefMbType,
-                                     pCurDqLayer->pRefPic, iCurMbXy, SMALLEST_INVISIBLE);
-
-  return (!bChromaCostCannotSkip && !bChromaTooLarge);
-}
 
 
 bool WelsMdInterJudgeBGDPskipFalse (sWelsEncCtx* pCtx, SWelsMD* pMd, SSlice* pSlice, SMB* pCurMb, SMbCache* pMbCache,

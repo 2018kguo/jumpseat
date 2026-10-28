@@ -110,16 +110,7 @@ void WelsLoadNal (SWelsEncoderOutput* pEncoderOuput, const int32_t/*EWelsNalUnit
  */
 void WelsUnloadNal (SWelsEncoderOutput* pEncoderOuput);
 
-/*!
- * \brief   load an initialize NAL pRawNal pData
- */
-void WelsLoadNalForSlice (SWelsSliceBs* pSliceBs, const int32_t/*EWelsNalUnitType*/ kiType,
-                          const int32_t/*EWelsNalRefIdc*/ kiNalRefIdc);
 
-/*!
- * \brief   unload pRawNal NAL
- */
-void WelsUnloadNalForSlice (SWelsSliceBs* pSliceBs);
 
 /*!
  * \brief   encode NAL with emulation forbidden three bytes checking

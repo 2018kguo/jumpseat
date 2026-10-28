@@ -59,25 +59,6 @@ int32_t AssignMbMapSingleSlice (void* pMbMap, const int32_t kiCountMbNum, const 
   return 0;
 }
 
-/*!
- * \brief   Assign MB map for multiple slice(s) segment
- *
- * \param   pCurDq              current layer which its MB map will be assigned
- * \param   kpSliceArgument     slice argument for current layer
- *
- * \return  0 - successful; none 0 - failed
- */
-int32_t AssignMbMapMultipleSlices (SDqLayer* pCurDq, const SSliceArgument* kpSliceArgument) {
-  SSliceCtx* pSliceSeg   = &pCurDq->sSliceEncCtx;
-  int32_t iSliceIdx      = 0;
-  return 1;
-
-  // any else uiSliceMode?
-  assert (0);
-
-  // extention for other multiple slice type in the future
-  return 1;
-}
 
 /*!
  *  Check slices assignment settings on MST_INTERLEAVE type
@@ -446,21 +427,6 @@ uint16_t WelsMbToSliceIdc (SDqLayer* pCurDq, const int32_t kiMbXY) {
   return (uint16_t) (-1);
 }
 
-/*!
- * \brief   Get first mb in slice/slice_group: uiSliceIdc (apply in Single/multiple slices and FMO)
- *
- * \param   pCurLayer       current layer
- * \param   kuiSliceIdc     slice idc
- *
- * \return  iFirstMb - successful; -1 - failed;
- */
-int32_t WelsGetFirstMbOfSlice (SDqLayer* pCurLayer, const int32_t kuiSliceIdc) {
-  if (NULL == pCurLayer || NULL == pCurLayer->pFirstMbIdxOfSlice) {
-    return -1;
-  }
-
-  return pCurLayer->pFirstMbIdxOfSlice[kuiSliceIdc];
-}
 
 /*!
  * \brief   Get successive mb to be processed in slice/slice_group: uiSliceIdc (apply in Single/multiple slices and FMO)
@@ -484,95 +450,8 @@ int32_t WelsGetNextMbOfSlice (SDqLayer* pCurDq, const int32_t kiMbXY) {
     return -1;
 }
 
-/*!
- * \brief   Get previous mb to be processed in slice/slice_group: uiSliceIdc (apply in Single/multiple slices and FMO)
- *
- * \param   pCurDq     current layer info
- * \param   kiMbXY     MB xy index
- *
- * \return  prev_mb - successful; -1 - failed;
- */
-int32_t WelsGetPrevMbOfSlice (SDqLayer* pCurDq, const int32_t kiMbXY) {
-  if (NULL != pCurDq) {
-    SSliceCtx* pSliceSeg = &pCurDq->sSliceEncCtx;
-    if (NULL == pSliceSeg || kiMbXY < 0 || kiMbXY >= pSliceSeg->iMbNumInFrame)
-      return -1;
-    return (-1 + kiMbXY);
-  } else
-    return -1;
-}
 
-/*!
- * \brief   Get number of mb in slice/slice_group: uiSliceIdc (apply in Single/multiple slices and FMO)
- *
- * \param   pSliceCtx       SSlice context
- * \param   pSlice          slice which request slice num
- * \param   kuiSliceIdc     slice/slice_group idc
- *
- * \return  count_num_of_mb - successful; -1 - failed;
- */
-int32_t WelsGetNumMbInSlice (SDqLayer* pCurDq, SSlice* pSlice, const int32_t kuiSliceIdc) {
-  SSliceCtx* pSliceCtx = &pCurDq->sSliceEncCtx;
-  bool bInValidFlag    = false;
 
-  if (NULL == pSliceCtx || NULL == pSlice || kuiSliceIdc < 0) {
-    return -1;
-  }
 
-  bInValidFlag = ((SM_SINGLE_SLICE != pSliceCtx->uiSliceMode) && (kuiSliceIdc >= pSliceCtx->iSliceNumInFrame))
-                 || ((SM_SINGLE_SLICE == pSliceCtx->uiSliceMode) && (kuiSliceIdc > 0));
-  if (bInValidFlag) {
-    return -1;
-  }
-
-  return pSlice->iCountMbNumInSlice;
-}
-
-int32_t GetCurrentSliceNum (const SDqLayer* pCurDq) {
-  const SSliceCtx* kpSliceCtx = &pCurDq->sSliceEncCtx;
-  return (kpSliceCtx != NULL) ? (kpSliceCtx->iSliceNumInFrame) : (-1);
-}
-int32_t DynamicAdjustSlicePEncCtxAll (SDqLayer* pCurDq,
-                                      int32_t* pRunLength) {
-  SSliceCtx* pSliceCtx                  = &pCurDq->sSliceEncCtx;
-  const int32_t iCountNumMbInFrame      = pSliceCtx->iMbNumInFrame;
-  const int32_t iCountSliceNumInFrame   = pSliceCtx->iSliceNumInFrame;
-  int32_t iSameRunLenFlag               = 1;
-  int32_t iFirstMbIdx                   = 0;
-  int32_t iSliceIdx                     = 0;
-
-  assert (iCountSliceNumInFrame <= MAX_THREADS_NUM);
-
-  while (iSliceIdx < iCountSliceNumInFrame) {
-    if (pRunLength[iSliceIdx] != pCurDq->pFirstMbIdxOfSlice[iSliceIdx]) {
-      iSameRunLenFlag = 0;
-      break;
-    }
-    ++ iSliceIdx;
-  }
-  if (iSameRunLenFlag) {
-    return 1; // do not need adjust it due to same running length as before to save complexity
-  }
-
-  iSliceIdx = 0;
-  do {
-    const int32_t kiSliceRun = pRunLength[iSliceIdx];
-    pCurDq->pFirstMbIdxOfSlice[iSliceIdx]         = iFirstMbIdx;
-    pCurDq->pCountMbNumInSlice[iSliceIdx]         = kiSliceRun;
-
-    WelsSetMemMultiplebytes_c (pSliceCtx->pOverallMbMap + iFirstMbIdx, iSliceIdx,
-                               kiSliceRun, sizeof (uint16_t));
-
-    iFirstMbIdx += kiSliceRun;
-
-    ++ iSliceIdx;
-  } while (iSliceIdx < iCountSliceNumInFrame && iFirstMbIdx < iCountNumMbInFrame);
-
-  return 0;
-}
-
-int32_t DynamicMaxSliceNumConstraint (uint32_t uiMaximumNum, int32_t iConsumedNum, uint32_t iDulplicateTimes) {
-  return ((uiMaximumNum - iConsumedNum - 1) / iDulplicateTimes);
-}
 
 } // namespace WelsEnc

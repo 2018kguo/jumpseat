@@ -216,11 +216,6 @@ uint32_t WelsCPUFeatureDetect (int32_t* pNumberOfLogicProcessors) {
 }
 
 
-void WelsCPURestore (const uint32_t kuiCPU) {
-  if (kuiCPU & (WELS_CPU_MMX | WELS_CPU_MMXEXT | WELS_CPU_3DNOW | WELS_CPU_3DNOWEXT)) {
-    WelsEmms();
-  }
-}
 
 #elif defined(HAVE_NEON_AARCH64)
 

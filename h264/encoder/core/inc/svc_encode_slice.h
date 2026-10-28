@@ -102,7 +102,6 @@ void FreeSliceBuffer (SSlice*& pSliceList,
 
 void InitSliceHeadWithBase (SSlice* pSlice, SSlice* pBaseSlice);
 
-void InitSliceRefInfoWithBase (SSlice* pSlice, SSlice* pBaseSlice, const uint8_t kuiRefCount);
 
 int32_t InitSliceList (SSlice*& pSliceList,
                        SBitStringAux* pBsWrite,
@@ -111,42 +110,18 @@ int32_t InitSliceList (SSlice*& pSliceList,
                        const bool bIndependenceBsBuffer,
                        CMemoryAlign* pMa);
 
-int32_t InitAllSlicesInThread (sWelsEncCtx* pCtx);
 
 int32_t InitSliceInLayer (sWelsEncCtx* pCtx,
                           SDqLayer* pDqLayer,
                           const int32_t kiDlayerIndex,
                           CMemoryAlign* pMa);
 
-int32_t ReallocateSliceList (sWelsEncCtx* pCtx,
-                             SSliceArgument* pSliceArgument,
-                             SSlice*& pSliceList,
-                             const int32_t kiMaxSliceNumOld,
-                             const int32_t kiMaxSliceNumNew);
 
-int32_t ReallocateSliceInThread (sWelsEncCtx* pCtx,
-                                 SDqLayer* pDqLayer,
-                                 const int32_t kiDlayerIdx,
-                                 const int32_t KiSlcBuffIdx);
 
-int32_t ReallocSliceBuffer (sWelsEncCtx* pCtx);
 
-int32_t GetCurLayerNalCount(const SDqLayer* pCurDq, const int32_t kiCodedSliceNum);
-int32_t GetTotalCodedNalCount(SFrameBSInfo* pFbi);
 
-int32_t FrameBsRealloc (sWelsEncCtx* pCtx,
-                        SFrameBSInfo* pFrameBsInfo,
-                        SLayerBSInfo* pLayerBsInfo,
-                        const int32_t kiMaxSliceNumOld);
 
-int32_t ReOrderSliceInLayer(sWelsEncCtx* pCtx,
-                            const SliceModeEnum kuiSliceMode,
-                            const int32_t kiThreadNum);
 
-int32_t SliceLayerInfoUpdate (sWelsEncCtx* pCtx,
-                              SFrameBSInfo* pFrameBsInfo,
-                              SLayerBSInfo* pLayerBsInfo,
-                              const SliceModeEnum kuiSliceMode);
 
 //slice encoding process
 int32_t WelsCodePSlice (sWelsEncCtx* pEncCtx, SSlice* pSlice);

@@ -302,8 +302,6 @@ int32_t ReleaseFeatureSearchPreparation (CMemoryAlign* pMa, uint16_t*& pFeatureO
 
 
 void SetCrossSearchThresholds (SPicture* pRef, SScreenBlockFeatureStorage* pStorage, const bool kbOn);
-void PerformFMEPreprocess (SWelsFuncPtrList* pFunc, SPicture* pRef, uint16_t* pFeatureOfBlock,
-                           SScreenBlockFeatureStorage* pScreenBlockFeatureStorage);
 bool SetFeatureSearchIn (SWelsFuncPtrList* pFunc,  const SWelsME& sMe,
                          const SSlice* pSlice, SScreenBlockFeatureStorage* pRefFeatureStorage,
                          const int32_t kiEncStride, const int32_t kiRefStride,
@@ -311,7 +309,6 @@ bool SetFeatureSearchIn (SWelsFuncPtrList* pFunc,  const SWelsME& sMe,
 void MotionEstimateFeatureFullSearch (SFeatureSearchIn& sFeatureSearchIn,
                                       const uint32_t kuiMaxSearchPoint,
                                       SWelsME* pMe);
-void UpdateFMESwitch (SDqLayer* pCurLayer);
 void UpdateFMESwitchNull (SDqLayer* pCurLayer);
 
 void WelsDiamondCrossFeatureSearch (SWelsFuncPtrList* pFuncList, SWelsME* pMe, SSlice* pSlice,

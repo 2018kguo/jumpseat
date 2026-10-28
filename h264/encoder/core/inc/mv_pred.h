@@ -167,25 +167,7 @@ void UpdateP8x16Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef,
  */
 void UpdateP8x8Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef, SMVUnitXY* pMv);
 
-/*!
- * \brief   only update pMv cache for current MB, only for P_4x4
- * \param
- * \param
- */
-void UpdateP4x4Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef, SMVUnitXY* pMv);
 
-/*!
- * \brief   only update pMv cache for current MB, only for P_8x4
- * \param
- * \param
- */
-void UpdateP8x4Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef, SMVUnitXY* pMv);
 
-/*!
- * \brief   only update pMv cache for current MB, only for P_4x8
- * \param
- * \param
- */
-void UpdateP4x8Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef, SMVUnitXY* pMv);
 }
 #endif//WELS_MV_PRED_H__

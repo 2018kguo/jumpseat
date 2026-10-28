@@ -85,10 +85,6 @@ void WelsUpdateRefSyntax (sWelsEncCtx* pCtx, const int32_t kiPOC, const int32_t 
 
 
 /*
-* check current mark iFrameNum used in LTR list or not
-*/
-bool CheckCurMarkFrameNumUsed (sWelsEncCtx* pCtx);
-/*
 *   decide whether current frame include long term reference mark and update long term reference mark syntax
 */
 void WelsMarkPic (sWelsEncCtx* pCtx);

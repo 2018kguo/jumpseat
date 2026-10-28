@@ -80,57 +80,7 @@ static int32_t WelsGenerateNewSps (sWelsEncCtx* pCtx, const bool kbUseSubsetSps,
   return iRet;
 }
 
-static bool CheckMatchedSps (SWelsSPS* const pSps1, SWelsSPS* const pSps2) {
 
-  if ((pSps1->iMbWidth != pSps2->iMbWidth)
-      || (pSps1->iMbHeight != pSps2->iMbHeight)) {
-    return false;
-  }
-
-  if ((pSps1->uiLog2MaxFrameNum != pSps2->uiLog2MaxFrameNum)
-      || (pSps1->iLog2MaxPocLsb != pSps2->iLog2MaxPocLsb)) {
-    return false;
-  }
-
-  if (pSps1->iNumRefFrames != pSps2->iNumRefFrames) {
-    return false;
-  }
-
-  if ((pSps1->bFrameCroppingFlag != pSps2->bFrameCroppingFlag)
-      || (pSps1->sFrameCrop.iCropLeft != pSps2->sFrameCrop.iCropLeft)
-      || (pSps1->sFrameCrop.iCropRight != pSps2->sFrameCrop.iCropRight)
-      || (pSps1->sFrameCrop.iCropTop != pSps2->sFrameCrop.iCropTop)
-      || (pSps1->sFrameCrop.iCropBottom != pSps2->sFrameCrop.iCropBottom)
-     ) {
-    return false;
-  }
-
-  if ((pSps1->uiProfileIdc != pSps2->uiProfileIdc)
-      || (pSps1->bConstraintSet0Flag != pSps2->bConstraintSet0Flag)
-      || (pSps1->bConstraintSet1Flag != pSps2->bConstraintSet1Flag)
-      || (pSps1->bConstraintSet2Flag != pSps2->bConstraintSet2Flag)
-      || (pSps1->bConstraintSet3Flag != pSps2->bConstraintSet3Flag)
-      || (pSps1->iLevelIdc != pSps2->iLevelIdc)) {
-    return false;
-  }
-
-  return true;
-}
-
-static bool CheckMatchedSubsetSps (SSubsetSps* const pSubsetSps1, SSubsetSps* const pSubsetSps2) {
-  if (!CheckMatchedSps (&pSubsetSps1->pSps, &pSubsetSps2->pSps)) {
-    return false;
-  }
-
-  if ((pSubsetSps1->sSpsSvcExt.iExtendedSpatialScalability      != pSubsetSps2->sSpsSvcExt.iExtendedSpatialScalability)
-      || (pSubsetSps1->sSpsSvcExt.bAdaptiveTcoeffLevelPredFlag  != pSubsetSps2->sSpsSvcExt.bAdaptiveTcoeffLevelPredFlag)
-      || (pSubsetSps1->sSpsSvcExt.bSeqTcoeffLevelPredFlag != pSubsetSps2->sSpsSvcExt.bSeqTcoeffLevelPredFlag)
-      || (pSubsetSps1->sSpsSvcExt.bSliceHeaderRestrictionFlag != pSubsetSps2->sSpsSvcExt.bSliceHeaderRestrictionFlag)) {
-    return false;
-  }
-
-  return true;
-}
 
 /*!
  * \brief   check if the current parameter can found a presenting sps

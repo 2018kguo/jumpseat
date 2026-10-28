@@ -257,7 +257,6 @@ struct TagWelsFuncPointerList {
 
   /* For Deblocking */
 
-  SWelsRcFunc              pfRc;
   PAccumulateSadFunc         pfAccumulateSadForRc;
 
   PSetMemoryZero        pfSetMemZeroSize8;      // for size is times to 8

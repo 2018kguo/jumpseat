@@ -84,16 +84,6 @@ void welsCodecTrace::SetCodecInstance (void* pCodecInstance) {
   m_sLogCtx.pCodecInstance = pCodecInstance;
 }
 
-void welsCodecTrace::SetTraceLevel (const int32_t iLevel) {
-  if (iLevel >= 0)
-    m_iTraceLevel = iLevel;
-}
 
-void welsCodecTrace::SetTraceCallback (WelsTraceCallback func) {
-  m_fpTrace = func;
-}
 
-void welsCodecTrace::SetTraceCallbackContext (void* ctx) {
-  m_pTraceCtx = ctx;
-}
 

@@ -821,56 +821,7 @@ void FillQpelLocationByFeatureValue_c (uint16_t* pFeatureOfBlock, const int32_t 
   }
 }
 
-bool CalculateFeatureOfBlock (SWelsFuncPtrList* pFunc, SPicture* pRef,
-                              SScreenBlockFeatureStorage* pScreenBlockFeatureStorage) {
-  uint16_t* pFeatureOfBlock = pScreenBlockFeatureStorage->pFeatureOfBlockPointer;
-  uint32_t* pTimesOfFeatureValue = pScreenBlockFeatureStorage->pTimesOfFeatureValue;
-  uint16_t** pLocationOfFeature  = pScreenBlockFeatureStorage->pLocationOfFeature;
-  uint16_t* pBuf = pScreenBlockFeatureStorage->pLocationPointer;
 
-  if (NULL == pFeatureOfBlock || NULL == pTimesOfFeatureValue || NULL == pLocationOfFeature || NULL == pBuf
-      || NULL == pRef->pData[0]) {
-    return false;
-  }
-
-  uint8_t* pRefData = pRef->pData[0];
-  const int32_t iRefStride = pRef->iLineSize[0];
-  int32_t iIs16x16 = pScreenBlockFeatureStorage->iIs16x16;
-  const int32_t iEdgeDiscard = (iIs16x16 ? 16 : 8); //this is to save complexity of padding on pRef
-  const int32_t iWidth = pRef->iWidthInPixel - iEdgeDiscard;
-  const int32_t kiHeight = pRef->iHeightInPixel - iEdgeDiscard;
-  const int32_t kiActualListSize = pScreenBlockFeatureStorage->iActualListSize;
-
-  memset (pTimesOfFeatureValue, 0, sizeof (int32_t)*kiActualListSize);
-  (pFunc->pfCalculateBlockFeatureOfFrame[iIs16x16]) (pRefData, iWidth, kiHeight, iRefStride, pFeatureOfBlock,
-      pTimesOfFeatureValue);
-
-  //assign pLocationOfFeature pointer
-  pFunc->pfInitializeHashforFeature (pTimesOfFeatureValue, pBuf, kiActualListSize,
-                                     pLocationOfFeature, pScreenBlockFeatureStorage->pFeatureValuePointerList);
-
-  //assign each pixel's pLocationOfFeature
-  pFunc->pfFillQpelLocationByFeatureValue (pFeatureOfBlock, iWidth, kiHeight,
-      pScreenBlockFeatureStorage->pFeatureValuePointerList);
-  return true;
-}
-
-void PerformFMEPreprocess (SWelsFuncPtrList* pFunc, SPicture* pRef, uint16_t* pFeatureOfBlock,
-                           SScreenBlockFeatureStorage* pScreenBlockFeatureStorage) {
-  pScreenBlockFeatureStorage->pFeatureOfBlockPointer = pFeatureOfBlock;
-  pScreenBlockFeatureStorage->bRefBlockFeatureCalculated = CalculateFeatureOfBlock (pFunc, pRef,
-      pScreenBlockFeatureStorage);
-
-  if (pScreenBlockFeatureStorage->bRefBlockFeatureCalculated) {
-    uint32_t uiRefPictureAvgQstepx16 = QStepx16ByQp[WelsMedian (0, pRef->iFrameAverageQp, 51)];
-    uint32_t uiSadCostThreshold16x16 = ((30 * (uiRefPictureAvgQstepx16 + 160)) >> 3);
-    pScreenBlockFeatureStorage->uiSadCostThreshold[BLOCK_16x16] = uiSadCostThreshold16x16;
-    pScreenBlockFeatureStorage->uiSadCostThreshold[BLOCK_8x8] = (uiSadCostThreshold16x16 >> 2);
-    pScreenBlockFeatureStorage->uiSadCostThreshold[BLOCK_16x8]
-      = pScreenBlockFeatureStorage->uiSadCostThreshold[BLOCK_8x16]
-        = pScreenBlockFeatureStorage->uiSadCostThreshold[BLOCK_4x4] = UINT_MAX;
-  }
-}
 
 // jumpseat: the cross search's thresholds, as PerformFMEPreprocess sets
 // them, without the feature index; UINT_MAX (no cross search) when off.
@@ -1015,39 +966,8 @@ void MotionEstimateFeatureFullSearch (SFeatureSearchIn& sFeatureSearchIn,
   }
 }
 
-//switch related
-static uint32_t CountFMECostDown (const SDqLayer* pCurLayer) {
-  uint32_t uiCostDownSum      = 0;
-  const int32_t kiSliceCount  = GetCurrentSliceNum (pCurLayer);
-  if (kiSliceCount >= 1) {
-    int32_t iSliceIndex  = 0;
-    SSlice* pSlice    = pCurLayer->ppSliceInLayer[iSliceIndex];
-    while (iSliceIndex < kiSliceCount) {
-      pSlice        = pCurLayer->ppSliceInLayer[iSliceIndex];
-      uiCostDownSum += pSlice->uiSliceFMECostDown;
-      ++ iSliceIndex;
-    }
-  }
-  return uiCostDownSum;
-}
 #define FMESWITCH_MBAVERCOSTSAVING_THRESHOLD (2) //empirically set.
-#define FMESWITCH_GOODFRAMECOUNT_MAX (5) //empirically set.
-static void UpdateFMEGoodFrameCount (const uint32_t iAvMBNormalizedRDcostDown, uint8_t& uiFMEGoodFrameCount) {
-  //this strategy may be changed, here the number is derived from empirical-numbers
-  // uiFMEGoodFrameCount lies in [0,FMESWITCH_GOODFRAMECOUNT_MAX]
-  if (iAvMBNormalizedRDcostDown > FMESWITCH_MBAVERCOSTSAVING_THRESHOLD) {
-    if (uiFMEGoodFrameCount < FMESWITCH_GOODFRAMECOUNT_MAX)
-      ++ uiFMEGoodFrameCount;
-  } else {
-    if (uiFMEGoodFrameCount > 0)
-      -- uiFMEGoodFrameCount;
-  }
-}
-void UpdateFMESwitch (SDqLayer* pCurLayer) {
-  const uint32_t iFMECost = CountFMECostDown (pCurLayer);
-  const uint32_t iAvMBNormalizedRDcostDown  = iFMECost / (pCurLayer->iMbWidth * pCurLayer->iMbHeight);
-  UpdateFMEGoodFrameCount (iAvMBNormalizedRDcostDown, pCurLayer->pFeatureSearchPreparation->uiFMEGoodFrameCount);
-}
+#define FMESWITCH_GOODFRAMECOUNT_MAX (5)
 void UpdateFMESwitchNull (SDqLayer* pCurLayer) {
 }
 /////////////////////////

@@ -63,10 +63,6 @@ uint32_t WelsCPUDetectAVX512();
 
 void WelsEmms();
 
-/*
- *  clear FPU registers states for potential float based calculation if support
- */
-void     WelsCPURestore (const uint32_t kuiCPU);
 
 #else
 #define WelsEmms()

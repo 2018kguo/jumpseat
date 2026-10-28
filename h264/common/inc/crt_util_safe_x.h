@@ -72,16 +72,8 @@ char*   WelsStrncpy (char* dest, int32_t sizeInBytes, const char* src);
 char*   WelsStrcat (char* dest, uint32_t sizeInBytes, const char* src);
 int32_t   WelsVsnprintf (char* buffer, int32_t sizeOfBuffer, const char* format, va_list argptr);
 
-WelsFileHandle*        WelsFopen (const char* filename,  const char* mode);
-int32_t                WelsFclose (WelsFileHandle*   fp);
 int32_t                WelsFread (void* buffer, int32_t size, int32_t count, WelsFileHandle* fp);
-int32_t                WelsFwrite (const void* buffer, int32_t size, int32_t count, WelsFileHandle* fp);
-int32_t                WelsFseek (WelsFileHandle* fp, int32_t offset, int32_t origin);
-int32_t                WelsFflush (WelsFileHandle* fp);
 
-int32_t                WelsGetTimeOfDay (SWelsTime* tp);
-int32_t                WelsStrftime (char* buffer, int32_t size, const char* format, const SWelsTime* tp);
-uint16_t               WelsGetMillisecond (const SWelsTime* tp);
 
 
 #ifdef __cplusplus

@@ -403,34 +403,6 @@ void UpdateP8x8Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t pRef, 
         pMvComp->sMotionVectorCache[7 + kuiCacheIdx] = *pMv;
 }
 
-//update uiRefIndex and pMv of only Mb_cache, for P4x4
-void UpdateP4x4Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t pRef, SMVUnitXY* pMv) {
-  SMVComponentUnit* pMvComp = &pMbCache->sMvComponents;
-  const uint8_t kuiCacheIdx = g_kuiCache30ScanIdx[iPartIdx];
 
-  pMvComp->iRefIndexCache    [kuiCacheIdx] = pRef;
-  pMvComp->sMotionVectorCache[kuiCacheIdx] = *pMv;
-}
 
-//update uiRefIndex and pMv of only Mb_cache, for P8x4
-void UpdateP8x4Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t pRef, SMVUnitXY* pMv) {
-  SMVComponentUnit* pMvComp = &pMbCache->sMvComponents;
-  const uint8_t kuiCacheIdx = g_kuiCache30ScanIdx[iPartIdx];
-
-  pMvComp->iRefIndexCache      [    kuiCacheIdx] =
-    pMvComp->iRefIndexCache    [1 + kuiCacheIdx] = pRef;
-  pMvComp->sMotionVectorCache  [    kuiCacheIdx] =
-    pMvComp->sMotionVectorCache[1 + kuiCacheIdx] = *pMv;
-}
-
-//update uiRefIndex and pMv of only Mb_cache, for P4x8
-void UpdateP4x8Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t pRef, SMVUnitXY* pMv) {
-  SMVComponentUnit* pMvComp = &pMbCache->sMvComponents;
-  const uint8_t kuiCacheIdx = g_kuiCache30ScanIdx[iPartIdx];
-
-  pMvComp->iRefIndexCache      [    kuiCacheIdx] =
-    pMvComp->iRefIndexCache    [6 + kuiCacheIdx] = pRef;
-  pMvComp->sMotionVectorCache  [    kuiCacheIdx] =
-    pMvComp->sMotionVectorCache[6 + kuiCacheIdx] = *pMv;
-}
 } // namespace WelsEnc

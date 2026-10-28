@@ -144,15 +144,6 @@ void UninitSlicePEncCtx (SDqLayer* pCurDq, CMemoryAlign* pMa);
  */
 uint16_t WelsMbToSliceIdc (SDqLayer* pCurDq, const int32_t kiMbXY);
 
-/*!
- * \brief   Get first mb in slice/slice_group: uiSliceIdc (apply in Single/multiple slices and FMO)
- *
- * \param   pCurLayer       current layer
- * \param   kiSliceIdc      slice idc
- *
- * \return  first_mb - successful; -1 - failed;
- */
-int32_t WelsGetFirstMbOfSlice (SDqLayer* pCurLayer, const int32_t kiSliceIdc);
 
 /*!
  * \brief   Get successive mb to be processed in slice/slice_group: uiSliceIdc (apply in Single/multiple slices and FMO)
@@ -164,37 +155,15 @@ int32_t WelsGetFirstMbOfSlice (SDqLayer* pCurLayer, const int32_t kiSliceIdc);
  */
 int32_t WelsGetNextMbOfSlice (SDqLayer* pCurDq, const int32_t kiMbXY);
 
-/*!
- * \brief   Get previous mb to be processed in slice/slice_group: uiSliceIdc (apply in Single/multiple slices and FMO)
- *
- * \param   pCurDq          current layer info
- * \param   kiMbXY          MB xy index
- *
- * \return  prev_mb - successful; -1 - failed;
- */
-int32_t WelsGetPrevMbOfSlice (SDqLayer* pCurDq, const int32_t kiMbXY);
 
-/*!
- * \brief   Get number of mb in slice/slice_group: uiSliceIdc (apply in Single/multiple slices and FMO)
- *
- * \param   pCurDq          current layer info
- * \param   pSlice          slice which request slice num
- * \param   kiSliceIdc      slice/slice_group idc
- *
- * \return  count_num_of_mb - successful; -1 - failed;
- */
-int32_t WelsGetNumMbInSlice (SDqLayer* pCurDq, SSlice* pSlice, const int32_t kuiSliceIdc);
 
 /*!
  *  Get slice count for multiple slice segment
  *
  */
 int32_t GetInitialSliceNum (SSliceArgument* pSliceArgument);
-int32_t GetCurrentSliceNum (const SDqLayer* pCurDq);
 SSlice* GetSliceByIndex(sWelsEncCtx* pCtx, const int32_t kiSliceIdc);
 
-//checking valid para
-int32_t DynamicMaxSliceNumConstraint (uint32_t uiMaximumNum, int32_t uiConsumedNum, uint32_t uiDulplicateTimes);
 
 bool CheckFixedSliceNumMultiSliceSetting (const int32_t kiMbNumInFrame,  SSliceArgument* pSliceArg);
 bool CheckRasterMultiSliceSetting (const int32_t kiMbNumInFrame, SSliceArgument* pSliceArg);
@@ -202,9 +171,5 @@ bool CheckRowMbMultiSliceSetting (const int32_t kiMbWidth,  SSliceArgument* pSli
 
 bool GomValidCheckSliceNum (const int32_t kiMbWidth, const int32_t kiMbHeight, uint32_t* pSliceNum);
 bool GomValidCheckSliceMbNum (const int32_t kiMbWidth, const int32_t kiMbHeight,  SSliceArgument* pSliceArg);
-//end of checking valid para
-
-int32_t DynamicAdjustSlicePEncCtxAll (SDqLayer* pCurDq,
-                                      int32_t* pRunLength);
 }
 #endif//WELS_SLICE_SEGMENT_H__

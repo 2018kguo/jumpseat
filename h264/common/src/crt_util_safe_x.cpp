@@ -71,38 +71,9 @@ int32_t WelsVsnprintf (char* pBuffer, int32_t iSizeOfBuffer, const char* kpForma
   return vsnprintf (pBuffer, iSizeOfBuffer, kpFormat, pArgPtr); //confirmed_safe_unsafe_usage
 }
 
-WelsFileHandle* WelsFopen (const char* kpFilename,  const char* kpMode) {
-  return fopen (kpFilename, kpMode);
-}
 
-int32_t WelsFclose (WelsFileHandle*   pFp) {
-  return fclose (pFp);
-}
 
-int32_t WelsGetTimeOfDay (SWelsTime* pTp) {
-  struct timeval  sTv;
 
-  if (gettimeofday (&sTv, NULL)) {
-    return -1;
-  }
-
-  pTp->time = sTv.tv_sec;
-  pTp->millitm = (uint16_t)sTv.tv_usec / 1000;
-
-  return 0;
-}
-
-int32_t WelsStrftime (char* pBuffer, int32_t iSize, const char* kpFormat, const SWelsTime* kpTp) {
-  struct tm*   pTnow;
-  int32_t iRc;
-
-  pTnow = localtime (&kpTp->time);
-
-  iRc = (int32_t) strftime (pBuffer, iSize, kpFormat, pTnow);
-  if (iRc == 0)
-    pBuffer[0] = '\0';
-  return iRc;
-}
 
 
 
@@ -113,18 +84,6 @@ char* WelsStrcat (char* pDest, uint32_t uiSizeInBytes, const char* kpSrc) {
   return pDest;
 }
 
-int32_t WelsFwrite (const void* kpBuffer, int32_t iSize, int32_t iCount, WelsFileHandle* pFp) {
-  return (int32_t)fwrite (kpBuffer, iSize, iCount, pFp);
-}
 
-uint16_t WelsGetMillisecond (const SWelsTime* kpTp) {
-  return kpTp->millitm;
-}
 
-int32_t WelsFseek (WelsFileHandle* fp, int32_t offset, int32_t origin) {
-  return fseek (fp, offset, origin);
-}
 
-int32_t WelsFflush (WelsFileHandle* pFp) {
-  return fflush (pFp);
-}

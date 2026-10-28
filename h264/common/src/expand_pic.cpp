@@ -221,51 +221,7 @@ static inline void MBPadRightChroma_c (uint8_t*& pDst, const int32_t& kiStride, 
   }
 }
 
-void PadMBLuma_c (uint8_t*& pDst, const int32_t& kiStride, const int32_t& kiPicW, const int32_t& kiPicH,
-                  const int32_t& kiMbX, const int32_t& kiMbY, const int32_t& kiMBWidth, const int32_t& kiMBHeight) {
-  if (kiMbX == 0 && kiMbY == 0) {
-    MBPadTopLeftLuma_c (pDst, kiStride);
-  } else if (kiMbY == 0 && kiMbX == kiMBWidth - 1) {
-    MBPadTopRightLuma_c (pDst, kiStride, kiPicW);
-  } else if (kiMbY == kiMBHeight - 1 && kiMbX == 0) {
-    MBPadBottomLeftLuma_c (pDst, kiStride, kiPicH);
-  } else if (kiMbY == kiMBHeight - 1 && kiMbX == kiMBWidth - 1) {
-    MBPadBottomRightLuma_c (pDst, kiStride, kiPicW, kiPicH);
-  }
-  if (kiMbX == 0) {
-    MBPadLeftLuma_c (pDst, kiStride, kiMbY);
-  } else if (kiMbX == kiMBWidth - 1) {
-    MBPadRightLuma_c (pDst, kiStride, kiMbY, kiPicW);
-  }
-  if (kiMbY == 0 && kiMbX > 0 && kiMbX < kiMBWidth - 1) {
-    MBPadTopLuma_c (pDst, kiStride, kiMbX);
-  } else if (kiMbY == kiMBHeight - 1 && kiMbX > 0 && kiMbX < kiMBWidth - 1) {
-    MBPadBottomLuma_c (pDst, kiStride, kiMbX, kiPicH);
-  }
-}
 
-void PadMBChroma_c (uint8_t*& pDst, const int32_t& kiStride, const int32_t& kiPicW, const int32_t& kiPicH,
-                    const int32_t& kiMbX, const int32_t& kiMbY, const int32_t& kiMBWidth, const int32_t& kiMBHeight) {
-  if (kiMbX == 0 && kiMbY == 0) {
-    MBPadTopLeftChroma_c (pDst, kiStride);
-  } else if (kiMbY == 0 && kiMbX == kiMBWidth - 1) {
-    MBPadTopRightChroma_c (pDst, kiStride, kiPicW);
-  } else if (kiMbY == kiMBHeight - 1 && kiMbX == 0) {
-    MBPadBottomLeftChroma_c (pDst, kiStride, kiPicH);
-  } else if (kiMbY == kiMBHeight - 1 && kiMbX == kiMBWidth - 1) {
-    MBPadBottomRightChroma_c (pDst, kiStride, kiPicW, kiPicH);
-  }
-  if (kiMbX == 0) {
-    MBPadLeftChroma_c (pDst, kiStride, kiMbY);
-  } else if (kiMbX == kiMBWidth - 1) {
-    MBPadRightChroma_c (pDst, kiStride, kiMbY, kiPicW);
-  }
-  if (kiMbY == 0 && kiMbX > 0 && kiMbX < kiMBWidth - 1) {
-    MBPadTopChroma_c (pDst, kiStride, kiMbX);
-  } else if (kiMbY == kiMBHeight - 1 && kiMbX > 0 && kiMbX < kiMBWidth - 1) {
-    MBPadBottomChroma_c (pDst, kiStride, kiMbX, kiPicH);
-  }
-}
 
 // rewrite it (split into luma & chroma) that is helpful for mmx/sse2 optimization perform, 9/27/2009
 static inline void ExpandPictureLuma_c (uint8_t* pDst, const int32_t kiStride, const int32_t kiPicW,

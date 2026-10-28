@@ -45,15 +45,6 @@
 
 namespace WelsEnc {
 
-/*!
- * \brief   initialize source picture body
- * \param   kpSrc       SSourcePicture*
- * \param   kiCsp       internal csp format
- * \param   kiWidth widht of picture in pixels
- * \param   kiHeight    height of picture in pixels
- * \return  successful - 0; otherwise none 0 for failed
- */
-int32_t InitPic (const void* kpSrc, const int32_t kiCsp, const int32_t kiWidth, const int32_t kiHeight);
 
 /*
  *  SVC core encoder external interfaces
@@ -95,7 +86,6 @@ void WelsUninitEncoderExt (sWelsEncCtx** ppCtx);
  */
 int32_t WelsEncoderEncodeExt (sWelsEncCtx*, SFrameBSInfo* pFbi, const SSourcePicture* kpSrcPic);
 
-int32_t WelsEncoderEncodeParameterSets (sWelsEncCtx* pCtx, void* pDst);
 
 /*
  * Force coding IDR as follows
@@ -107,17 +97,9 @@ int32_t ForceCodingIDR (sWelsEncCtx* pCtx,int32_t iLayerId);
  *          SVC adjustment results in new requirement in memory blocks adjustment
  */
 int32_t WelsBitRateVerification(SLogContext* pLogCtx,SSpatialLayerConfig* pLayerParam,int32_t iLayerId);
-int32_t WelsEncoderParamAdjust (sWelsEncCtx** ppCtx, SWelsSvcCodingParam* pNew);
-void WelsEncoderApplyFrameRate (SWelsSvcCodingParam* pParam);
 int32_t WelsEncoderApplyBitRate (SLogContext* pLogCtx, SWelsSvcCodingParam* pParam, int32_t iLayer);
-int32_t WelsEncoderApplyBitVaryRang(SLogContext* pLogCtx, SWelsSvcCodingParam* pParam, int32_t iRang);
-int32_t WelsEncoderApplyLTR (SLogContext* pLogCtx, sWelsEncCtx** ppCtx, SLTRConfig* pLTRValue);
-int32_t DynSliceRealloc(sWelsEncCtx* pCtx,SFrameBSInfo* pFrameBsInfo,SLayerBSInfo* pLayerBsInfo);
-int32_t FilterLTRRecoveryRequest (sWelsEncCtx* pCtx, SLTRRecoverRequest* pLTRRecoverRequest);
 void CheckProfileSetting (SLogContext* pLogCtx,SWelsSvcCodingParam* pParam,int32_t iLayer, EProfileIdc uiProfileIdc);
 void CheckLevelSetting (SLogContext* pLogCtx,SWelsSvcCodingParam* pParam,int32_t iLayer, ELevelIdc uiLevelIdc);
-void CheckReferenceNumSetting (SLogContext* pLogCtx,  SWelsSvcCodingParam* pParam,int32_t iNumRef);
-void FilterLTRMarkingFeedback (sWelsEncCtx* pCtx, SLTRMarkingFeedback* pLTRMarkingFeedback);
 }
 
 #endif//WELS_ENCODER_CALLBACK_H__

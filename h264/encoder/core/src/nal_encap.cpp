@@ -74,38 +74,7 @@ void WelsUnloadNal (SWelsEncoderOutput* pEncoderOuput) {
   ++ (*pIdx);
 }
 
-/*!
- * \brief   load an initialize NAL pRawNal pData
- */
-void WelsLoadNalForSlice (SWelsSliceBs* pSliceBs, const int32_t/*EWelsNalUnitType*/ kiType,
-                          const int32_t/*EWelsNalRefIdc*/ kiNalRefIdc) {
-  SWelsNalRaw* pRawNal                  = &pSliceBs->sNalList[ pSliceBs->iNalIndex ];
-  SNalUnitHeader* sNalUnitHeader        = &pRawNal->sNalExt.sNalUnitHeader;
-  SBitStringAux* pBitStringAux          = &pSliceBs->sBsWrite;
-  const int32_t kiStartPos              = (BsGetBitsPos (pBitStringAux) >> 3);
 
-  sNalUnitHeader->eNalUnitType          = (EWelsNalUnitType)kiType;
-  sNalUnitHeader->uiNalRefIdc           = (EWelsNalRefIdc)kiNalRefIdc;
-  sNalUnitHeader->uiForbiddenZeroBit    = 0;
-
-  pRawNal->pRawData     = &pSliceBs->pBsBuffer[kiStartPos];
-  pRawNal->iStartPos    = kiStartPos;
-  pRawNal->iPayloadSize = 0;
-}
-
-/*!
- * \brief   unload pRawNal NAL
- */
-void WelsUnloadNalForSlice (SWelsSliceBs* pSliceBs) {
-  int32_t*      pIdx            = &pSliceBs->iNalIndex;
-  SWelsNalRaw* pRawNal          = &pSliceBs->sNalList[ *pIdx ];
-  SBitStringAux* pBitStringAux  = &pSliceBs->sBsWrite;
-  const int32_t kiEndPos        = (BsGetBitsPos (pBitStringAux) >> 3);
-
-  /* count payload size of pRawNal NAL */
-  pRawNal->iPayloadSize = kiEndPos - pRawNal->iStartPos;
-  ++ (*pIdx);
-}
 
 /*!
  * \brief   encode NAL with emulation forbidden three bytes checking
