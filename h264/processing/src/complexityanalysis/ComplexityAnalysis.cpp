@@ -466,11 +466,12 @@ void CComplexityAnalysisScreen::GomComplexityAnalysisInter (SPixMap* pSrc, SPixM
 
       iBlockSadH = iBlockSadV = 0x7fffffff; // INT_MAX
 
-      if (j > 0) {
+      // jumpseat: an unchanged block's cost is 0 whatever intra would cost.
+      if (j > 0 && iInterSad) {
         m_pIntraFunc[0] (iMemPredMb, pTmpCur, iStrideY);
         iBlockSadH = m_pSadFunc (pTmpCur, iStrideY, iMemPredMb, 16);
       }
-      if (i > 0) {
+      if (i > 0 && iInterSad) {
         m_pIntraFunc[1] (iMemPredMb, pTmpCur, iStrideY);
         iBlockSadV = m_pSadFunc (pTmpCur, iStrideY, iMemPredMb, 16);
       }

@@ -616,7 +616,10 @@ void WelsMdInterFinePartitionVaaOnScreen (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd
   int32_t iCostP8x8;
   uint8_t uiMbSign = pEncCtx->pFuncList->pfGetMbSignFromInterVaa (&pEncCtx->pVaa->sVaaCalcInfo.pSad8x8[pCurMb->iMbXY][0]);
 
-  if (MBVAASIGN_FLAT == uiMbSign) {
+  SVAAFrameInfoExt* pVaaExt = static_cast<SVAAFrameInfoExt*> (pEncCtx->pVaa);
+  const bool kbScrolling = pVaaExt->sScrollDetectInfo.bScrollDetectFlag
+                           && (pVaaExt->sScrollDetectInfo.iScrollMvX | pVaaExt->sScrollDetectInfo.iScrollMvY);
+  if (MBVAASIGN_FLAT == uiMbSign || !kbScrolling) { // jumpseat: see PreprocessSliceCoding
     return;
   }
 

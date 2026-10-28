@@ -2719,48 +2719,23 @@ void PreprocessSliceCoding (sWelsEncCtx* pCtx) {
       if (!SetMeMethod (ME_DIA_CROSS, pFuncList->pfSearchMethod[BLOCK_16x16])) {
         WelsLog (pLogCtx, WELS_LOG_WARNING, "SetMeMethod(BLOCK_16x16) ME_DIA_CROSS unsuccessful, switched to default search");
       }
-      //ME8x8
-      SFeatureSearchPreparation* pFeatureSearchPreparation = pCurLayer->pFeatureSearchPreparation;
-      if (pFeatureSearchPreparation) {
-        pFeatureSearchPreparation->iHighFreMbCount = 0;
-
-        //calculate bFMESwitchFlag
-        SVAAFrameInfoExt* pVaaExt = static_cast<SVAAFrameInfoExt*> (pCtx->pVaa);
-        const int32_t kiMbSize = pCurLayer->iMbHeight * pCurLayer->iMbWidth;
-        pFeatureSearchPreparation->bFMESwitchFlag = CalcFMESwitchFlag (pFeatureSearchPreparation->uiFMEGoodFrameCount,
-            pFeatureSearchPreparation->iHighFreMbCount * 100 / kiMbSize, pCtx->pVaa->sVaaCalcInfo.iFrameSad / kiMbSize,
-            pVaaExt->sScrollDetectInfo.bScrollDetectFlag && (pVaaExt->sScrollDetectInfo.iScrollMvX | pVaaExt->sScrollDetectInfo.iScrollMvY));
-
-        //PerformFMEPreprocess
-        SScreenBlockFeatureStorage* pScreenBlockFeatureStorage = pCurLayer->pRefPic->pScreenBlockFeatureStorage;
-        pFeatureSearchPreparation->pRefBlockFeature = pScreenBlockFeatureStorage;
-        if (pFeatureSearchPreparation->bFMESwitchFlag
-            && !pScreenBlockFeatureStorage->bRefBlockFeatureCalculated) {
-          SPicture* pRef = (pCtx->pSvcParam->bEnableLongTermReference ? pCurLayer->pRefOri[0] : pCurLayer->pRefPic);
-          PerformFMEPreprocess (pFuncList, pRef, pFeatureSearchPreparation->pFeatureOfBlock,
-                                pScreenBlockFeatureStorage);
-        }
-
-        //assign ME pointer
-        if (pFeatureSearchPreparation->bFMESwitchFlag && pScreenBlockFeatureStorage->bRefBlockFeatureCalculated
-            && (!pScreenBlockFeatureStorage->iIs16x16)) {
-          if (!SetMeMethod (ME_DIA_CROSS_FME, pFuncList->pfSearchMethod[BLOCK_8x8])) {
-            WelsLog (pLogCtx, WELS_LOG_WARNING,
-                     "SetMeMethod(BLOCK_8x8) ME_DIA_CROSS_FME unsuccessful, switched to default search");
-          }
-        }
-
-        //assign UpdateFMESwitch pointer
-        if (pFeatureSearchPreparation->bFMESwitchFlag) {
-          pFuncList->pfUpdateFMESwitch = UpdateFMESwitch;
-        } else {
-          pFuncList->pfUpdateFMESwitch = UpdateFMESwitchNull;
-        }
-      }//if (pFeatureSearchPreparation)
-    } else {
-      //reset some status when at I_SLICE
-      pCurLayer->pFeatureSearchPreparation->bFMESwitchFlag = true;
-      pCurLayer->pFeatureSearchPreparation->uiFMEGoodFrameCount = FMESWITCH_DEFAULT_GOODFRAME_NUM;
+      // jumpseat: on scrolling frames, the cross search (16x16 and 8x8
+      // partitions) finds content moved along an axis. OpenH264 enabled it
+      // only by building a per-pixel feature index of the reference frame,
+      // whose lookups never changed a motion vector on desktop content: we
+      // set the cross search's threshold directly instead (scroll CPU -16%,
+      // same bits). Other frames keep to diamond search and 16x16
+      // (WelsMdInterFinePartitionVaaOnScreen): partitions there cost CPU and
+      // saved nothing.
+      SScreenBlockFeatureStorage* pRefStorage = pCurLayer->pRefPic->pScreenBlockFeatureStorage;
+      const bool kbScrolling = pVaaExt->sScrollDetectInfo.bScrollDetectFlag
+                               && (pVaaExt->sScrollDetectInfo.iScrollMvX | pVaaExt->sScrollDetectInfo.iScrollMvY);
+      if (pRefStorage) {
+        SetCrossSearchThresholds (pCurLayer->pRefPic, pRefStorage, kbScrolling);
+      }
+      if (kbScrolling) {
+        SetMeMethod (ME_DIA_CROSS, pFuncList->pfSearchMethod[BLOCK_8x8]);
+      }
     }
   }
 

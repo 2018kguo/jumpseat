@@ -5,7 +5,7 @@
 # Frames come from `jumpseat --record scroll.bgrx --frames 240`.
 FROM debian:bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential nasm git ca-certificates libyuv-dev linux-perf libx264-dev libavcodec-dev \
+      build-essential nasm git ca-certificates libyuv-dev linux-perf libx264-dev libavcodec-dev valgrind \
     && rm -rf /var/lib/apt/lists/*
 ARG OPENH264=v2.6.0
 RUN git clone --depth 1 --branch "$OPENH264" https://github.com/cisco/openh264 /openh264 \

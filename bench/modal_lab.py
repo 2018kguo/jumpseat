@@ -3,6 +3,7 @@ twin; perf does not run under gVisor, so profiles come from callgrind).
 
     python3 bench/modal_lab.py rd usage=1          BD-rate vs x264
     python3 bench/modal_lab.py run usage=1 qp=17   one point per workload
+    python3 bench/modal_lab.py ir qp=17 usage=1     CPU as instructions vs x264
     python3 bench/modal_lab.py callgrind scroll usage=1
     python3 bench/modal_lab.py sh 'any command'
 
@@ -46,7 +47,9 @@ def sandbox() -> modal.Sandbox:
 def exec_(sb: modal.Sandbox, command: str, stdin: bytes | None = None) -> int:
     p = sb.exec("sh", "-c", command)
     if stdin is not None:
-        p.stdin.write(stdin)
+        for i in range(0, len(stdin), 1 << 20):  # the client buffers at most a few MB
+            p.stdin.write(stdin[i:i + (1 << 20)])
+            p.stdin.drain()
         p.stdin.write_eof()
         p.stdin.drain()
     for line in p.stdout:
@@ -80,6 +83,8 @@ def main() -> int:
         return exec_(sb, build + f"X264='{os.environ.get('X264', '')}' sh /bench/sweep.sh {args} | tee /tmp/sweep.csv | python3 /bench/bdrate.py && echo && cat /tmp/sweep.csv")
     if cmd == "run":
         return exec_(sb, build + f"sh /bench/run.sh {args}")
+    if cmd == "ir":
+        return exec_(sb, build + f"sh /bench/ir.sh {args}")
     if cmd == "callgrind":
         work, rest = sys.argv[2], " ".join(sys.argv[3:])
         return exec_(sb, build + "sh /bench/run.sh enc=0 >/dev/null 2>&1; "
