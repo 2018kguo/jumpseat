@@ -231,7 +231,7 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
 
     fMaxFrameRate  = WELS_CLIP3 (pCodingParam.fMaxFrameRate, MIN_FRAME_RATE, MAX_FRAME_RATE);
     iTargetBitrate = pCodingParam.iTargetBitrate;
-    iUsageType  = pCodingParam.iUsageType;
+    iUsageType  = SCREEN_CONTENT_REAL_TIME; // jumpseat: the one configuration kept (h264/README.md)
     iPicWidth   = pCodingParam.iPicWidth;
     iPicHeight  = pCodingParam.iPicHeight;
 
@@ -284,18 +284,18 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
   }
   int32_t ParamTranscode (const SEncParamExt& pCodingParam) {
     float fParamMaxFrameRate = WELS_CLIP3 (pCodingParam.fMaxFrameRate, MIN_FRAME_RATE, MAX_FRAME_RATE);
-    iUsageType = pCodingParam.iUsageType;
+    iUsageType = SCREEN_CONTENT_REAL_TIME; // jumpseat: the one configuration kept (h264/README.md)
     iPicWidth   = pCodingParam.iPicWidth;
     iPicHeight  = pCodingParam.iPicHeight;
     fMaxFrameRate = fParamMaxFrameRate;
-    iComplexityMode = pCodingParam.iComplexityMode;
+    iComplexityMode = LOW_COMPLEXITY;
 
     SUsedPicRect.iLeft = 0;
     SUsedPicRect.iTop  = 0;
     SUsedPicRect.iWidth = ((iPicWidth >> 1) << 1);
     SUsedPicRect.iHeight = ((iPicHeight >> 1) << 1);
 
-    iMultipleThreadIdc = pCodingParam.iMultipleThreadIdc;
+    iMultipleThreadIdc = 1;
     bUseLoadBalancing = pCodingParam.bUseLoadBalancing;
 
     /* Deblocking loop filter */
@@ -328,13 +328,13 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
     bEnableBackgroundDetection = pCodingParam.bEnableBackgroundDetection ? true : false;
 
     /* Adaptive quantization control */
-    bEnableAdaptiveQuant       = pCodingParam.bEnableAdaptiveQuant ? true : false;
+    bEnableAdaptiveQuant       = false;
 
     /* Frame skipping */
     bEnableFrameSkip           = pCodingParam.bEnableFrameSkip ? true : false;
 
     /* Enable int32_t term reference */
-    bEnableLongTermReference   = pCodingParam.bEnableLongTermReference ? true : false;
+    bEnableLongTermReference   = false;
     iLtrMarkPeriod = pCodingParam.iLtrMarkPeriod;
     bIsLosslessLink = pCodingParam.bIsLosslessLink;
     bFixRCOverShoot = pCodingParam.bFixRCOverShoot;
@@ -348,13 +348,11 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
 
     /* For ssei information */
     bEnableSSEI         = pCodingParam.bEnableSSEI;
-    bSimulcastAVC       = pCodingParam.bSimulcastAVC;
+    bSimulcastAVC       = false;
 
     /* Layer definition */
-    iSpatialLayerNum = (int8_t)WELS_CLIP3 (pCodingParam.iSpatialLayerNum, 1,
-                                            MAX_DEPENDENCY_LAYER); // number of dependency(Spatial/CGS) layers used to be encoded
-    iTemporalLayerNum = (int8_t)WELS_CLIP3 (pCodingParam.iTemporalLayerNum, 1,
-                          MAX_TEMPORAL_LEVEL); // number of temporal layer specified
+    iSpatialLayerNum = 1;
+    iTemporalLayerNum = 1;
 
     uiGopSize           = 1 << (iTemporalLayerNum - 1); // Override GOP size based temporal layer
     iDecompStages       = iTemporalLayerNum - 1;        // WELS_LOG2( uiGopSize );// GOP size dependency
@@ -375,7 +373,7 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
     iLTRRefNum  = (pCodingParam.bEnableLongTermReference ? pCodingParam.iLTRRefNum : 0);
     iLtrMarkPeriod  = pCodingParam.iLtrMarkPeriod;
 
-    bPrefixNalAddingCtrl = pCodingParam.bPrefixNalAddingCtrl;
+    bPrefixNalAddingCtrl = false;
 
     eSpsPpsIdStrategy = CONSTANT_ID; // jumpseat: the only strategy kept (paraset_strategy.cpp)
 
@@ -419,12 +417,10 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
         }
       }
 
-      //multi slice
-      pSpatialLayer->sSliceArgument = pCodingParam.sSpatialLayers[iIdxSpatial].sSliceArgument;
-
-      memcpy (&(pSpatialLayer->sSliceArgument),
-              &(pCodingParam.sSpatialLayers[iIdxSpatial].sSliceArgument), // confirmed_safe_unsafe_usage
-              sizeof (SSliceArgument)) ;
+      // jumpseat: one slice a frame (multi-slice and size-limited slicing removed)
+      memset (&pSpatialLayer->sSliceArgument, 0, sizeof (SSliceArgument));
+      pSpatialLayer->sSliceArgument.uiSliceMode = SM_SINGLE_SLICE;
+      pSpatialLayer->sSliceArgument.uiSliceNum = 1;
 
       pSpatialLayer->iDLayerQp = pCodingParam.sSpatialLayers[iIdxSpatial].iDLayerQp;
 

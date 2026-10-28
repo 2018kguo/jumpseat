@@ -9,7 +9,9 @@
 //         xthreads (x264; 0 = auto, as the streamer runs it),
 //         usage (0 camera, 1 screen), complexity, qp, refs,
 //         scd, bg, aq, ltr, threads, fps, repeat, rest (then encode the last
-//         frame that many more times: the quality left once motion stops)
+//         frame that many more times: the quality left once motion stops),
+//         kbps (cap the bitrate as the streamer's flow control does, so the
+//         rate control's capped paths run)
 // "cpu" is process CPU time per frame: x264 runs sliced threads, so its
 // wall time understates what it costs.
 #include <math.h>
@@ -106,6 +108,15 @@ int main(int argc, char **argv) {
   if (!use_x264 && (*enc)->InitializeExt(enc, &p) != 0) { fprintf(stderr, "encoder init failed\n"); return 1; }
   int format = videoFormatI420;
   (*enc)->SetOption(enc, ENCODER_OPTION_DATAFORMAT, &format);
+  int kbps = opt(argc, argv, "kbps", 0);
+  if (kbps > 0 && !use_x264) { // as server/encoder_openh264.go set_max_kbps
+    SBitrateInfo rate;
+    memset(&rate, 0, sizeof rate);
+    rate.iLayer = SPATIAL_LAYER_ALL;
+    rate.iBitrate = kbps * 1000;
+    (*enc)->SetOption(enc, ENCODER_OPTION_BITRATE, &rate);
+    (*enc)->SetOption(enc, ENCODER_OPTION_MAX_BITRATE, &rate);
+  }
 
   if (decode_side_open() < 0) { fprintf(stderr, "decoder open failed\n"); return 1; }
 
