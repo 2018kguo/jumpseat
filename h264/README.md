@@ -5,9 +5,26 @@ trimmed to what jumpseat links and changed for desktops. Not tracking
 upstream: changes here are ordinary commits.
 
 Kept: `api/` (the ISVCEncoder interface), `common/`, `encoder/`,
-`processing/` (scroll, scene-change and complexity analysis), with x86-64
-(nasm) and arm64 assembly. Dropped: the decoder, console apps, tests, test
-streams, 32-bit ARM, MIPS and LoongArch.
+`processing/` (scroll, scene-change, complexity and background analysis,
+adaptive quantization), with x86-64 (nasm) and arm64 assembly, and plain-C
+versions of every SIMD routine.
+
+Removed, because jumpseat never runs it (each removal left the bench output
+identical to the byte, screen and camera mode):
+
+- From upstream's tree: the decoder, console apps, tests and test streams.
+- Downsampling, denoising and image rotation: one layer, at the input's size.
+- CABAC: baseline profile is CAVLC; parameters force it.
+- The deblocking filter: off, as x264 ultrafast runs; parameters force it.
+- SPS/PPS id strategies other than constant ids; parameters force it.
+- Code for targets and builds we never compile (`unifdef`): 32-bit ARM,
+  MIPS, LoongArch, 32-bit x86, Android, Windows, and the testbed,
+  statistics and frame-dump debug switches.
+
+Still here though unused: multi-threaded and size-limited slicing, and
+multi-layer SVC. They are woven through the frame loop in `encoder_ext.cpp`,
+which also uses their helpers on the single-threaded path; taking them out
+means restructuring that loop.
 
     make -j8        # build/libjumpseat_h264.a; x86-64 needs nasm
 

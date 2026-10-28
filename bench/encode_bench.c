@@ -7,7 +7,7 @@
 //   encode_bench FRAMES.bgrx [key=value ...]
 //   keys: enc (0 OpenH264, 1 x264 as the streamer sets it up), crf and
 //         xthreads (x264; 0 = auto, as the streamer runs it),
-//         usage (0 camera, 1 screen), complexity, loopfilter, qp, refs,
+//         usage (0 camera, 1 screen), complexity, qp, refs,
 //         scd, bg, aq, ltr, threads, fps, repeat, rest (then encode the last
 //         frame that many more times: the quality left once motion stops)
 // "cpu" is process CPU time per frame: x264 runs sliced threads, so its
@@ -89,7 +89,6 @@ int main(int argc, char **argv) {
   p.bEnableFrameSkip = 0; p.uiIntraPeriod = 0;
   p.iMultipleThreadIdc = opt(argc, argv, "threads", 1);
   p.iComplexityMode = (ECOMPLEXITY_MODE)opt(argc, argv, "complexity", 0);
-  p.iLoopFilterDisableIdc = opt(argc, argv, "loopfilter", 1);
   int v;
   if ((v = opt(argc, argv, "refs", -1)) >= 0) p.iNumRefFrame = v;
   if ((v = opt(argc, argv, "scd", -1)) >= 0) p.bEnableSceneChangeDetect = v;
