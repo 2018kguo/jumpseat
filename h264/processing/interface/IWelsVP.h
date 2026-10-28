@@ -168,8 +168,6 @@ typedef struct {
   int* pSsd16x16;                   // sum of square difference of 16x16
   int* pSum16x16;                   // sum of 16x16
   int* pSumOfSquare16x16;           // sum of square of 16x16
-  int   (*pSumOfDiff8x8)[4];
-  unsigned char (*pMad8x8)[4];
   int iFrameSad;                    // sad of frame
 } SVAACalcResult;
 

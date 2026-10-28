@@ -246,7 +246,7 @@ SPicture* CWelsPreProcess::GetBestRefPic (EUsageType iUsageType, bool bSceneLtr,
 
 int32_t CWelsPreProcess::AnalyzeSpatialPic (sWelsEncCtx* pCtx, const int32_t kiDidx) {
   SWelsSvcCodingParam* pSvcParam = pCtx->pSvcParam;
-  bool bCalculateBGD = (pCtx->eSliceType == P_SLICE && pSvcParam->bEnableBackgroundDetection);
+  bool bCalculateBGD = false;
   SSpatialLayerInternal* pParamInternal = &pSvcParam->sDependencyLayers[kiDidx];
   int32_t iCurTemporalIdx  = m_uiSpatialLayersInTemporal[kiDidx] - 1;
 

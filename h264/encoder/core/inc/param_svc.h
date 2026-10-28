@@ -277,7 +277,7 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
     bEnableSceneChangeDetect   = pCodingParam.bEnableSceneChangeDetect;
 
     /* Background detection Control */
-    bEnableBackgroundDetection = pCodingParam.bEnableBackgroundDetection ? true : false;
+    bEnableBackgroundDetection = false; // jumpseat: removed
 
     /* Adaptive quantization control */
     bEnableAdaptiveQuant       = false;
