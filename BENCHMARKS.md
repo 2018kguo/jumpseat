@@ -40,6 +40,11 @@ one thread (its default four slice threads cost more CPU).
 | typing | **-26%** | **0.68x** |
 | animation | **-10%** | **0.90x** |
 
+Live, in a same-VM A/B against its x264 build (four slice threads):
+scroll 656 vs 1330 kbit/s, animation 3436 vs 3864, typing 19 vs 21, with
+stream CPU 4-10% above x264's (fewer instructions, more cycles each: x264's
+assembly does more per cycle than OpenH264's mode decision).
+
 At the streamer's settings (QP floor 17 against x264 crf 25), and after the
 motion stops (`rest=60`: the quality left on screen):
 
