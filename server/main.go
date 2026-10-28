@@ -1,4 +1,4 @@
-// agentview streams an X display to browsers as H.264 over a websocket, for
+// jumpseat streams an X display to browsers as H.264 over a websocket, for
 // watching and taking over a computer-use agent's desktop, and gives the
 // agent a small HTTP API to say what it is doing, hand a step to the user,
 // and know when the user is driving.
@@ -43,10 +43,10 @@ const (
 var webFiles embed.FS
 
 func main() {
-	listen := flag.String("listen", "unix:/run/agentview/stream.sock", `where to listen: "unix:/path" (trusted callers only, e.g. behind your proxy) or "host:port" (requires --token)`)
-	token := flag.String("token", os.Getenv("AGENTVIEW_TOKEN"), "bearer token for every route on a TCP listener (or AGENTVIEW_TOKEN)")
+	listen := flag.String("listen", "unix:/run/jumpseat/stream.sock", `where to listen: "unix:/path" (trusted callers only, e.g. behind your proxy) or "host:port" (requires --token)`)
+	token := flag.String("token", os.Getenv("JUMPSEAT_TOKEN"), "bearer token for every route on a TCP listener (or JUMPSEAT_TOKEN)")
 	display := flag.String("display", ":0", "X display")
-	dir := flag.String("dir", "/run/agentview", "directory for the agent status and user-input files")
+	dir := flag.String("dir", "/run/jumpseat", "directory for the agent status and user-input files")
 	flag.Parse()
 
 	if err := os.MkdirAll(*dir, 0o700); err != nil {
@@ -70,14 +70,14 @@ func main() {
 		*token = ""
 	} else {
 		if *token == "" {
-			log.Fatal("a TCP listener needs --token (or AGENTVIEW_TOKEN): every page the agent's browser opens can reach local ports")
+			log.Fatal("a TCP listener needs --token (or JUMPSEAT_TOKEN): every page the agent's browser opens can reach local ports")
 		}
 		listener, err = net.Listen("tcp", *listen)
 	}
 	if err != nil {
 		log.Fatal(err)
 	}
-	log.Printf("agentview on %s, display %s", *listen, *display)
+	log.Printf("jumpseat on %s, display %s", *listen, *display)
 	log.Fatal(http.Serve(listener, routes(*display, *token)))
 }
 

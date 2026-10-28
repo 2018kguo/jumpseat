@@ -105,7 +105,7 @@ func serve(ws *websocket.Conn, display string) {
 	// The rate x264 budgets for: Chromium's 60 Hz, not the pacing cap above
 	// it, so a bitrate cap allots each frame what a real frame gets.
 	budgetFPS := encoderFPS
-	if value, err := strconv.Atoi(os.Getenv("AGENTVIEW_ENCODER_FPS")); err == nil && value > 0 {
+	if value, err := strconv.Atoi(os.Getenv("JUMPSEAT_ENCODER_FPS")); err == nil && value > 0 {
 		budgetFPS = value // A/B runs
 	}
 	enc, err := newEncoder(width, height, budgetFPS)
@@ -116,12 +116,12 @@ func serve(ws *websocket.Conn, display string) {
 	defer enc.close()
 
 	v := &viewer{ws: ws}
-	if kbps, err := strconv.Atoi(os.Getenv("AGENTVIEW_LINK_KBPS")); err == nil && kbps > 0 {
+	if kbps, err := strconv.Atoi(os.Getenv("JUMPSEAT_LINK_KBPS")); err == nil && kbps > 0 {
 		v.link = newSlowLink(v, kbps)
 		defer v.link.close()
 	}
 	f := newFlow()
-	f.off = os.Getenv("AGENTVIEW_FLOW") == "off"
+	f.off = os.Getenv("JUMPSEAT_FLOW") == "off"
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
@@ -409,9 +409,9 @@ func (s *stageTimes) flush() {
 	*s = stageTimes{since: time.Now()}
 }
 
-// fpsCap is maxFPS unless AGENTVIEW_MAX_FPS overrides it (BENCHMARKS.md).
+// fpsCap is maxFPS unless JUMPSEAT_MAX_FPS overrides it (BENCHMARKS.md).
 func fpsCap() int {
-	if value, err := strconv.Atoi(os.Getenv("AGENTVIEW_MAX_FPS")); err == nil && value > 0 {
+	if value, err := strconv.Atoi(os.Getenv("JUMPSEAT_MAX_FPS")); err == nil && value > 0 {
 		return value
 	}
 	return maxFPS

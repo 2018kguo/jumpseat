@@ -277,7 +277,7 @@ func (k *keyboard) press(key string, down bool) {
 // humanInputFile holds when the user last gave input from a viewer (unix
 // ms): GET /agent/lease reads it, and so can any process on the machine, so
 // the agent's own input waits while the user drives. Set from --dir.
-var humanInputFile = "/run/agentview/human-input"
+var humanInputFile = "/run/jumpseat/human-input"
 
 var lastStamp atomic.Int64
 

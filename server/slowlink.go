@@ -7,7 +7,7 @@ import (
 	"golang.org/x/net/websocket"
 )
 
-// slowLink is the benchmarks' bottleneck (AGENTVIEW_LINK_KBPS): an
+// slowLink is the benchmarks' bottleneck (JUMPSEAT_LINK_KBPS): an
 // unbounded queue drained at a fixed rate, the deep-buffered router that
 // makes TCP links bloat. Browser throttling cannot stand in for it: Chromium
 // buffers websocket messages its own way.

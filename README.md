@@ -1,6 +1,7 @@
-# agentview
+# jumpseat
 
-**Watch your computer-use agent live, and take over when it needs you.**
+**Your agent flies. You're in the jumpseat.** Watch your computer-use agent
+live, and take the controls when it needs you.
 
 One Go binary streams a Linux desktop (the one your agent drives) to any
 browser over a plain websocket: 60 fps at about a third of a core, nothing
@@ -18,7 +19,7 @@ person is driving, so the two never fight over the mouse.
 - **Small.** A websocket, H.264, WebCodecs. The browser client has no
   dependencies.
 
-| | agentview | KasmVNC |
+| | jumpseat | KasmVNC |
 |---|---|---|
 | fps | 60 | 24 |
 | bandwidth, scrolling | 1.3 Mbit/s | 14.8 |
@@ -30,8 +31,8 @@ More in [BENCHMARKS.md](BENCHMARKS.md).
 ## Try it
 
 ```sh
-docker build -f docker/Dockerfile -t agentview .
-docker run --rm -p 8080:8080 -e AGENTVIEW_TOKEN=secret agentview
+docker build -f docker/Dockerfile -t jumpseat .
+docker run --rm -p 8080:8080 -e JUMPSEAT_TOKEN=secret jumpseat
 open "http://localhost:8080/?token=secret"
 ```
 
@@ -48,14 +49,14 @@ curl -H "Authorization: Bearer secret" localhost:8080/agent/lease   # {"driving"
 **On the machine with the desktop** (Xvfb or any X server):
 
 ```sh
-agentview --listen :8080 --token "$TOKEN" --display :0
-# or behind your own auth: --listen unix:/run/agentview/stream.sock
+jumpseat --listen :8080 --token "$TOKEN" --display :0
+# or behind your own auth: --listen unix:/run/jumpseat/stream.sock
 ```
 
 **In your app:**
 
 ```ts
-import { connect, supportsStream } from "@2018kguo/agentview";
+import { connect, supportsStream } from "@2018kguo/jumpseat";
 
 const view = connect(element, `wss://host/stream?token=${token}`, {
   connected: () => {},

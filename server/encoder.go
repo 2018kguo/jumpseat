@@ -100,9 +100,9 @@ const encoderCRF = 25
 
 func newEncoder(width, height, fps int) (*encoder, error) {
 	e := &encoder{}
-	// AGENTVIEW_X264 overrides x264 options for the A/B harness.
+	// JUMPSEAT_X264 overrides x264 options for the A/B harness.
 	var params *C.char
-	if value := os.Getenv("AGENTVIEW_X264"); value != "" {
+	if value := os.Getenv("JUMPSEAT_X264"); value != "" {
 		params = C.CString(value)
 		defer C.free(unsafe.Pointer(params))
 	}

@@ -1,15 +1,15 @@
 // End to end against the demo container:
-//   docker run -d -p 18080:8080 -e AGENTVIEW_TOKEN=secret agentview
-//   AGENTVIEW_URL=http://localhost:18080 AGENTVIEW_TOKEN=secret npm test
+//   docker run -d -p 18080:8080 -e JUMPSEAT_TOKEN=secret jumpseat
+//   JUMPSEAT_URL=http://localhost:18080 JUMPSEAT_TOKEN=secret npm test
 // A real browser opens the demo viewer and checks the stream, the agent API
 // and taking over. Exits 1 on any failure.
 import { execFileSync } from "node:child_process";
 
 import { chromium } from "playwright";
 
-const base = process.env.AGENTVIEW_URL ?? "http://localhost:18080";
-const token = process.env.AGENTVIEW_TOKEN ?? "secret";
-const container = process.env.AGENTVIEW_CONTAINER ?? "agentview-test";
+const base = process.env.JUMPSEAT_URL ?? "http://localhost:18080";
+const token = process.env.JUMPSEAT_TOKEN ?? "secret";
+const container = process.env.JUMPSEAT_CONTAINER ?? "jumpseat-test";
 let failures = 0;
 const check = (ok, what) => {
   failures += ok ? 0 : 1;
@@ -27,7 +27,7 @@ const windowTitle = () =>
 check((await fetch(`${base}/agent/lease`)).status === 401, "the agent API needs the token");
 
 // Real Chrome: Playwright's own Chromium build has no H.264 decoder.
-const browser = await chromium.launch({ channel: process.env.AGENTVIEW_BROWSER ?? "chrome" });
+const browser = await chromium.launch({ channel: process.env.JUMPSEAT_BROWSER ?? "chrome" });
 const page = await browser.newPage({ viewport: { width: 1280, height: 852 } });
 await page.goto(`${base}/?token=${token}`);
 await page.getByText("Agent in control").waitFor({ timeout: 30000 });

@@ -9,7 +9,7 @@ import (
 // agentStatusFile holds what the agent is doing, for the viewer's caption,
 // waiting hint and handoff banner: written by POST /agent/status, or by any
 // process on the machine (JSON {"kind","text"}). Set from --dir.
-var agentStatusFile = "/run/agentview/agent-status"
+var agentStatusFile = "/run/jumpseat/agent-status"
 
 const statusPoll = 250 * time.Millisecond
 

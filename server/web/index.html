@@ -1,7 +1,7 @@
 <!doctype html>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>agentview</title>
+<title>jumpseat</title>
 <style>
   html, body { margin: 0; height: 100%; background: #111; color: #eee; font: 14px system-ui, sans-serif; }
   header { display: flex; gap: 8px; align-items: center; padding: 8px 12px; }
@@ -20,7 +20,7 @@
 </header>
 <div id="screen"><div id="frame"></div><div class="pill" id="caption"></div><div class="pill" id="handoff"></div></div>
 <script type="module">
-  import { canDecodeDesktop, connect } from "./agentview.js";
+  import { canDecodeDesktop, connect } from "./jumpseat.js";
   // The demo viewer: ?token=… is the server's --token.
   const token = new URLSearchParams(location.search).get("token") ?? "";
   const $ = (id) => document.getElementById(id);

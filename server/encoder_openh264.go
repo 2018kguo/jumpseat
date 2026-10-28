@@ -15,7 +15,7 @@ typedef struct {
 	uint8_t *i420;
 } oh264;
 
-// Tunables, each -1 for OpenH264's own default (AGENTVIEW_OH264).
+// Tunables, each -1 for OpenH264's own default (JUMPSEAT_OH264).
 typedef struct {
 	int qp, complexity, bg, aq, scd, ltr, denoise, threads, loopfilter, refs, rc, vui, usage;
 } oh_opts;
@@ -142,7 +142,7 @@ type encoder struct {
 // camera mode with the deblocking filter off and low complexity matches
 // x264 ultrafast's CPU (0.27 cores scrolling); a QP floor of 17 under
 // quality-mode rate control matches its picture (48 dB). Screen mode
-// (AGENTVIEW_OH264=usage=1) halves scrolling bandwidth for twice the CPU,
+// (JUMPSEAT_OH264=usage=1) halves scrolling bandwidth for twice the CPU,
 // for links where bandwidth is what is short.
 const (
 	openH264QP         = 17
@@ -154,9 +154,9 @@ const (
 func newEncoder(width, height, fps int) (*encoder, error) {
 	opts := C.oh_opts{qp: openH264QP, complexity: openH264Complexity, bg: -1, aq: -1, scd: -1, ltr: -1, denoise: -1, threads: -1,
 		loopfilter: openH264LoopFilter, refs: -1, rc: -1, vui: -1, usage: openH264Usage}
-	// AGENTVIEW_OH264 ("qp=24,complexity=0,scd=0") overrides them for
+	// JUMPSEAT_OH264 ("qp=24,complexity=0,scd=0") overrides them for
 	// the A/B harness.
-	for _, pair := range strings.Split(os.Getenv("AGENTVIEW_OH264"), ",") {
+	for _, pair := range strings.Split(os.Getenv("JUMPSEAT_OH264"), ",") {
 		key, value, _ := strings.Cut(pair, "=")
 		n, err := strconv.Atoi(value)
 		if err != nil {

@@ -1,4 +1,4 @@
-module github.com/2018kguo/agentview/server
+module github.com/2018kguo/jumpseat/server
 
 go 1.26.0
 

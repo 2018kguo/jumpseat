@@ -1,14 +1,14 @@
 {
-  "name": "@2018kguo/agentview",
+  "name": "@2018kguo/jumpseat",
   "version": "0.1.0",
-  "description": "Watch and take over a computer-use agent's desktop: the browser client for agentview (H.264 over a websocket, WebCodecs).",
+  "description": "Watch and take over a computer-use agent's desktop: the browser client for jumpseat (H.264 over a websocket, WebCodecs).",
   "type": "module",
-  "main": "dist/agentview.js",
-  "types": "dist/agentview.d.ts",
+  "main": "dist/jumpseat.js",
+  "types": "dist/jumpseat.d.ts",
   "files": ["dist"],
   "scripts": {
-    "build": "bun build agentview.ts --format=esm --target=browser --outfile dist/agentview.js && bunx tsc agentview.ts --declaration --emitDeclarationOnly --target es2022 --lib es2022,dom --outDir dist",
-    "build:demo": "bun build agentview.ts --format=esm --target=browser --outfile ../server/web/agentview.js"
+    "build": "bun build jumpseat.ts --format=esm --target=browser --outfile dist/jumpseat.js && bunx tsc jumpseat.ts --declaration --emitDeclarationOnly --target es2022 --lib es2022,dom --outDir dist",
+    "build:demo": "bun build jumpseat.ts --format=esm --target=browser --outfile ../server/web/jumpseat.js"
   },
   "license": "MIT"
 }

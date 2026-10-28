@@ -7,7 +7,7 @@ cores on two). "Stream CPU" counts the X server and the streamer.
 
 ## vs KasmVNC 1.5.0 (same VM)
 
-| | agentview (x264) | KasmVNC |
+| | jumpseat (x264) | KasmVNC |
 |---|---|---|
 | fps, scrolling / animating | 60 / 60 | 24 / 24 |
 | stream CPU, scrolling | ~0.3 cores | 0.38–0.48 |
@@ -23,7 +23,7 @@ cores on two). "Stream CPU" counts the X server and the streamer.
 |---|---|---|
 | libx264 ultrafast (`-tags x264`, GPL) | 0.27 / 0.41 | 1325 / 3904 |
 | OpenH264, camera mode (default, BSD) | 0.27 / 0.44 | 1160 / 5589 |
-| OpenH264, screen mode (`AGENTVIEW_OH264=usage=1`) | 0.52 / 0.70 | **627** / 5376 |
+| OpenH264, screen mode (`JUMPSEAT_OH264=usage=1`) | 0.52 / 0.70 | **627** / 5376 |
 
 ## What made the difference, and what did not
 

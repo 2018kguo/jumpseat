@@ -62,7 +62,7 @@ type flow struct {
 	holds     []int64 // when capture waited, within rateWindow
 	acking    bool
 	acked     chan struct{}
-	off       bool // AGENTVIEW_FLOW=off, for A/B runs
+	off       bool // JUMPSEAT_FLOW=off, for A/B runs
 }
 
 func newFlow() *flow { return &flow{epoch: time.Now(), acked: make(chan struct{}, 1)} }

@@ -1,5 +1,5 @@
 /**
- * The browser end of agentview: H.264 frames decoded with
+ * The browser end of jumpseat: H.264 frames decoded with
  * WebCodecs onto a canvas, and the user's input sent back while they have
  * taken over. The wire format is in PROTOCOL.md.
  */
