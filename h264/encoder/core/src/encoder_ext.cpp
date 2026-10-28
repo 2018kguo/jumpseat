@@ -1815,7 +1815,6 @@ int32_t WelsInitEncoderExt (sWelsEncCtx** ppCtx, SWelsSvcCodingParam* pCodingPar
                + pCtx->pMemAlign->WelsGetMemoryUsage())  /* requested size from CMemoryAlign::WelsMalloc() */
           );
 
-  pCtx->iStatisticsLogInterval = STATISTICS_LOG_INTERVAL_MS;
   pCtx->uiLastTimestamp = -1;
   pCtx->bDeliveryFlag = true;
   *ppCtx = pCtx;
@@ -2244,10 +2243,7 @@ int32_t ForceCodingIDR (sWelsEncCtx* pCtx, int32_t iLayerId) {
     pParamInternal->iFrameNum = 0;
     pParamInternal->iPOC = 0;
     pParamInternal->bEncCurFrmAsIdrFlag = true;
-    pCtx->sEncoderStatistics[0].uiIDRReqNum++;
   }
-  WelsLog (&pCtx->sLogCtx, WELS_LOG_INFO, "ForceCodingIDR(iDid 0-%d)at InputFrameCount=%d\n",
-           pCtx->pSvcParam->iSpatialLayerNum - 1, pCtx->sEncoderStatistics[0].uiInputFrameCount);
   pCtx->bCheckWindowStatusRefreshFlag = false;
 
 

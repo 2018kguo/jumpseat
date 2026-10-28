@@ -532,31 +532,5 @@ typedef struct TagBitrateInfo {
 /**
 * @brief Structure for encoder statistics
 */
-typedef struct TagVideoEncoderStatistics {
-  unsigned int uiWidth;                        ///< the width of encoded frame
-  unsigned int uiHeight;                       ///< the height of encoded frame
-  //following standard, will be 16x aligned, if there are multiple spatial, this is of the highest
-  float fAverageFrameSpeedInMs;                ///< average_Encoding_Time
-
-  // rate control related
-  float fAverageFrameRate;                     ///< the average frame rate in, calculate since encoding starts, supposed that the input timestamp is in unit of ms
-  float fLatestFrameRate;                      ///< the frame rate in, in the last second, supposed that the input timestamp is in unit of ms (? useful for checking BR, but is it easy to calculate?
-  unsigned int uiBitRate;                      ///< sendrate in Bits per second, calculated within the set time-window
-  unsigned int uiAverageFrameQP;                    ///< the average QP of last encoded frame
-
-  unsigned int uiInputFrameCount;              ///< number of frames
-  unsigned int uiSkippedFrameCount;            ///< number of frames
-
-  unsigned int uiResolutionChangeTimes;        ///< uiResolutionChangeTimes
-  unsigned int uiIDRReqNum;                    ///< number of IDR requests
-  unsigned int uiIDRSentNum;                   ///< number of actual IDRs sent
-  unsigned int uiLTRSentNum;                   ///< number of LTR sent/marked
-
-  long long    iStatisticsTs;                  ///< Timestamp of updating the statistics
-
-  unsigned long iTotalEncodedBytes;
-  unsigned long iLastStatisticsBytes;
-  unsigned long iLastStatisticsFrameCount;
-} SEncoderStatistics;
 
 #endif//WELS_VIDEO_CODEC_APPLICATION_DEFINITION_H__

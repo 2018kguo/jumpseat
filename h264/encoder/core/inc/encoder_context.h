@@ -204,10 +204,6 @@ typedef struct TagWelsEncCtx {
   CMemoryAlign*     pMemAlign;
 
   //related to Statistics
-  int64_t            uiStartTimestamp;
-  SEncoderStatistics sEncoderStatistics[MAX_DEPENDENCY_LAYER];
-  int32_t            iStatisticsLogInterval;
-  int64_t            iLastStatisticsLogTs;
 
   int32_t iEncoderError;
   bool bDeliveryFlag;
