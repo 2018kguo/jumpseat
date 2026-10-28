@@ -214,23 +214,6 @@ static inline void McCopy_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t
 
 
 
-void McChroma_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                    int16_t iMvX, int16_t iMvY, int32_t iWidth, int32_t iHeight) {
-  static const PMcChromaWidthExtFunc kpMcChromaWidthFuncs[2] = {
-    McChromaWidthEq4_mmx,
-    McChromaWidthEq8_sse2
-  };
-  const int32_t kiD8x = iMvX & 0x07;
-  const int32_t kiD8y = iMvY & 0x07;
-  if (kiD8x == 0 && kiD8y == 0) {
-    McCopy_sse2 (pSrc, iSrcStride, pDst, iDstStride, iWidth, iHeight);
-    return;
-  }
-  if (iWidth != 2) {
-    kpMcChromaWidthFuncs[iWidth >> 3] (pSrc, iSrcStride, pDst, iDstStride, g_kuiABCD[kiD8y][kiD8x], iHeight);
-  } else
-    McChromaWithFragMv_c (pSrc, iSrcStride, pDst, iDstStride, iMvX, iMvY, iWidth, iHeight);
-}
 
 //***************************************************************************//
 //                          SSSE3 implementation                             //
@@ -332,9 +315,6 @@ void WelsCommon::InitMcFunc (SMcFunc* pMcFuncs, uint32_t uiCpuFlag) {
   pMcFuncs->pMcChromaFunc     = McChroma_c;
 
 #if defined (X86_ASM)
-  if (uiCpuFlag & WELS_CPU_SSE2) {
-    pMcFuncs->pMcChromaFunc     = McChroma_sse2;
-  }
   if (uiCpuFlag & WELS_CPU_SSSE3) {
     pMcFuncs->pMcChromaFunc = McChroma_ssse3;
   }

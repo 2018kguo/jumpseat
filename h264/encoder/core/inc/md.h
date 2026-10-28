@@ -161,10 +161,7 @@ extern "C" {
 
 #if defined(X86_ASM)
 
-//  for pfGetVarianceFromIntraVaa SIMD optimization, 6/7/2010
-int32_t AnalysisVaaInfoIntra_sse2 (uint8_t* pDataY, const int32_t kiLineSize);
 int32_t AnalysisVaaInfoIntra_ssse3 (uint8_t* pDataY, const int32_t kiLineSize);
-uint8_t MdInterAnalysisVaaInfo_sse2 (int32_t* pSad8x8);
 uint8_t MdInterAnalysisVaaInfo_sse41 (int32_t* pSad8x8);
 void UpdateMbMv_sse2 (SMVUnitXY* pMvBuffer, const SMVUnitXY ksMv);
 

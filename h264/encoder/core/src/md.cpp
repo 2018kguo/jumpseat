@@ -361,8 +361,6 @@ void InitIntraAnalysisVaaInfo (SWelsFuncPtrList* pFuncList, const uint32_t kuiCp
 
 #if defined(X86_ASM)
   if ((kuiCpuFlag & WELS_CPU_SSE2) == WELS_CPU_SSE2) {
-    pFuncList->pfGetVarianceFromIntraVaa    = AnalysisVaaInfoIntra_sse2;
-    pFuncList->pfGetMbSignFromInterVaa      = MdInterAnalysisVaaInfo_sse2;
     pFuncList->pfUpdateMbMv                 = UpdateMbMv_sse2;
   }
   if ((kuiCpuFlag & WELS_CPU_SSSE3) == WELS_CPU_SSSE3) {

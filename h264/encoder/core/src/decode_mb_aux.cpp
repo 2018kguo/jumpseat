@@ -258,16 +258,11 @@ void WelsInitReconstructionFuncs (SWelsFuncPtrList* pFuncList, uint32_t  uiCpuFl
   pFuncList->pfIDctI16x16Dc     = WelsIDctRecI16x16Dc_c;
 
 #if defined(X86_ASM)
-  if (uiCpuFlag & WELS_CPU_MMXEXT) {
-    pFuncList->pfIDctT4         = WelsIDctT4Rec_mmx;
-  }
   if (uiCpuFlag & WELS_CPU_SSE2) {
     pFuncList->pfDequantization4x4          = WelsDequant4x4_sse2;
     pFuncList->pfDequantizationFour4x4      = WelsDequantFour4x4_sse2;
     pFuncList->pfDequantizationIHadamard4x4 = WelsDequantIHadamard4x4_sse2;
 
-    pFuncList->pfIDctT4         = WelsIDctT4Rec_sse2;
-    pFuncList->pfIDctFourT4     = WelsIDctFourT4Rec_sse2;
     pFuncList->pfIDctI16x16Dc   = WelsIDctRecI16x16Dc_sse2;
   }
 #if defined(HAVE_AVX2)

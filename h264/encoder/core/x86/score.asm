@@ -160,32 +160,7 @@ low_mask_table:
     db 10,13,13,17,13,16,16,20,13,17
     db 16,20,17,20,20,24
 
-
 SECTION .text
-
-;***********************************************************************
-;void WelsScan4x4DcAc_sse2( int16_t level[16], int16_t *pDct )
-;***********************************************************************
-WELS_EXTERN WelsScan4x4DcAc_sse2
-    %assign push_num 0
-    LOAD_2_PARA
-    movdqa     xmm0, [r1]           ; 7 6 5 4 3 2 1 0
-    movdqa     xmm1, [r1+16]        ; f e d c b a 9 8
-    pextrw     r2d, xmm0, 7         ; ecx = 7
-    pextrw     r3d, xmm1, 2         ; edx = a
-    pextrw     r1d, xmm0, 5         ; eax = 5
-    pinsrw     xmm1, r2d, 2         ; f e d c b 7 9 8
-    pinsrw     xmm0, r1d, 7         ; 5 6 5 4 3 2 1 0
-    pextrw     r2d, xmm1, 0         ; ecx = 8
-    pinsrw     xmm0, r2d, 5         ; 5 6 8 4 3 2 1 0
-    pinsrw     xmm1, r3d, 0         ; f e d c b 7 9 a
-    pshufd     xmm2, xmm0, 0xd8     ; 5 6 3 2 8 4 1 0
-    pshufd     xmm3, xmm1, 0xd8     ; f e b 7 d c 9 a
-    pshufhw    xmm0, xmm2, 0x93     ; 6 3 2 5 8 4 1 0
-    pshuflw    xmm1, xmm3, 0x39     ; f e b 7 a d c 9
-    movdqa     [r0],xmm0
-    movdqa     [r0+16], xmm1
-    ret
 
 ;***********************************************************************
 ;void WelsScan4x4DcAc_ssse3( int16_t level[16], int16_t *pDct )
@@ -243,7 +218,6 @@ WELS_EXTERN WelsScan4x4Ac_sse2
     movdqa     [r0+16], xmm2
     ret
 
-
 ;***********************************************************************
 ;void int32_t WelsCalculateSingleCtr4x4_sse2( int16_t *pDct );
 ;***********************************************************************
@@ -292,38 +266,6 @@ WELS_EXTERN WelsCalculateSingleCtr4x4_sse2
     add       r0b,  [r2+r1]
     DEINIT_X86_32_PIC
     mov retrd, r0d
-    ret
-
-
-;***********************************************************************
-; int32_t WelsGetNoneZeroCount_sse2(int16_t* level);
-;***********************************************************************
-WELS_EXTERN WelsGetNoneZeroCount_sse2
-    %assign push_num 0
-    INIT_X86_32_PIC r3
-    LOAD_1_PARA
-    movdqa    xmm0, [r0]
-    movdqa    xmm1, [r0+16]
-    pxor      xmm2, xmm2
-    pcmpeqw   xmm0, xmm2
-    pcmpeqw   xmm1, xmm2
-    packsswb  xmm1, xmm0
-    xor r1, r1
-    pmovmskb  r1d,  xmm1
-    xor       r1d,  0xffff
-    mov       r2,  r1
-    and       r1,  0xff
-    shr       r2,  8
-;   and       ecx,  0xff    ; we do not need this due to high 16bits equal to 0 yet
-;   xor       retr,  retr
-    ;add       al,  [nozero_count_table+r2]
-    lea       r0 , [pic(nozero_count_table)]
-    movzx     r2, byte [r0+r2]
-    movzx     r1,   byte [r0+r1]
-    mov   retrq, r2
-    add   retrq, r1
-    ;add       al,  [nozero_count_table+r1]
-    DEINIT_X86_32_PIC
     ret
 
 ;***********************************************************************

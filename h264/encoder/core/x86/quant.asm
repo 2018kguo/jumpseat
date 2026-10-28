@@ -42,7 +42,6 @@
 
 %include "asm_inc.asm"
 
-
 SECTION .text
 ;************************************************
 ;NEW_QUANT
@@ -79,92 +78,6 @@ SECTION .text
 %define ff                  esp + 8
 %define mf                  esp + 12
 %define max                 esp + 16
-;***********************************************************************
-;   void WelsQuant4x4_sse2(int16_t *pDct, int16_t* ff,  int16_t *mf);
-;***********************************************************************
-WELS_EXTERN WelsQuant4x4_sse2
-    %assign push_num 0
-    LOAD_3_PARA
-    movdqa  xmm2, [r1]
-    movdqa  xmm3, [r2]
-
-    SSE2_Quant8 xmm0, xmm1, xmm2, xmm3, [r0]
-    SSE2_Quant8 xmm0, xmm1, xmm2, xmm3, [r0 + 0x10]
-
-    ret
-
-;***********************************************************************
-;void WelsQuant4x4Dc_sse2(int16_t *pDct, const int16_t ff, int16_t mf);
-;***********************************************************************
-WELS_EXTERN WelsQuant4x4Dc_sse2
-    %assign push_num 0
-    LOAD_3_PARA
-    SIGN_EXTENSIONW r1, r1w
-    SIGN_EXTENSIONW r2, r2w
-    SSE2_Copy8Times xmm3, r2d
-
-    SSE2_Copy8Times xmm2, r1d
-
-    SSE2_Quant8 xmm0, xmm1, xmm2, xmm3, [r0]
-    SSE2_Quant8 xmm0, xmm1, xmm2, xmm3, [r0 + 0x10]
-
-    ret
-
-;***********************************************************************
-;   void WelsQuantFour4x4_sse2(int16_t *pDct, int16_t* ff,  int16_t *mf);
-;***********************************************************************
-WELS_EXTERN WelsQuantFour4x4_sse2
-    %assign push_num 0
-    LOAD_3_PARA
-    MOVDQ   xmm2, [r1]
-    MOVDQ   xmm3, [r2]
-
-    SSE2_Quant8 xmm0, xmm1, xmm2, xmm3, [r0]
-    SSE2_Quant8 xmm0, xmm1, xmm2, xmm3, [r0 + 0x10]
-    SSE2_Quant8 xmm0, xmm1, xmm2, xmm3, [r0 + 0x20]
-    SSE2_Quant8 xmm0, xmm1, xmm2, xmm3, [r0 + 0x30]
-    SSE2_Quant8 xmm0, xmm1, xmm2, xmm3, [r0 + 0x40]
-    SSE2_Quant8 xmm0, xmm1, xmm2, xmm3, [r0 + 0x50]
-    SSE2_Quant8 xmm0, xmm1, xmm2, xmm3, [r0 + 0x60]
-    SSE2_Quant8 xmm0, xmm1, xmm2, xmm3, [r0 + 0x70]
-
-    ret
-
-;***********************************************************************
-;   void WelsQuantFour4x4Max_sse2(int16_t *pDct, int32_t* f,  int16_t *mf, int16_t *max);
-;***********************************************************************
-WELS_EXTERN WelsQuantFour4x4Max_sse2
-    %assign push_num 0
-    LOAD_4_PARA
-    PUSH_XMM 8
-    MOVDQ   xmm2, [r1]
-    MOVDQ   xmm3, [r2]
-
-    pxor    xmm4, xmm4
-    pxor    xmm5, xmm5
-    pxor    xmm6, xmm6
-    pxor    xmm7, xmm7
-    SSE2_QuantMax8  xmm0, xmm1, xmm2, xmm3, [r0   ], xmm4
-    SSE2_QuantMax8  xmm0, xmm1, xmm2, xmm3, [r0 + 0x10], xmm4
-    SSE2_QuantMax8  xmm0, xmm1, xmm2, xmm3, [r0 + 0x20], xmm5
-    SSE2_QuantMax8  xmm0, xmm1, xmm2, xmm3, [r0 + 0x30], xmm5
-    SSE2_QuantMax8  xmm0, xmm1, xmm2, xmm3, [r0 + 0x40], xmm6
-    SSE2_QuantMax8  xmm0, xmm1, xmm2, xmm3, [r0 + 0x50], xmm6
-    SSE2_QuantMax8  xmm0, xmm1, xmm2, xmm3, [r0 + 0x60], xmm7
-    SSE2_QuantMax8  xmm0, xmm1, xmm2, xmm3, [r0 + 0x70], xmm7
-
-    SSE2_TransTwo4x4W xmm4, xmm5, xmm6, xmm7, xmm0
-    pmaxsw  xmm0,  xmm4
-    pmaxsw  xmm0,  xmm5
-    pmaxsw  xmm0,  xmm7
-    movdqa  xmm1,  xmm0
-    punpckhqdq  xmm0, xmm1
-    pmaxsw  xmm0, xmm1
-
-    movq    [r3], xmm0
-    POP_XMM
-    LOAD_4_PARA_POP
-    ret
 
 %macro MMX_Copy4Times 2
     movd        %1, %2
@@ -234,7 +147,6 @@ WELS_EXTERN WelsHadamardQuant2x2_mmx
     mov         [r0 + 0x40],    r1w
     mov         [r0 + 0x60],    r1w
 
-
     movd        retrd,      mm1
 
     WELSEMMS
@@ -285,13 +197,11 @@ WELS_EXTERN WelsHadamardQuant2x2Skip_mmx
     WELSEMMS
     ret
 
-
 %macro SSE2_DeQuant8 3
     MOVDQ  %2, %1
     pmullw %2, %3
     MOVDQ  %1, %2
 %endmacro
-
 
 ;***********************************************************************
 ; void WelsDequant4x4_sse2(int16_t *pDct, const uint16_t* mf);
@@ -367,7 +277,6 @@ WELS_EXTERN WelsDequantIHadamard4x4_sse2
     MOVDQ       [r0+16],    xmm2
     ret
 
-
 ; data=%1 abs_out=%2 ff=%3 mf=%4 7FFFh=%5
 %macro AVX2_Quant 5
     vpabsw          %2, %1
@@ -376,7 +285,6 @@ WELS_EXTERN WelsDequantIHadamard4x4_sse2
     vpmulhuw        %2, %2, %4
     vpsignw         %1, %2, %1
 %endmacro
-
 
 ;***********************************************************************
 ;   void WelsQuant4x4_avx2(int16_t *pDct, int16_t* ff, int16_t *mf);
@@ -395,7 +303,6 @@ WELS_EXTERN WelsQuant4x4_avx2
     vzeroupper
     POP_XMM
     ret
-
 
 ;***********************************************************************
 ;void WelsQuant4x4Dc_avx2(int16_t *pDct, int16_t ff, int16_t mf);
@@ -425,7 +332,6 @@ WELS_EXTERN WelsQuant4x4Dc_avx2
     POP_XMM
     ret
 
-
 ;***********************************************************************
 ;   void WelsQuantFour4x4_avx2(int16_t *pDct, int16_t* ff, int16_t *mf);
 ;***********************************************************************
@@ -452,7 +358,6 @@ WELS_EXTERN WelsQuantFour4x4_avx2
     vzeroupper
     POP_XMM
     ret
-
 
 ;***********************************************************************
 ;   void WelsQuantFour4x4Max_avx2(int16_t *pDct, int32_t* ff, int16_t *mf, int16_t *max);

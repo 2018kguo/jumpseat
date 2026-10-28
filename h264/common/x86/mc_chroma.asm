@@ -58,7 +58,6 @@ ALIGN 16
 h264_d0x20_mmx:
     dw 32,32,32,32
 
-
 ;=============================================================================
 ; Code
 ;=============================================================================
@@ -137,86 +136,6 @@ WELS_EXTERN McChromaWidthEq4_mmx
     LOAD_6_PARA_POP
     ret
 
-
-;*******************************************************************************
-; void McChromaWidthEq8_sse2( const uint8_t *pSrc,
-;                       int32_t iSrcStride,
-;                       uint8_t *pDst,
-;                       int32_t iDstStride,
-;                       const uint8_t *pABCD,
-;                       int32_t iheigh );
-;*******************************************************************************
-WELS_EXTERN McChromaWidthEq8_sse2
-    %assign  push_num 0
-    LOAD_6_PARA
-    PUSH_XMM 8
-    SIGN_EXTENSION  r1, r1d
-    SIGN_EXTENSION  r3, r3d
-    SIGN_EXTENSION  r5, r5d
-
-    movd xmm3, [r4]
-    WELS_Zero xmm7
-    punpcklbw  xmm3, xmm3
-    punpcklwd  xmm3, xmm3
-
-    movdqa     xmm4, xmm3
-    punpckldq  xmm3, xmm3
-    punpckhdq  xmm4, xmm4
-    movdqa     xmm5, xmm3
-    movdqa     xmm6, xmm4
-
-    punpcklbw  xmm3, xmm7
-    punpckhbw  xmm5, xmm7
-    punpcklbw  xmm4, xmm7
-    punpckhbw  xmm6, xmm7
-
-    lea r4, [r0 + r1] ;lea ebx, [esi + eax]
-    movq xmm0, [r0]
-    movq xmm1, [r0+1]
-    punpcklbw xmm0, xmm7
-    punpcklbw xmm1, xmm7
-.xloop:
-
-    pmullw xmm0, xmm3
-    pmullw xmm1, xmm5
-    paddw  xmm0, xmm1
-
-    movq  xmm1, [r4]
-    punpcklbw xmm1, xmm7
-    movdqa xmm2, xmm1
-    pmullw xmm1, xmm4
-    paddw xmm0, xmm1
-
-    movq xmm1, [r4+1]
-    punpcklbw xmm1, xmm7
-    movdqa xmm7, xmm1
-    pmullw xmm1, xmm6
-    paddw xmm0, xmm1
-    movdqa xmm1,xmm7
-
-    paddw xmm0, [h264_d0x20_sse2]
-    psrlw xmm0, 6
-
-    WELS_Zero xmm7
-    packuswb xmm0, xmm7
-    movq [r2], xmm0
-
-    movdqa xmm0, xmm2
-
-    lea r2, [r2 + r3]
-    lea r4, [r4 + r1]
-
-    dec r5
-    jnz near .xloop
-
-    POP_XMM
-    LOAD_6_PARA_POP
-
-    ret
-
-
-
-
 ;***********************************************************************
 ; void McChromaWidthEq8_ssse3( const uint8_t *pSrc,
 ;                        int32_t iSrcStride,
@@ -289,5 +208,4 @@ WELS_EXTERN McChromaWidthEq8_ssse3
     LOAD_6_PARA_POP
 
     ret
-
 

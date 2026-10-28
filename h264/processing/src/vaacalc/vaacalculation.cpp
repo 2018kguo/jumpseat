@@ -53,9 +53,6 @@ CVAACalculation::~CVAACalculation() {
 void CVAACalculation::InitVaaFuncs (SVaaFuncs& sVaaFuncs, int32_t iCpuFlag) {
   sVaaFuncs.pfVAACalcSad         = VAACalcSad_c;
 #ifdef X86_ASM
-  if ((iCpuFlag & WELS_CPU_SSE2) == WELS_CPU_SSE2) {
-    sVaaFuncs.pfVAACalcSad       = VAACalcSad_sse2;
-  }
 #ifdef HAVE_AVX2
   if (iCpuFlag & WELS_CPU_AVX2) {
     sVaaFuncs.pfVAACalcSad       = VAACalcSad_avx2;

@@ -152,197 +152,6 @@ SECTION .text
 
 ;***********************************************************************
 ;
-;int32_t WelsSampleSatd4x4_sse2( uint8_t *, int32_t, uint8_t *, int32_t );
-;
-;***********************************************************************
-WELS_EXTERN WelsSampleSatd4x4_sse2
-    %assign  push_num 0
-    LOAD_4_PARA
-    PUSH_XMM 8
-    SIGN_EXTENSION r1, r1d
-    SIGN_EXTENSION r3, r3d
-    movd      xmm0, [r0]
-    movd      xmm1, [r0+r1]
-    lea       r0 , [r0+2*r1]
-    movd      xmm2, [r0]
-    movd      xmm3, [r0+r1]
-    punpckldq xmm0, xmm2
-    punpckldq xmm1, xmm3
-
-    movd      xmm4, [r2]
-    movd      xmm5, [r2+r3]
-    lea       r2 , [r2+2*r3]
-    movd      xmm6, [r2]
-    movd      xmm7, [r2+r3]
-    punpckldq xmm4, xmm6
-    punpckldq xmm5, xmm7
-
-    pxor      xmm6, xmm6
-    punpcklbw xmm0, xmm6
-    punpcklbw xmm1, xmm6
-    punpcklbw xmm4, xmm6
-    punpcklbw xmm5, xmm6
-
-    psubw     xmm0, xmm4
-    psubw     xmm1, xmm5
-
-    movdqa    xmm2, xmm0
-    paddw     xmm0, xmm1
-    psubw     xmm2, xmm1
-    SSE2_XSawp qdq, xmm0, xmm2, xmm3
-
-    movdqa     xmm4, xmm0
-    paddw      xmm0, xmm3
-    psubw      xmm4, xmm3
-
-    movdqa         xmm2, xmm0
-    punpcklwd      xmm0, xmm4
-    punpckhwd      xmm4, xmm2
-
-    SSE2_XSawp     dq,  xmm0, xmm4, xmm3
-    SSE2_XSawp     qdq, xmm0, xmm3, xmm5
-
-    movdqa         xmm7, xmm0
-    paddw          xmm0, xmm5
-    psubw          xmm7, xmm5
-
-    SSE2_XSawp     qdq,  xmm0, xmm7, xmm1
-
-    movdqa         xmm2, xmm0
-    paddw          xmm0, xmm1
-    psubw          xmm2, xmm1
-
-    WELS_AbsW  xmm0, xmm3
-    paddusw        xmm6, xmm0
-    WELS_AbsW  xmm2, xmm4
-    paddusw        xmm6, xmm2
-    SSE2_SumWHorizon1  xmm6, xmm4
-    movd           retrd,  xmm6
-    and            retrd,  0xffff
-    shr            retrd,  1
-    POP_XMM
-    LOAD_4_PARA_POP
-    ret
-
- ;***********************************************************************
- ;
- ;int32_t WelsSampleSatd8x8_sse2( uint8_t *, int32_t, uint8_t *, int32_t, );
- ;
- ;***********************************************************************
-WELS_EXTERN WelsSampleSatd8x8_sse2
-    %assign  push_num 0
-    LOAD_4_PARA
-    PUSH_XMM 8
-    SIGN_EXTENSION r1, r1d
-    SIGN_EXTENSION r3, r3d
-    pxor   xmm6,   xmm6
-    pxor   xmm7,   xmm7
-    SSE2_GetSatd8x8
-    psrlw   xmm6,  1
-    SSE2_SumWHorizon   xmm6,xmm4,xmm7
-    movd    retrd,   xmm6
-    POP_XMM
-    LOAD_4_PARA_POP
-    ret
-
- ;***********************************************************************
- ;
- ;int32_t WelsSampleSatd8x16_sse2( uint8_t *, int32_t, uint8_t *, int32_t, );
- ;
- ;***********************************************************************
-WELS_EXTERN WelsSampleSatd8x16_sse2
-    %assign  push_num 0
-    LOAD_4_PARA
-    PUSH_XMM 8
-    SIGN_EXTENSION r1, r1d
-    SIGN_EXTENSION r3, r3d
-    pxor   xmm6,   xmm6
-    pxor   xmm7,   xmm7
-
-    SSE2_GetSatd8x8
-    lea    r0,    [r0+2*r1]
-    lea    r2,    [r2+2*r3]
-    SSE2_GetSatd8x8
-
-    psrlw   xmm6,  1
-    SSE2_SumWHorizon   xmm6,xmm4,xmm7
-    movd    retrd,   xmm6
-    POP_XMM
-    LOAD_4_PARA_POP
-    ret
-
-;***********************************************************************
-;
-;int32_t WelsSampleSatd16x8_sse2( uint8_t *, int32_t, uint8_t *, int32_t, );
-;
-;***********************************************************************
-WELS_EXTERN WelsSampleSatd16x8_sse2
-    %assign  push_num 0
-    LOAD_4_PARA
-    PUSH_XMM 8
-    SIGN_EXTENSION r1, r1d
-    SIGN_EXTENSION r3, r3d
-    push r0
-    push r2
-    pxor   xmm6,   xmm6
-    pxor   xmm7,   xmm7
-
-    SSE2_GetSatd8x8
-
-    pop r2
-    pop r0
-    add    r0,    8
-    add    r2,    8
-    SSE2_GetSatd8x8
-
-    psrlw   xmm6,  1
-    SSE2_SumWHorizon   xmm6,xmm4,xmm7
-    movd    retrd,   xmm6
-    POP_XMM
-    LOAD_4_PARA_POP
-    ret
-
-;***********************************************************************
-;
-;int32_t WelsSampleSatd16x16_sse2( uint8_t *, int32_t, uint8_t *, int32_t, );
-;
-;***********************************************************************
-WELS_EXTERN WelsSampleSatd16x16_sse2
-    %assign  push_num 0
-    LOAD_4_PARA
-    PUSH_XMM 8
-    SIGN_EXTENSION r1, r1d
-    SIGN_EXTENSION r3, r3d
-    push r0
-    push r2
-    pxor   xmm6,   xmm6
-    pxor   xmm7,   xmm7
-
-    SSE2_GetSatd8x8
-    lea    r0,    [r0+2*r1]
-    lea    r2,    [r2+2*r3]
-    SSE2_GetSatd8x8
-
-    pop r2
-    pop r0
-    add    r0,    8
-    add    r2,    8
-
-    SSE2_GetSatd8x8
-    lea    r0,    [r0+2*r1]
-    lea    r2,    [r2+2*r3]
-    SSE2_GetSatd8x8
-
- ; each column sum of SATD is necessarily even, so we don't lose any precision by shifting first.
-    psrlw   xmm6,  1
-    SSE2_SumWHorizon   xmm6,xmm4,xmm7
-    movd    retrd,   xmm6
-    POP_XMM
-    LOAD_4_PARA_POP
-    ret
-
-;***********************************************************************
-;
 ;Pixel_satd_wxh_sse2 END
 ;
 ;***********************************************************************
@@ -352,7 +161,6 @@ WELS_EXTERN WelsSampleSatd16x16_sse2
 ;Pixel_satd_intra_sse2 BEGIN
 ;
 ;***********************************************************************
-
 
 %macro SSE_DB_1_2REG 2
     pxor %1, %1
@@ -598,7 +406,6 @@ not_dc_h:
     mov       dword [r5], 0x00
     POP_XMM
     ret
-
 
 %macro SSE41_I16x16Get8WSumSub 3 ;xmm5 HSumSubDB1, xmm6 HSumSubDW1, xmm7 PDW1 : in %1, pOut %1, %3
     pmaddubsw    %1, xmm5
@@ -965,7 +772,6 @@ loop_chroma_satdx3:
     movd      r1d, xmm5 ;H
     movd      r0d, xmm4 ;V
 
-
     shl       r5d, 1
     add       r1d, r5d
     add       r0d, r5d
@@ -994,7 +800,6 @@ return_satd_intra_8x8_x3:
     POP_XMM
     LOAD_7_PARA_POP
 ret
-
 
 ;***********************************************************************
 ;
@@ -1288,150 +1093,6 @@ WELS_EXTERN WelsSampleSatd4x4_sse41
 
 ;***********************************************************************
 ;
-;int32_t WelsSampleSatd8x8_sse41( uint8_t *, int32_t, uint8_t *, int32_t, );
-;
-;***********************************************************************
-WELS_EXTERN WelsSampleSatd8x8_sse41
-    %assign  push_num 2
-    INIT_X86_32_PIC r6
-    LOAD_4_PARA
-    PUSH_XMM 8
-    SIGN_EXTENSION r1, r1d
-    SIGN_EXTENSION r3, r3d
-
-    movdqa      xmm7, [pic(HSumSubDB1)]
-    lea         r4,  [r1+r1*2]
-    lea         r5,  [r3+r3*2]
-    pxor        xmm6, xmm6
-    SSE41_GetSatd8x4
-    lea         r0,  [r0+4*r1]
-    lea         r2,  [r2+4*r3]
-    SSE41_GetSatd8x4
-    SSSE3_SumWHorizon retrd, xmm6, xmm5, xmm7
-    POP_XMM
-    LOAD_4_PARA_POP
-    DEINIT_X86_32_PIC
-    ret
-
-;***********************************************************************
-;
-;int32_t WelsSampleSatd8x16_sse41( uint8_t *, int32_t, uint8_t *, int32_t, );
-;
-;***********************************************************************
-WELS_EXTERN WelsSampleSatd8x16_sse41
-    %assign  push_num 3
-    LOAD_4_PARA
-    PUSH_XMM 8
-    SIGN_EXTENSION r1, r1d
-    SIGN_EXTENSION r3, r3d
-
-    INIT_X86_32_PIC_NOPRESERVE r4
-    movdqa      xmm7, [pic(HSumSubDB1)]
-    DEINIT_X86_32_PIC
-    lea         r4,  [r1+r1*2]
-    lea         r5,  [r3+r3*2]
-    pxor        xmm6, xmm6
-    mov         r6,    0
-loop_get_satd_8x16:
-    SSE41_GetSatd8x4
-    lea         r0,  [r0+4*r1]
-    lea         r2,  [r2+4*r3]
-    inc         r6
-    cmp         r6,  4
-    jl          loop_get_satd_8x16
-    SSSE3_SumWHorizon retrd, xmm6, xmm5, xmm7
-    POP_XMM
-    LOAD_4_PARA_POP
-    ret
-
-;***********************************************************************
-;
-;int32_t WelsSampleSatd16x8_sse41( uint8_t *, int32_t, uint8_t *, int32_t, );
-;
-;***********************************************************************
-WELS_EXTERN WelsSampleSatd16x8_sse41
-    %assign  push_num 2
-    INIT_X86_32_PIC r6
-    LOAD_4_PARA
-    PUSH_XMM 8
-    SIGN_EXTENSION r1, r1d
-    SIGN_EXTENSION r3, r3d
-    push  r0
-    push  r2
-
-    movdqa      xmm7, [pic(HSumSubDB1)]
-    lea         r4,  [r1+r1*2]
-    lea         r5,  [r3+r3*2]
-    pxor        xmm6,   xmm6
-    SSE41_GetSatd8x4
-    lea         r0,  [r0+4*r1]
-    lea         r2,  [r2+4*r3]
-    SSE41_GetSatd8x4
-
-    pop  r2
-    pop  r0
-    add         r0,    8
-    add         r2,    8
-    SSE41_GetSatd8x4
-    lea         r0,  [r0+4*r1]
-    lea         r2,  [r2+4*r3]
-    SSE41_GetSatd8x4
-    SSSE3_SumWHorizon retrd, xmm6, xmm5, xmm7
-    POP_XMM
-    LOAD_4_PARA_POP
-    DEINIT_X86_32_PIC
-    ret
-
-;***********************************************************************
-;
-;int32_t WelsSampleSatd16x16_sse41( uint8_t *, int32_t, uint8_t *, int32_t, );
-;
-;***********************************************************************
-
-WELS_EXTERN WelsSampleSatd16x16_sse41
-    %assign  push_num 3
-    LOAD_4_PARA
-    PUSH_XMM 8
-    SIGN_EXTENSION r1, r1d
-    SIGN_EXTENSION r3, r3d
-
-    push  r0
-    push  r2
-
-    INIT_X86_32_PIC_NOPRESERVE r4
-    movdqa      xmm7, [pic(HSumSubDB1)]
-    DEINIT_X86_32_PIC
-    lea         r4,  [r1+r1*2]
-    lea         r5,  [r3+r3*2]
-    pxor        xmm6,   xmm6
-    mov         r6,    0
-loop_get_satd_16x16_left:
-    SSE41_GetSatd8x4
-    lea         r0,  [r0+4*r1]
-    lea         r2,  [r2+4*r3]
-    inc         r6
-    cmp         r6,  4
-    jl          loop_get_satd_16x16_left
-
-    pop  r2
-    pop  r0
-    add         r0,    8
-    add         r2,    8
-    mov         r6,    0
-loop_get_satd_16x16_right:
-    SSE41_GetSatd8x4
-    lea         r0,  [r0+4*r1]
-    lea         r2,  [r2+4*r3]
-    inc         r6
-    cmp         r6,  4
-    jl          loop_get_satd_16x16_right
-    SSSE3_SumWHorizon retrd, xmm6, xmm5, xmm7
-    POP_XMM
-    LOAD_4_PARA_POP
-    ret
-
-;***********************************************************************
-;
 ;Pixel_satd_wxh_sse41 END
 ;
 ;***********************************************************************
@@ -1629,7 +1290,6 @@ WelsSampleSatd16x4N_avx2:
     LOAD_4_PARA_POP
     ret
 
-
 ;***********************************************************************
 ;
 ;Pixel_satd_wxh_avx2 END
@@ -1655,7 +1315,6 @@ WelsSampleSatd16x4N_avx2:
     paddw  xmm0,   xmm1
 %endmacro
 
-
 %macro SSE2_GetSad4x16 0
     movdqu xmm0,   [r2]
     MOVDQ  xmm2,   [r0]
@@ -1674,7 +1333,6 @@ WelsSampleSatd16x4N_avx2:
     psadbw xmm1,   xmm2
     paddw  xmm7,   xmm1
 %endmacro
-
 
 %macro SSE2_GetSad8x4 0
     movq   xmm0,   [r0]
@@ -1759,8 +1417,6 @@ WELS_EXTERN WelsSampleSad16x8_sse2
     LOAD_4_PARA_POP
     ret
 
-
-
 WELS_EXTERN WelsSampleSad8x16_sse2
     %assign  push_num 0
     LOAD_4_PARA
@@ -1786,7 +1442,6 @@ WELS_EXTERN WelsSampleSad8x16_sse2
     POP_XMM
     LOAD_4_PARA_POP
     ret
-
 
 %macro CACHE_SPLIT_CHECK 3 ; address, width, cacheline
 and    %1,  0x1f|(%3>>1)
@@ -1918,20 +1573,17 @@ WELS_EXTERN WelsSampleSad8x8_sse21
 .return:
     ret
 
-
 ;***********************************************************************
 ;
 ;Pixel_sad_wxh_sse2 END
 ;
 ;***********************************************************************
 
-
 ;***********************************************************************
 ;
 ;Pixel_sad_4_wxh_sse2 BEGIN
 ;
 ;***********************************************************************
-
 
 %macro SSE2_Get4LW16Sad 5 ;s-1l, s, s+1l, d, address
     psadbw %1,   %4
@@ -2062,7 +1714,6 @@ WELS_EXTERN WelsSampleSadFour16x16_sse2
     POP_XMM
     LOAD_5_PARA_POP
     ret
-
 
 WELS_EXTERN WelsSampleSadFour16x8_sse2
     %assign  push_num 0
@@ -2362,7 +2013,6 @@ WELS_EXTERN WelsSampleSadFour8x16_sse2
     LOAD_5_PARA_POP
     ret
 
-
 WELS_EXTERN WelsSampleSadFour8x8_sse2
     %assign  push_num 0
     LOAD_5_PARA
@@ -2448,7 +2098,6 @@ WELS_EXTERN WelsSampleSadFour8x8_sse2
     movhps xmm0,  [r0+r1]
     psadbw xmm3,  xmm0
     paddw  xmm4,  xmm3
-
 
     movq   xmm1,  [r2+r3-1]
     movq   xmm3,  [r2+r3+1]
