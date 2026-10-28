@@ -85,23 +85,6 @@ typedef void (*PDeblockingBSCalc) (SWelsFuncPtrList* pFunc, SMB* pCurMb, uint8_t
                                    int32_t iMbStride, int32_t iLeftFlag, int32_t iTopFlag);
 typedef void (*PDeblockingFilterSlice) (SDqLayer* pCurDq, SWelsFuncPtrList* pFunc, SSlice* pSlice);
 
-typedef struct tagDeblockingFunc {
-  PLumaDeblockingLT4Func    pfLumaDeblockingLT4Ver;
-  PLumaDeblockingEQ4Func    pfLumaDeblockingEQ4Ver;
-  PLumaDeblockingLT4Func    pfLumaDeblockingLT4Hor;
-  PLumaDeblockingEQ4Func    pfLumaDeblockingEQ4Hor;
-
-  PChromaDeblockingLT4Func  pfChromaDeblockingLT4Ver;
-  PChromaDeblockingEQ4Func  pfChromaDeblockingEQ4Ver;
-  PChromaDeblockingLT4Func  pfChromaDeblockingLT4Hor;
-  PChromaDeblockingEQ4Func  pfChromaDeblockingEQ4Hor;
-
-  PDeblockingBSCalc         pfDeblockingBSCalc;
-
-  PDeblockingFilterSlice    pfDeblockingFilterSlice;
-} DeblockingFunc;
-
-typedef  void (*PSetNoneZeroCountZeroFunc) (int8_t* pNonZeroCount);
 
 typedef int32_t (*PIntraFineMdFunc) (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCache* pMbCache);
 typedef void (*PInterFineMdFunc) (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SSlice* slice, SMB* pCurMb, int32_t bestCost);
@@ -276,8 +259,6 @@ struct TagWelsFuncPointerList {
   //DYNSLC_LNGTH_CRTL    dynslc_funcpointer_slcsize_ctrl;
 
   /* For Deblocking */
-  DeblockingFunc                         pfDeblocking;
-  PSetNoneZeroCountZeroFunc     pfSetNZCZero;
 
   SWelsRcFunc              pfRc;
   PAccumulateSadFunc         pfAccumulateSadForRc;

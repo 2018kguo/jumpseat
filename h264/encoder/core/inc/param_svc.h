@@ -308,7 +308,7 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
     bUseLoadBalancing = pCodingParam.bUseLoadBalancing;
 
     /* Deblocking loop filter */
-    iLoopFilterDisableIdc       = pCodingParam.iLoopFilterDisableIdc;      // 0: on, 1: off, 2: on except for slice boundaries,
+    iLoopFilterDisableIdc       = 1; // jumpseat: no deblocking filter (removed), as x264 ultrafast
     iLoopFilterAlphaC0Offset    = pCodingParam.iLoopFilterAlphaC0Offset;   // AlphaOffset: valid range [-6, 6], default 0
     iLoopFilterBetaOffset       = pCodingParam.iLoopFilterBetaOffset;      // BetaOffset:  valid range [-6, 6], default 0
     iEntropyCodingModeFlag      = 0; // jumpseat: CAVLC only (CABAC removed)

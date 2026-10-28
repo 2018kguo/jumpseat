@@ -181,7 +181,6 @@ WelsErrorType CWelsSliceEncodingTask::ExecuteTask() {
     return iReturn;
   }
 
-  m_pCtx->pFuncList->pfDeblocking.pfDeblockingFilterSlice (m_pCtx->pCurDqLayer, m_pCtx->pFuncList, m_pSlice);
 
   WelsLog (&m_pCtx->sLogCtx, WELS_LOG_DETAIL,
            "@pSlice=%-6d sliceType:%c idc:%d size:%-6d",  m_iSliceIdx,
@@ -298,7 +297,6 @@ WelsErrorType CWelsConstrainedSizeSlicingEncodingTask::ExecuteTask() {
                iLocalSliceIdx, m_pSliceBs->uiSize, m_iSliceSize, m_pSliceBs->sNalList[0].iPayloadSize);
       return iReturn;
     }
-    m_pCtx->pFuncList->pfDeblocking.pfDeblockingFilterSlice (pCurDq, m_pCtx->pFuncList, m_pSlice);
 
     WelsLog (&m_pCtx->sLogCtx, WELS_LOG_DETAIL,
              "@pSlice=%-6d sliceType:%c idc:%d size:%-6d\n",

@@ -43,7 +43,6 @@
 #include "decode_mb_aux.h"
 #include "get_intra_predictor.h"
 
-#include "deblocking.h"
 #include "ref_list_mgr_svc.h"
 #include "mc.h"
 #include "paraset_strategy.h"
@@ -219,8 +218,6 @@ int32_t InitFunctionPointers (sWelsEncCtx* pEncCtx, SWelsSvcCodingParam* pParam,
   WelsInitEncodingFuncs (pFuncList, uiCpuFlag);
   WelsInitReconstructionFuncs (pFuncList, uiCpuFlag);
 
-  DeblockingInit (&pFuncList->pfDeblocking, uiCpuFlag);
-  WelsBlockFuncInit (&pFuncList->pfSetNZCZero, uiCpuFlag);
 
   InitFillNeighborCacheInterFunc (pFuncList, pParam->bEnableBackgroundDetection);
 

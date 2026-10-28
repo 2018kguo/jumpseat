@@ -48,7 +48,6 @@
 #include "svc_encode_slice.h"
 #include "svc_mode_decision.h"
 #include "decode_mb_aux.h"
-#include "deblocking.h"
 #include "ref_list_mgr_svc.h"
 #include "ls_defines.h"
 #include "crt_util_safe_x.h" // Safe CRT routines like utils for cross platforms
@@ -1100,7 +1099,7 @@ static inline int32_t InitDqLayers (sWelsEncCtx** ppCtx, SExistingParasetList* p
 
     //deblocking parameters initialization
     //target-layer deblocking
-    pDqLayer->iLoopFilterDisableIdc     = pParam->iLoopFilterDisableIdc;
+    pDqLayer->iLoopFilterDisableIdc     = 1; // jumpseat: no deblocking filter (removed)
     pDqLayer->iLoopFilterAlphaC0Offset  = (pParam->iLoopFilterAlphaC0Offset) << 1;
     pDqLayer->iLoopFilterBetaOffset     = (pParam->iLoopFilterBetaOffset) << 1;
     //parallel deblocking
@@ -1108,10 +1107,6 @@ static inline int32_t InitDqLayers (sWelsEncCtx** ppCtx, SExistingParasetList* p
 
     //deblocking parameter adjustment
     if (SM_SINGLE_SLICE == pDlayer->sSliceArgument.uiSliceMode) {
-      //iLoopFilterDisableIdc: will be 0 or 1 under single_slice
-      if (2 == pParam->iLoopFilterDisableIdc) {
-        pDqLayer->iLoopFilterDisableIdc = 0;
-      }
       //bDeblockingParallelFlag
       pDqLayer->bDeblockingParallelFlag = false;
     } else {
@@ -2737,17 +2732,6 @@ void PreprocessSliceCoding (sWelsEncCtx* pCtx) {
 
   const int32_t kiCurDid            = pCtx->uiDependencyId;
   const int32_t kiCurTid            = pCtx->uiTemporalId;
-  if (pCurLayer->bDeblockingParallelFlag && (pCurLayer->iLoopFilterDisableIdc != 1)
-#if !defined(ENABLE_FRAME_DUMP)
-      && (NRI_PRI_LOWEST != pCtx->eNalPriority)
-      && (pCtx->pSvcParam->sDependencyLayers[kiCurDid].iHighestTemporalId == 0
-          || kiCurTid < pCtx->pSvcParam->sDependencyLayers[kiCurDid].iHighestTemporalId)
-#endif// !ENABLE_FRAME_DUMP
-     ) {
-    pFuncList->pfDeblocking.pfDeblockingFilterSlice = DeblockingFilterSliceAvcbase;
-  } else {
-    pFuncList->pfDeblocking.pfDeblockingFilterSlice = DeblockingFilterSliceAvcbaseNull;
-  }
 }
 
 /*!
@@ -3832,18 +3816,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
       WelsRcPostFrameSkippedUpdate (pCtx, iCurDid);
       pCtx->iEncoderError = ENC_RETURN_SUCCESS;
       return ENC_RETURN_SUCCESS;
-    }
-
-    // deblocking filter
-    if (
-      (!pCtx->pCurDqLayer->bDeblockingParallelFlag) &&
-#if !defined(ENABLE_FRAME_DUMP)
-      ((eNalRefIdc != NRI_PRI_LOWEST) && (pSvcParam->sDependencyLayers[iCurDid].iHighestTemporalId == 0
-                                          || iCurTid < pSvcParam->sDependencyLayers[iCurDid].iHighestTemporalId)) &&
-#endif//!ENABLE_FRAME_DUMP
-      true
-    ) {
-      PerformDeblockingFilter (pCtx);
     }
 
     pCtx->pFuncList->pfRc.pfWelsRcPictureInfoUpdate (pCtx, iLayerSize);
