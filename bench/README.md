@@ -120,9 +120,21 @@ python3 bench/modal_lab.py callgrind scroll usage=1  # x86: where an encode's in
 `modal_lab.py` keeps an x86 sandbox on Modal and syncs `h264/` and `bench/`
 into it, so a change rebuilds in seconds. Options for `encode_bench`: `enc=1`
 (x264 as the streamer sets it up), `crf`, `xthreads`, `qp`, `kbps` (cap the
-rate as a slow link does), `rest=N`, `perframe=1` (`usage`, `complexity`, `rc`
+rate as a slow link does), `capat=F` (apply it at frame F: the streamer caps only
+once flow control has measured the link, so its first IDR is never capped), `rest=N`, `perframe=1` (`usage`, `complexity`, `rc`
 and the like only change stock OpenH264, `LAB_SRC=stock`: h264/ forces its
 configuration); `X264_NO_AVX512=1` prices x264's
 AVX-512 kernels. Every encoder change is judged on bits (BD-rate, or output
 identical to the byte for a pure speed-up) and instructions. Put run output
 in the ignored `.bench/`.
+
+## Under a bitrate cap
+
+`kbps=1000` alone caps from the first frame, which the streamer never does:
+the IDR then comes out at 34.8 dB and the still screen climbs back over ~60
+frames, so typing looks worse capped (41.95 dB) than not (53.8). With the cap
+applied as the streamer applies it (`kbps=1000 capat=1`), typing is
+unchanged (532 kbit/s, 53.79 dB). After animation under the cap, a still
+screen is sharp again in about the time the link takes to carry one
+full-quality frame: 51 dB at 20 frames and 54.5 dB at 40 at 1000 kbit/s,
+54 dB at 80 at 500 kbit/s (uncapped: 5 frames).

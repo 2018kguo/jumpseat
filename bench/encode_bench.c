@@ -108,14 +108,10 @@ int main(int argc, char **argv) {
   if (!use_x264 && (*enc)->InitializeExt(enc, &p) != 0) { fprintf(stderr, "encoder init failed\n"); return 1; }
   int format = videoFormatI420;
   (*enc)->SetOption(enc, ENCODER_OPTION_DATAFORMAT, &format);
-  int kbps = opt(argc, argv, "kbps", 0);
-  if (kbps > 0 && !use_x264) { // as server/encoder_openh264.go set_max_kbps
-    SBitrateInfo rate;
-    memset(&rate, 0, sizeof rate);
-    rate.iLayer = SPATIAL_LAYER_ALL;
-    rate.iBitrate = kbps * 1000;
-    (*enc)->SetOption(enc, ENCODER_OPTION_BITRATE, &rate);
-  }
+  // kbps=N caps the rate as server/encoder_openh264.go set_max_kbps does;
+  // capat=F applies it before frame F (the streamer caps only once its flow
+  // control has measured the link, so its first IDR is never capped).
+  int kbps = opt(argc, argv, "kbps", 0), capat = opt(argc, argv, "capat", 0);
 
   if (decode_side_open() < 0) { fprintf(stderr, "decoder open failed\n"); return 1; }
 
@@ -136,6 +132,13 @@ int main(int argc, char **argv) {
       memset(&info, 0, sizeof info);
       uint8_t *nal = 0;
       int size = 0;
+      if (kbps > 0 && !use_x264 && r == 0 && n == capat) {
+        SBitrateInfo rate;
+        memset(&rate, 0, sizeof rate);
+        rate.iLayer = SPATIAL_LAYER_ALL;
+        rate.iBitrate = kbps * 1000;
+        (*enc)->SetOption(enc, ENCODER_OPTION_BITRATE, &rate);
+      }
       double t0 = now_ms(), c0 = cpu_ms();
       if (use_x264) size = x264_side_encode(x, y, pic.uiTimeStamp, &nal);
       else (*enc)->EncodeFrame(enc, &pic, &info);
