@@ -56,7 +56,6 @@ typedef struct TagLogContext {
   void* pCodecInstance;
 } SLogContext;
 
-
 #ifdef __GNUC__
 extern void WelsLog (SLogContext* pCtx, int32_t iLevel, const char* kpFmt, ...) __attribute__ ((__format__ (__printf__,
     3,
@@ -90,6 +89,5 @@ float WelsCalcPsnr (const void* kpTarPic,
                     const int32_t kiRefStride,
                     const int32_t kiWidth,
                     const int32_t kiHeight);
-
 
 #endif//WELS_UTILS_H__

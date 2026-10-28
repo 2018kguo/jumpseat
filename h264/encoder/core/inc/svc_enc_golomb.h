@@ -51,7 +51,6 @@ namespace WelsEnc {
 /* GOLOMB CODIMG FOR WELS ENCODER ONLY                                  */
 /************************************************************************/
 
-
 /*
  *  Get size of unsigned exp golomb codes
  */

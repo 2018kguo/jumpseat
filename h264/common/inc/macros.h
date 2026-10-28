@@ -45,7 +45,6 @@
 #include <string.h>
 #include "typedefs.h"
 
-
 /*
 * ENFORCE_STACK_ALIGN_1D: force 1 dimension local data aligned in stack
 * _tp: type
@@ -58,7 +57,6 @@
     _tp _nm ## _tEmP[(_sz)+(_al)-1]; \
     _tp *_nm = _nm ## _tEmP + ((_al)-1) - (((uintptr_t)(_nm ## _tEmP + ((_al)-1)) & ((_al)-1))/sizeof(_tp));
 
-
 #define ENFORCE_STACK_ALIGN_2D(_tp, _nm, _cx, _cy, _al) \
     assert( ((_al) && !((_al) & ((_al) - 1))) && ((_al) >= sizeof(_tp)) ); /*_al should be power-of-2 and >= sizeof(_tp)*/\
     _tp _nm ## _tEmP[(_cx)*(_cy)+(_al)/sizeof(_tp)-1]; \
@@ -66,17 +64,14 @@
     _nm ## _tEmP_al -= (((uintptr_t)_nm ## _tEmP_al & ((_al)-1))/sizeof(_tp)); \
     _tp (*_nm)[(_cy)] = (_tp (*)[(_cy)])_nm ## _tEmP_al;
 
-
 #if   defined(__GNUC__)
 
 #define ALIGNED_DECLARE( type, var, n ) type var __attribute__((aligned(n)))
 #endif//_MSC_VER
 
-
 #ifndef WELS_ALIGN
 #define WELS_ALIGN(x, n) (((x)+(n)-1)&~((n)-1))
 #endif//WELS_ALIGN
-
 
 #ifndef WELS_MAX
 #define WELS_MAX(x, y) ((x) > (y) ? (x) : (y))
@@ -88,7 +83,6 @@
 #ifndef WELS_MIN_POSITIVE
 #define WELS_MIN_POSITIVE(x, y) (x >= 0 && y >= 0) ? WELS_MIN(x, y) : WELS_MAX(x, y);
 #endif//WELS_MIN_POSITIVE
-
 
 #ifndef WELS_CEIL
 #define WELS_CEIL(x) ceil(x) // FIXME: low complexity instead of math library used
@@ -233,9 +227,6 @@ static inline int32_t WELS_LOG2 (uint32_t v) {
 
 #define CLIP3_QP_0_51(q) WELS_CLIP3(q, 0, 51) // ((q) < (0) ? (0) : ((q) > (51) ? (51) : (q)))
 #define   CALC_BI_STRIDE(width,bitcount)  ((((width * bitcount) + 31) & ~31) >> 3)
-
-
-
 
 #ifndef BUTTERFLY1x2
 #define BUTTERFLY1x2(b) (((b)<<8) | (b))

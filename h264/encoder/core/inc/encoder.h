@@ -89,8 +89,6 @@ EVideoFrameType DecideFrameType (sWelsEncCtx* pEncCtx, const int8_t kiSpatialNum
 void InitBitStream (sWelsEncCtx* pEncCtx);
 int32_t GetTemporalLevel (SSpatialLayerInternal* fDlp, const int32_t kiFrameNum, const int32_t kiGopSize);
 
-
-
 /*!
  * \brief   encode overall slices pData in a frame
  * \param   pEncCtx             sWelsEncCtx*, encoder context
@@ -103,7 +101,6 @@ int32_t EncodeFrame (sWelsEncCtx* pEncCtx,
                      const int32_t kiSliceNumCount,
                      const EWelsNalUnitType keNalType,
                      const EWelsNalRefIdc keNalIdc);
-
 
 /**********************************************************************************
  * memzero Function

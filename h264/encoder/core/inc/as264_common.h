@@ -48,18 +48,10 @@ $(TargetPath)
 */
 
 /****************************************************************************
- * Options for algorithm, usually change bitrate
- ****************************************************************************/
-
-/****************************************************************************
  * Options for optimization, not change bitrate
  ****************************************************************************/
 //#undef        X86_ASM             // X86_ASM is included in project preprocessor definitions, undef it when need to disable asm code
 #define SINGLE_REF_FRAME            // need to disable it when use multi-reference
-
-
-
-
 
 //#define STAT_OUTPUT
 //#define MB_TYPES_CHECK
@@ -69,7 +61,6 @@ $(TargetPath)
 //#define SLICE_INFO_OUTPUT             // useful in multiple slice coding track
 //#define MB_TYPES_INFO_OUTPUT
 
-
 /* macros dependencies check */
 //@if !FRAME_INFO_OUTPUT
 
@@ -77,12 +68,7 @@ $(TargetPath)
 //#undef STAT_OUTPUT
 //#endif//STAT_OUTPUT
 
-
-
-
-
 //@if SLICE_INFO_OUTPUT
-
 
 //@if MB_TYPES_INFO_OUTPUT
 

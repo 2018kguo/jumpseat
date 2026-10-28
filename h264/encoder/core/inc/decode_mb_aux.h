@@ -70,7 +70,6 @@ void WelsIDctT4Rec_avx2 (uint8_t* pRec, int32_t iStride, uint8_t* pPrediction, i
 void WelsIDctFourT4Rec_avx2 (uint8_t* pRec, int32_t iStride, uint8_t* pPrediction, int32_t iPredStride, int16_t* pDct);
 #endif//X86_ASM
 
-
 #ifdef HAVE_NEON_AARCH64
 void WelsDequantFour4x4_AArch64_neon (int16_t* pDct, const uint16_t* kpMF);
 void WelsDequant4x4_AArch64_neon (int16_t* pDct, const uint16_t* kpMF);
@@ -81,7 +80,6 @@ void WelsIDctFourT4Rec_AArch64_neon (uint8_t* pRec, int32_t iStride, uint8_t* pP
 void WelsIDctRecI16x16Dc_AArch64_neon (uint8_t* pRec, int32_t iStride, uint8_t* pPrediction, int32_t iPredStride,
                                  int16_t* pDctDc);
 #endif
-
 
 #if defined(__cplusplus)
 }

@@ -96,39 +96,6 @@ SScreenBlockFeatureStorage* pRefFeatureStorage;
 SMVUnitXY          sMv;
 } SWelsME;
 
-typedef struct TagFeatureSearchIn {
-PSampleSadSatdCostFunc pSad;
-
-uint32_t* pTimesOfFeature;
-uint16_t** pQpelLocationOfFeature;
-uint16_t* pMvdCostX;
-uint16_t* pMvdCostY;
-
-uint8_t* pEnc;
-uint8_t* pColoRef;
-int32_t iEncStride;
-int32_t iRefStride;
-uint16_t uiSadCostThresh;
-
-int32_t iFeatureOfCurrent;
-
-int32_t iCurPixX;
-int32_t iCurPixY;
-int32_t iCurPixXQpel;
-int32_t iCurPixYQpel;
-
-int32_t iMinQpelX;
-int32_t iMinQpelY;
-int32_t iMaxQpelX;
-int32_t iMaxQpelY;
-} SFeatureSearchIn;
-
-typedef struct TagFeatureSearchOut {
-SMVUnitXY sBestMv;
-uint32_t uiBestSadCost;
-uint8_t* pBestRef;
-} SFeatureSearchOut;
-
 #define  COST_MVD(table, mx, my)  (table[mx] + table[my])
 extern const int32_t QStepx16ByQp[52];
 
@@ -157,7 +124,6 @@ void WelsMotionEstimateSearchScrolled (SWelsFuncPtrList* pFuncList, SDqLayer* pL
  *
  * \return  NONE
  */
-
 
 /*!
  * \brief  EL mb motion estimate initial point testing
@@ -232,7 +198,6 @@ void WelsDiamondCrossSearch (SWelsFuncPtrList* pFuncList, SWelsME* pMe, SSlice* 
 #define FMESWITCH_DEFAULT_GOODFRAME_NUM (2)
 #define FMESWITCH_MBSAD_THRESHOLD   30 // empirically set.
 
-
 #ifdef X86_ASM
 extern "C"
 {
@@ -244,7 +209,6 @@ extern "C"
 {
 }
 #endif
-
 
 int32_t RequestScreenBlockFeatureStorage (CMemoryAlign* pMa, const int32_t kiFrameWidth,  const int32_t kiFrameHeight,
     const int32_t iNeedFeatureStorage,
@@ -258,9 +222,7 @@ int32_t ReleaseFeatureSearchPreparation (CMemoryAlign* pMa, uint16_t*& pFeatureO
 #define FMESWITCH_DEFAULT_GOODFRAME_NUM (2)
 #define FME_DEFAULT_FEATURE_INDEX (0)
 
-
 void SetCrossSearchThresholds (SPicture* pRef, SScreenBlockFeatureStorage* pStorage, const bool kbOn);
-
 
 //inline functions
 inline void SetMvWithinIntegerMvRange (const int32_t kiMbWidth, const int32_t kiMbHeight, const int32_t kiMbX,

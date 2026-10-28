@@ -34,10 +34,6 @@
 #define WELS_VIDEO_CODEC_DEFINITION_H__
 
 /**
-  * @file  codec_def.h
-*/
-
-/**
 * @brief Enumerate the type of video format
 */
 typedef enum {
@@ -149,61 +145,6 @@ enum {
   ET_FEC_FULL = 0x40,       ///< Forward Error Correction in 100% redundency mode
   ET_RFS = 0x80             ///< Reference Frame Selection
 };
-
-/**
-* @brief Information of coded Slice(=NAL)(s)
-*/
-typedef struct SliceInformation {
-  unsigned char* pBufferOfSlices;    ///< base buffer of coded slice(s)
-  int            iCodedSliceCount;   ///< number of coded slices
-  unsigned int*  pLengthOfSlices;    ///< array of slices length accordingly by number of slice
-  int            iFecType;           ///< FEC type[0, 50%FEC, 100%FEC]
-  unsigned char  uiSliceIdx;         ///< index of slice in frame [FMO: 0,..,uiSliceCount-1; No FMO: 0]
-  unsigned char  uiSliceCount;       ///< count number of slice in frame [FMO: 2-8; No FMO: 1]
-  char           iFrameIndex;        ///< index of frame[-1, .., idr_interval-1]
-  unsigned char  uiNalRefIdc;        ///< NRI, priority level of slice(NAL)
-  unsigned char  uiNalType;          ///< NAL type
-  unsigned char
-  uiContainingFinalNal;              ///< whether final NAL is involved in buffer of coded slices, flag used in Pause feature in T27
-} SliceInfo, *PSliceInfo;
-
-/**
-* @brief thresholds of the initial, maximal and minimal rate
-*/
-typedef struct {
-  int   iWidth;                   ///< frame width
-  int   iHeight;                  ///< frame height
-  int   iThresholdOfInitRate;     ///< threshold of initial rate
-  int   iThresholdOfMaxRate;      ///< threshold of maximal rate
-  int   iThresholdOfMinRate;      ///< threshold of minimal rate
-  int   iMinThresholdFrameRate;   ///< min frame rate min
-  int   iSkipFrameRate;           ///< skip to frame rate min
-  int   iSkipFrameStep;           ///< how many frames to skip
-} SRateThresholds, *PRateThresholds;
-
-/**
-* @brief  Structure for decoder memery
-*/
-typedef struct TagSysMemBuffer {
-  int iWidth;                    ///< width of decoded pic for display
-  int iHeight;                   ///< height of decoded pic for display
-  int iFormat;                   ///< type is "EVideoFormatType"
-  int iStride[2];                ///< stride of 2 component
-} SSysMEMBuffer;
-
-/**
-* @brief  Buffer info
-*/
-typedef struct TagBufferInfo {
-  int iBufferStatus;             ///< 0: one frame data is not ready; 1: one frame data is ready
-  unsigned long long uiInBsTimeStamp;     ///< input BS timestamp
-  unsigned long long uiOutYuvTimeStamp;     ///< output YUV timestamp, when bufferstatus is 1
-  union {
-    SSysMEMBuffer sSystemBuffer; ///<  memory info for one picture
-  } UsrData;                     ///<  output buffer info
-  unsigned char* pDst[3];  //point to picture YUV data
-} SBufferInfo;
-
 
 /**
 * @brief In a GOP, multiple of the key frame number, derived from

@@ -39,8 +39,6 @@
 //#define MEMORY_CHECK
 #define MEMORY_MONITOR
 
-
-
 namespace WelsCommon {
 
 class CMemoryAlign {

@@ -43,7 +43,6 @@
 #ifndef RC_H
 #define RC_H
 
-
 #include "codec_app_def.h"
 #include "svc_enc_macroblock.h"
 #include "slice.h"

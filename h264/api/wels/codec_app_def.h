@@ -30,8 +30,6 @@
  *
  */
 
-
-
 #ifndef WELS_VIDEO_CODEC_APPLICATION_DEFINITION_H__
 #define WELS_VIDEO_CODEC_APPLICATION_DEFINITION_H__
 /**
@@ -51,10 +49,8 @@
 #define MAX_RTP_PAYLOAD_LEN             1000
 #define AVERAGE_RTP_PAYLOAD_LEN         800
 
-
 #define SAVED_NALUNIT_NUM_TMP           ( (MAX_SPATIAL_LAYER_NUM*MAX_QUALITY_LAYER_NUM) + 1 + MAX_SPATIAL_LAYER_NUM )  ///< SPS/PPS + SEI/SSEI + PADDING_NAL
 #define MAX_SLICES_NUM_TMP              ( ( MAX_NAL_UNITS_IN_LAYER - SAVED_NALUNIT_NUM_TMP ) / 3 )
-
 
 #define AUTO_REF_PIC_COUNT  -1          ///< encoder selects the number of reference frame automatically
 #define UNSPECIFIED_BIT_RATE 0          ///< to do: add detail comment
@@ -70,35 +66,6 @@ typedef struct  _tagVersion {
   unsigned int uRevision;               ///< The revision number
   unsigned int uReserved;               ///< The reserved number, it should be 0.
 } OpenH264Version;
-
-/**
-* @brief Decoding status
-*/
-typedef enum {
-  /**
-  * Errors derived from bitstream parsing
-  */
-  dsErrorFree = 0x00,   ///< bit stream error-free
-  dsFramePending = 0x01,   ///< need more throughput to generate a frame output,
-  dsRefLost = 0x02,   ///< layer lost at reference frame with temporal id 0
-  dsBitstreamError = 0x04,   ///< error bitstreams(maybe broken internal frame) the decoder cared
-  dsDepLayerLost = 0x08,   ///< dependented layer is ever lost
-  dsNoParamSets = 0x10,   ///< no parameter set NALs involved
-  dsDataErrorConcealed = 0x20,   ///< current data error concealed specified
-  dsRefListNullPtrs = 0x40, ///<ref picure list contains null ptrs within uiRefCount range
-
-  /**
-  * Errors derived from logic level
-  */
-  dsInvalidArgument     = 0x1000, ///< invalid argument specified
-  dsInitialOptExpected  = 0x2000, ///< initializing operation is expected
-  dsOutOfMemory         = 0x4000, ///< out of memory due to new request
-  /**
-  * ANY OTHERS?
-  */
-  dsDstBufNeedExpan     = 0x8000  ///< actual picture size exceeds size of dst pBuffer feed in decoder, so need expand its size
-
-} DECODING_STATE;
 
 /**
 * @brief Option types introduced in SVC encoder application
@@ -146,54 +113,6 @@ typedef enum {
 } ENCODER_OPTION;
 
 /**
-* @brief Option types introduced in decoder application
-*/
-typedef enum {
-  DECODER_OPTION_END_OF_STREAM = 1,     ///< end of stream flag
-  DECODER_OPTION_VCL_NAL,               ///< feedback whether or not have VCL NAL in current AU for application layer
-  DECODER_OPTION_TEMPORAL_ID,           ///< feedback temporal id for application layer
-  DECODER_OPTION_FRAME_NUM,             ///< feedback current decoded frame number
-  DECODER_OPTION_IDR_PIC_ID,            ///< feedback current frame belong to which IDR period
-  DECODER_OPTION_LTR_MARKING_FLAG,      ///< feedback wether current frame mark a LTR
-  DECODER_OPTION_LTR_MARKED_FRAME_NUM,  ///< feedback frame num marked by current Frame
-  DECODER_OPTION_ERROR_CON_IDC,         ///< indicate decoder error concealment method
-  DECODER_OPTION_TRACE_LEVEL,
-  DECODER_OPTION_TRACE_CALLBACK,        ///< a void (*)(void* context, int level, const char* message) function which receives log messages
-  DECODER_OPTION_TRACE_CALLBACK_CONTEXT,///< context info of trace callbac
-
-  DECODER_OPTION_GET_STATISTICS,        ///< feedback decoder statistics
-  DECODER_OPTION_GET_SAR_INFO,          ///< feedback decoder Sample Aspect Ratio info in Vui
-  DECODER_OPTION_PROFILE,               ///< get current AU profile info, only is used in GetOption
-  DECODER_OPTION_LEVEL,                 ///< get current AU level info,only is used in GetOption
-  DECODER_OPTION_STATISTICS_LOG_INTERVAL,///< set log output interval
-  DECODER_OPTION_IS_REF_PIC,             ///< feedback current frame is ref pic or not
-  DECODER_OPTION_NUM_OF_FRAMES_REMAINING_IN_BUFFER,  ///< number of frames remaining in decoder buffer when pictures are required to re-ordered into display-order.
-  DECODER_OPTION_NUM_OF_THREADS,         ///< number of decoding threads. The maximum thread count is equal or less than lesser of (cpu core counts and 16).
-} DECODER_OPTION;
-
-/**
-* @brief Enumerate the type of error concealment methods
-*/
-typedef enum {
-  ERROR_CON_DISABLE = 0,
-  ERROR_CON_FRAME_COPY,
-  ERROR_CON_SLICE_COPY,
-  ERROR_CON_FRAME_COPY_CROSS_IDR,
-  ERROR_CON_SLICE_COPY_CROSS_IDR,
-  ERROR_CON_SLICE_COPY_CROSS_IDR_FREEZE_RES_CHANGE,
-  ERROR_CON_SLICE_MV_COPY_CROSS_IDR,
-  ERROR_CON_SLICE_MV_COPY_CROSS_IDR_FREEZE_RES_CHANGE
-} ERROR_CON_IDC;
-/**
-* @brief Feedback that whether or not have VCL NAL in current AU
-*/
-typedef enum {
-  FEEDBACK_NON_VCL_NAL = 0,
-  FEEDBACK_VCL_NAL,
-  FEEDBACK_UNKNOWN_NAL
-} FEEDBACK_VCL_NAL_IN_AU;
-
-/**
 * @brief Type of layer being encoded
 */
 typedef enum {
@@ -213,15 +132,6 @@ typedef enum {
 } LAYER_NUM;
 
 /**
-* @brief Enumerate the type of video bitstream which is provided to decoder
-*/
-typedef enum {
-  VIDEO_BITSTREAM_AVC               = 0,
-  VIDEO_BITSTREAM_SVC               = 1,
-  VIDEO_BITSTREAM_DEFAULT           = VIDEO_BITSTREAM_SVC
-} VIDEO_BITSTREAM_TYPE;
-
-/**
 * @brief Enumerate the type of key frame request
 */
 typedef enum {
@@ -232,35 +142,6 @@ typedef enum {
   LTR_MARKING_SUCCESS = 4,
   LTR_MARKING_FAILED = 5
 } KEY_FRAME_REQUEST_TYPE;
-
-/**
-* @brief Structure for LTR recover request
-*/
-typedef struct {
-  unsigned int uiFeedbackType;       ///< IDR request or LTR recovery request
-  unsigned int uiIDRPicId;           ///< distinguish request from different IDR
-  int          iLastCorrectFrameNum;
-  int          iCurrentFrameNum;     ///< specify current decoder frame_num.
-  int          iLayerId;           //specify the layer for recovery request
-} SLTRRecoverRequest;
-
-/**
-* @brief Structure for LTR marking feedback
-*/
-typedef struct {
-  unsigned int  uiFeedbackType; ///< mark failed or successful
-  unsigned int  uiIDRPicId;     ///< distinguish request from different IDR
-  int           iLTRFrameNum;   ///< specify current decoder frame_num
-  int           iLayerId;        //specify the layer for LTR marking feedback
-} SLTRMarkingFeedback;
-
-/**
-* @brief Structure for LTR configuration
-*/
-typedef struct {
-  bool   bEnableLongTermReference; ///< 1: on, 0: off
-  int    iLTRRefNum;               ///< TODO: not supported to set it arbitrary yet
-} SLTRConfig;
 
 /**
 * @brief Enumerate the type of rate control mode
@@ -425,7 +306,6 @@ typedef enum {
   CM_NUM_ENUM
 } EColorMatrix;
 
-
 /**
 * @brief Enumerate the type of sample aspect ratio
 */
@@ -447,7 +327,6 @@ typedef enum {
 
   ASP_EXT_SAR = 255
 } ESampleAspectRatio;
-
 
 /**
 * @brief  Structure for spatial layer configuration
@@ -598,29 +477,6 @@ typedef struct TagEncParamExt {
 } SEncParamExt;
 
 /**
-* @brief Define a new struct to show the property of video bitstream.
-*/
-typedef struct {
-  unsigned int          size;          ///< size of the struct
-  VIDEO_BITSTREAM_TYPE  eVideoBsType;  ///< video stream type (AVC/SVC)
-} SVideoProperty;
-
-/**
-* @brief SVC Decoding Parameters, reserved here and potential applicable in the future
-*/
-typedef struct TagSVCDecodingParam {
-  char*     pFileNameRestructed;       ///< file name of reconstructed frame used for PSNR calculation based debug
-
-  unsigned int  uiCpuLoad;             ///< CPU load
-  unsigned char uiTargetDqLayer;       ///< setting target dq layer id
-
-  ERROR_CON_IDC eEcActiveIdc;          ///< whether active error concealment feature in decoder
-  bool bParseOnly;                     ///< decoder for parse only, no reconstruction. When it is true, SPS/PPS size should not exceed SPS_PPS_BS_SIZE (128). Otherwise, it will return error info
-
-  SVideoProperty   sVideoProperty;    ///< video stream property
-} SDecodingParam, *PDecodingParam;
-
-/**
 * @brief Bitstream inforamtion of a layer being encoded
 */
 typedef struct {
@@ -677,69 +533,6 @@ typedef struct TagBitrateInfo {
 } SBitrateInfo;
 
 /**
-* @brief Structure for dump layer info
-*/
-typedef struct TagDumpLayer {
-  int iLayer;
-  char* pFileName;
-} SDumpLayer;
-
-/**
-* @brief Structure for profile info in layer
-*
-*/
-typedef struct TagProfileInfo {
-  int iLayer;
-  EProfileIdc uiProfileIdc;        ///< the profile info
-} SProfileInfo;
-
-/**
-* @brief  Structure for level info in layer
-*
-*/
-typedef struct TagLevelInfo {
-  int iLayer;
-  ELevelIdc uiLevelIdc;            ///< the level info
-} SLevelInfo;
-/**
-* @brief Structure for dilivery status
-*
-*/
-typedef struct TagDeliveryStatus {
-  bool bDeliveryFlag;              ///< 0: the previous frame isn't delivered,1: the previous frame is delivered
-  int iDropFrameType;              ///< the frame type that is dropped; reserved
-  int iDropFrameSize;              ///< the frame size that is dropped; reserved
-} SDeliveryStatus;
-
-/**
-* @brief The capability of decoder, for SDP negotiation
-*/
-typedef struct TagDecoderCapability {
-  int iProfileIdc;     ///< profile_idc
-  int iProfileIop;     ///< profile-iop
-  int iLevelIdc;       ///< level_idc
-  int iMaxMbps;        ///< max-mbps
-  int iMaxFs;          ///< max-fs
-  int iMaxCpb;         ///< max-cpb
-  int iMaxDpb;         ///< max-dpb
-  int iMaxBr;          ///< max-br
-  bool bRedPicCap;     ///< redundant-pic-cap
-} SDecoderCapability;
-
-/**
-* @brief Structure for parse only output
-*/
-typedef struct TagParserBsInfo {
-  int iNalNum;                                 ///< total NAL number in current AU
-  int* pNalLenInByte;  ///< each nal length
-  unsigned char* pDstBuff;                     ///< outputted dst buffer for parsed bitstream
-  int iSpsWidthInPixel;                        ///< required SPS width info
-  int iSpsHeightInPixel;                       ///< required SPS height info
-  unsigned long long uiInBsTimeStamp;               ///< input BS timestamp
-  unsigned long long uiOutBsTimeStamp;             ///< output BS timestamp
-} SParserBsInfo, *PParserBsInfo;
-
-/**
 * @brief Structure for encoder statistics
 */
 typedef struct TagVideoEncoderStatistics {
@@ -768,53 +561,5 @@ typedef struct TagVideoEncoderStatistics {
   unsigned long iLastStatisticsBytes;
   unsigned long iLastStatisticsFrameCount;
 } SEncoderStatistics;
-
-/**
-* @brief  Structure for decoder statistics
-*/
-typedef struct TagVideoDecoderStatistics {
-  unsigned int uiWidth;                        ///< the width of encode/decode frame
-  unsigned int uiHeight;                       ///< the height of encode/decode frame
-  float fAverageFrameSpeedInMs;                ///< average_Decoding_Time
-  float fActualAverageFrameSpeedInMs;          ///< actual average_Decoding_Time, including freezing pictures
-  unsigned int uiDecodedFrameCount;            ///< number of frames
-  unsigned int uiResolutionChangeTimes;        ///< uiResolutionChangeTimes
-  unsigned int uiIDRCorrectNum;                ///< number of correct IDR received
-  //EC on related
-  unsigned int
-  uiAvgEcRatio;                                ///< when EC is on, the average ratio of total EC areas, can be an indicator of reconstruction quality
-  unsigned int
-  uiAvgEcPropRatio;                            ///< when EC is on, the rough average ratio of propogate EC areas, can be an indicator of reconstruction quality
-  unsigned int uiEcIDRNum;                     ///< number of actual unintegrity IDR or not received but eced
-  unsigned int uiEcFrameNum;                   ///<
-  unsigned int uiIDRLostNum;                   ///< number of whole lost IDR
-  unsigned int
-  uiFreezingIDRNum;               ///< number of freezing IDR with error (partly received), under resolution change
-  unsigned int uiFreezingNonIDRNum;            ///< number of freezing non-IDR with error
-  int iAvgLumaQp;                              ///< average luma QP. default: -1, no correct frame outputted
-  int iSpsReportErrorNum;                      ///< number of Sps Invalid report
-  int iSubSpsReportErrorNum;                   ///< number of SubSps Invalid report
-  int iPpsReportErrorNum;                      ///< number of Pps Invalid report
-  int iSpsNoExistNalNum;                       ///< number of Sps NoExist Nal
-  int iSubSpsNoExistNalNum;                    ///< number of SubSps NoExist Nal
-  int iPpsNoExistNalNum;                       ///< number of Pps NoExist Nal
-
-  unsigned int uiProfile;                ///< Profile idc in syntax
-  unsigned int uiLevel;                  ///< level idc according to Annex A-1
-
-  int iCurrentActiveSpsId;                     ///< current active SPS id
-  int iCurrentActivePpsId;                     ///< current active PPS id
-
-  unsigned int iStatisticsLogInterval;                  ///< frame interval of statistics log
-} SDecoderStatistics; // in building, coming soon
-
-/**
-* @brief Structure for sample aspect ratio (SAR) info in VUI
-*/
-typedef struct TagVuiSarInfo {
-  unsigned int uiSarWidth;                     ///< SAR width
-  unsigned int uiSarHeight;                    ///< SAR height
-  bool bOverscanAppropriateFlag;               ///< SAR overscan flag
-} SVuiSarInfo, *PVuiSarInfo;
 
 #endif//WELS_VIDEO_CODEC_APPLICATION_DEFINITION_H__

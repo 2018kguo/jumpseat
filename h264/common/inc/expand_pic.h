@@ -70,14 +70,12 @@ void ExpandPictureChroma_AArch64_neon (uint8_t* pDst, const int32_t kiStride, co
                                        const int32_t kiPicH);
 #endif
 
-
 typedef void (*PExpandPictureFunc) (uint8_t* pDst, const int32_t kiStride, const int32_t kiPicW, const int32_t kiPicH);
 
 typedef struct TagExpandPicFunc {
   PExpandPictureFunc pfExpandLumaPicture;
   PExpandPictureFunc pfExpandChromaPicture[2];
 } SExpandPicFunc;
-
 
 void ExpandReferencingPicture (uint8_t* pData[3], int32_t iWidth, int32_t iHeight, int32_t iStride[3],
                                PExpandPictureFunc pExpLuma, PExpandPictureFunc pExpChrom[2]);

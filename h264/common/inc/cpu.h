@@ -43,7 +43,6 @@
 #include "typedefs.h"
 #include "cpu_core.h"
 
-
 #if defined(__cplusplus)
 extern "C" {
 #endif//__cplusplus
@@ -62,7 +61,6 @@ int32_t WelsCPUSupportFMA (uint32_t eax, uint32_t ecx);
 uint32_t WelsCPUDetectAVX512();
 
 void WelsEmms();
-
 
 #else
 #define WelsEmms()

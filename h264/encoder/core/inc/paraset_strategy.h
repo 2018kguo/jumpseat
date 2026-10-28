@@ -92,7 +92,6 @@ class IWelsParametersetStrategy {
   virtual int32_t GetSpsIdx (const int32_t iIdx) = 0;
 };
 
-
 class  CWelsParametersetIdConstant : public IWelsParametersetStrategy {
  public:
 

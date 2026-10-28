@@ -189,16 +189,6 @@ typedef struct {
 } SVAACalcParam;
 
 typedef struct {
-  signed char*     pBackgroundMbFlag;
-  SVAACalcResult*  pCalcRes;
-} SBGDInterface;
-
-typedef enum {
-  AQ_QUALITY_MODE,   //Quality mode
-  AQ_BITRATE_MODE    //Bitrate mode
-} EAQModes;
-
-typedef struct {
   unsigned short    uiMotionIndex;
   unsigned short    uiTextureIndex;
 } SMotionTextureUnit;
@@ -211,12 +201,6 @@ typedef struct {
   signed char*      pMotionTextureIndexToDeltaQp;
   int               iAverMotionTextureIndexToDeltaQp; // *AQ_STEP_INT_MULTIPLY
 } SAdaptiveQuantizationParam;
-
-typedef enum {
-  FRAME_SAD     =  0,
-  GOM_SAD       = -1,
-  GOM_VAR       = -2
-} EComplexityAnalysisMode;
 
 typedef struct {
   int  iComplexityAnalysisMode;
@@ -306,5 +290,4 @@ WELSVP_EXTERNC_END
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 #endif // IWELSVP_H_
-
 

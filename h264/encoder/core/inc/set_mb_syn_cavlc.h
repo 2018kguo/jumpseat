@@ -46,7 +46,6 @@
 
 namespace WelsEnc {
 
-
 enum ECtxBlockCat {
   LUMA_DC     = 0,
   LUMA_AC     = 1,
@@ -55,21 +54,13 @@ enum ECtxBlockCat {
   CHROMA_AC   = 4
 };
 
-
 #define LUMA_DC_AC    0x04
-
-typedef struct TagCavlcTableItem {
-  uint16_t uiBits;
-  uint8_t  uiLen;
-  uint8_t  uiSuffixLength;
-} SCavlcTableItem;
 
 void  InitCoeffFunc (SWelsFuncPtrList* pFuncList, const uint32_t uiCpuFlag,int32_t iEntropyCodingModeFlag);
 
 int32_t  WriteBlockResidualCavlc (SWelsFuncPtrList* pFuncList, int16_t* pCoffLevel, int32_t iEndIdx,
                                   int32_t iCalRunLevelFlag,
                                   int32_t iResidualProperty, int8_t iNC, SBitStringAux* pBs);
-
 
 #if defined(__cplusplus)
 extern "C" {

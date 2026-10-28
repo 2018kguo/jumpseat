@@ -59,5 +59,4 @@
 #define MAX_SPS_COUNT           32      // Count number of SPS
 #define BASE_QUALITY_ID         0
 
-
 #endif//WELS_CONST_COMMON_H__

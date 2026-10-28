@@ -110,8 +110,6 @@ void WelsLoadNal (SWelsEncoderOutput* pEncoderOuput, const int32_t/*EWelsNalUnit
  */
 void WelsUnloadNal (SWelsEncoderOutput* pEncoderOuput);
 
-
-
 /*!
  * \brief   encode NAL with emulation forbidden three bytes checking
  * \param   pDst        pDst NAL pData

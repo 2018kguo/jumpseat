@@ -56,9 +56,7 @@
 #include "crt_util_safe_x.h"
 #include "utils.h"
 
-
 namespace WelsEnc {
-
 
 /*
  *  reference list for each quality layer in SVC
@@ -130,7 +128,6 @@ typedef struct TagWelsEncCtx {
   SMB**             ppMbListD;     // [MAX_DEPENDENCY_LAYER];
   SStrideTables*    pStrideTab;     // stride tables for internal coding used
   SWelsFuncPtrList* pFuncList;
-
 
   // pointers
   SPicture*         pEncPic;                // pointer to current picture to be encoded
@@ -205,7 +202,6 @@ typedef struct TagWelsEncCtx {
   SParaSetOffset    sPSOVector;
   SParaSetOffset*   pPSOVector;
   CMemoryAlign*     pMemAlign;
-
 
   //related to Statistics
   int64_t            uiStartTimestamp;

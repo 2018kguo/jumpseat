@@ -42,7 +42,6 @@
 #include "picture.h"
 #include "svc_enc_macroblock.h"
 
-
 #include "svc_enc_slice_segment.h"
 namespace WelsEnc {
 

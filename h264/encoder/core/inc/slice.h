@@ -47,7 +47,6 @@ namespace WelsEnc {
 
 /*******************************sub struct of slice header****************************/
 
-
 /*
  *  Reference picture list reordering syntax, refer to page 64 in JVT X201wcm
  */
@@ -59,7 +58,6 @@ struct {
   uint16_t      uiReorderingOfPicNumsIdc; //in order to pack 2-uint16_t into 1-(u)int32_t, so modify the type into uint16_t.
 } SReorderingSyntax[MAX_REFERENCE_REORDER_COUNT_NUM];   // MAX_REF_PIC_COUNT
 } SRefPicListReorderSyntax;
-
 
 /* Decoded reference picture marking syntax, refer to Page 66 in JVT X201wcm */
 typedef struct TagRefPicMarking {
@@ -139,7 +137,6 @@ SRefPicMarking  sRefMarking;    // Decoded reference picture marking syntaxs
 SRefPicListReorderSyntax        sRefReordering; // Reference picture list reordering syntaxs
 } SSliceHeader, *PSliceHeader;
 
-
 /* SSlice header in scalable extension syntax, refer to Page 394 in JVT X201wcm */
 typedef struct TagSliceHeaderExt {
 SSliceHeader    sSliceHeader;
@@ -163,7 +160,6 @@ bool            bTcoeffLevelPredFlag;
 uint8_t         uiDisableInterLayerDeblockingFilterIdc;
 
 } SSliceHeaderExt, *PSliceHeaderExt;
-
 
 typedef struct TagSlice {
 // mainly for multiple threads imp.

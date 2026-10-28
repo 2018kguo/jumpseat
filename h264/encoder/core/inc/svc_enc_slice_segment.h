@@ -51,7 +51,6 @@ using namespace WelsCommon;
 
 namespace WelsEnc {
 
-
 // NOTE:
 // if PREFIX_NALs are used in base layer(iDid=0, qid=0), MAX_SLICES_NUM will be half of MAX_NAL_UNITS_IN_LAYER in case ST or MT without PACKING_ONE_SLICE_PER_LAYER
 // in case MT and PACKING_ONE_SLICE_PER_LAYER, MAX_SLICES_NUM should not be exceeding MAX_LAYER_NUM_OF_FRAME
@@ -89,7 +88,6 @@ int32_t                 iMaxSliceNumConstraint; /* maximal number of slices cons
 
 } SSliceCtx;
 
-
 typedef struct TagDynamicSlicingStack {
 int32_t         iStartPos;
 int32_t         iCurrentPos;
@@ -124,7 +122,6 @@ int32_t InitSlicePEncCtx (SDqLayer* pCurDq,
                           SSliceArgument* pSliceArgument,
                           void* pPpsArg);
 
-
 /*!
  * \brief   Uninitialize Wels SSlice context (Single/multiple slices and FMO)
  *
@@ -144,7 +141,6 @@ void UninitSlicePEncCtx (SDqLayer* pCurDq, CMemoryAlign* pMa);
  */
 uint16_t WelsMbToSliceIdc (SDqLayer* pCurDq, const int32_t kiMbXY);
 
-
 /*!
  * \brief   Get successive mb to be processed in slice/slice_group: uiSliceIdc (apply in Single/multiple slices and FMO)
  *
@@ -155,16 +151,12 @@ uint16_t WelsMbToSliceIdc (SDqLayer* pCurDq, const int32_t kiMbXY);
  */
 int32_t WelsGetNextMbOfSlice (SDqLayer* pCurDq, const int32_t kiMbXY);
 
-
-
 /*!
  *  Get slice count for multiple slice segment
  *
  */
 int32_t GetInitialSliceNum (SSliceArgument* pSliceArgument);
 SSlice* GetSliceByIndex(sWelsEncCtx* pCtx, const int32_t kiSliceIdc);
-
-
 
 }
 #endif//WELS_SLICE_SEGMENT_H__

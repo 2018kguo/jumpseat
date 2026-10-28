@@ -106,7 +106,6 @@ uint16_t            sAspectRatioExtHeight;
 
 } SWelsSPS, *PWelsSPS;
 
-
 /* Sequence Parameter Set SVC extension syntax, refer to Page 391 in JVT X201wcm */
 typedef struct TagSpsSvcExt {
 // SCropOffset     sSeqScaledRefLayer;
@@ -136,7 +135,6 @@ SSpsSvcExt      sSpsSvcExt;
 typedef struct TagWelsPPS {
 uint32_t        iSpsId;
 uint32_t        iPpsId;
-
 
 // uint32_t        uiNumRefIdxL0Active;
 // uint32_t        uiNumRefIdxL1Active;

@@ -46,7 +46,6 @@
 #include "svc_enc_macroblock.h"
 #include "md.h"
 
-
 namespace WelsEnc {
 ////////////////////////
 // INTERFACE, called by svc_encode_slice.c
@@ -57,7 +56,6 @@ typedef enum {
 STATIC,
 SCROLLED
 } ESkipModes;
-
 
 bool WelsMdInterJudgeBGDPskipFalse (sWelsEncCtx* pEnc, SWelsMD* pMd, SSlice* pSlice, SMB* pCurMb, SMbCache* pMbCache,
                                     bool* bKeepSkip);

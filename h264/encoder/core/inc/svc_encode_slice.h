@@ -47,7 +47,6 @@
 
 namespace WelsEnc {
 
-
 void UpdateNonZeroCountCache (SMB* pMb, SMbCache* pMbCache);
 
 //for P SSlice (intra part + inter part, MB level)
@@ -64,7 +63,6 @@ void WelsInterMbEncode (sWelsEncCtx* pEncCtx, SSlice* pSlice, SMB* pCurMb); //on
 void WelsIMbChromaEncode (sWelsEncCtx* pEncCtx, SMB* pCurMb, SMbCache* pMbCache);
 //for P SSlice (intra part + inter part, MB level)
 void WelsPMbChromaEncode (sWelsEncCtx* pEncCtx, SSlice* pSlice, SMB* pCurMb);
-
 
 //===================MB-level encode====================//
 //encapsulation func: store base rec, highest Dependency Layer(only one quality) rec, single layer rec
@@ -98,7 +96,6 @@ void FreeSliceBuffer (SSlice*& pSliceList,
 
 void InitSliceHeadWithBase (SSlice* pSlice, SSlice* pBaseSlice);
 
-
 int32_t InitSliceList (SSlice*& pSliceList,
                        SBitStringAux* pBsWrite,
                        const int32_t kiMaxSliceNum,
@@ -106,18 +103,10 @@ int32_t InitSliceList (SSlice*& pSliceList,
                        const bool bIndependenceBsBuffer,
                        CMemoryAlign* pMa);
 
-
 int32_t InitSliceInLayer (sWelsEncCtx* pCtx,
                           SDqLayer* pDqLayer,
                           const int32_t kiDlayerIndex,
                           CMemoryAlign* pMa);
-
-
-
-
-
-
-
 
 //slice encoding process
 int32_t WelsCodePSlice (sWelsEncCtx* pEncCtx, SSlice* pSlice);
@@ -129,7 +118,6 @@ void WelsInitSliceEncodingFuncs (uint32_t uiCpuFlag);
 
 int32_t WelsMdInterMbLoop (sWelsEncCtx* pEncCtx, SSlice* pSlice, void* pMd,
                            const int32_t kiSliceFirstMbXY);// for inter dynamic slice
-
 
 }
 #endif //SVC_ENCODE_SLICE_H__

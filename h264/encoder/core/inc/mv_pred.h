@@ -41,7 +41,6 @@
 #ifndef WELS_MV_PRED_H__
 #define WELS_MV_PRED_H__
 
-
 #include "svc_enc_macroblock.h"
 #include "mb_cache.h"
 
@@ -114,7 +113,6 @@ void UpdateP4x8MotionInfo (SMbCache* pMbCache, SMB* pCurMb, const int32_t kiPart
  */
 void PredMv (const SMVComponentUnit* kpMvComp, int8_t iPartIdx, int8_t iPartW, int32_t iRef, SMVUnitXY* sMvp);
 
-
 /*!
  * \brief   get the motion predictor for SKIP MB
  * \param
@@ -122,14 +120,12 @@ void PredMv (const SMVComponentUnit* kpMvComp, int8_t iPartIdx, int8_t iPartW, i
  */
 void PredSkipMv (SMbCache* pMbCache, SMVUnitXY* sMvp);
 
-
 /*!
  * \brief   get the motion predictor for inter16x8 MB
  * \param
  * \param   output mvp_x and mvp_y
  */
 void PredInter16x8Mv (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef, SMVUnitXY* sMvp);
-
 
 /*!
  * \brief   get the motion predictor for inter8x16 MB
@@ -146,16 +142,12 @@ void PredInter8x16Mv (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef, SMVUnit
  */
 //void update_p16x16_motion2cache(SMbCache* pMbCache, int8_t pRef, SMVUnitXY* pMv);
 
-
-
 /*!
  * \brief   only update pMv cache for current MB, only for P_8x8
  * \param
  * \param
  */
 void UpdateP8x8Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef, SMVUnitXY* pMv);
-
-
 
 }
 #endif//WELS_MV_PRED_H__

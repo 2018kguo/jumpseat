@@ -461,7 +461,6 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
 
 } SWelsSvcCodingParam;
 
-
 typedef struct TagExistingParasetList {
   SWelsSPS            sSps[MAX_SPS_COUNT];
   SSubsetSps          sSubsetSps[MAX_SPS_COUNT];
@@ -471,7 +470,6 @@ typedef struct TagExistingParasetList {
   uint32_t            uiInUseSubsetSpsNum;
   uint32_t            uiInUsePpsNum;
 } SExistingParasetList;
-
 
 static inline int32_t FreeCodingParam (SWelsSvcCodingParam** pParam, CMemoryAlign* pMa) {
   if (pParam == NULL || *pParam == NULL || pMa == NULL)

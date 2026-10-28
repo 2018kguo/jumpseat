@@ -45,7 +45,6 @@
 
 namespace WelsEnc {
 
-
 /*
  *  SVC core encoder external interfaces
  */
@@ -85,7 +84,6 @@ void WelsUninitEncoderExt (sWelsEncCtx** ppCtx);
  * \return  EFrameType (videoFrameTypeIDR/videoFrameTypeI/videoFrameTypeP)
  */
 int32_t WelsEncoderEncodeExt (sWelsEncCtx*, SFrameBSInfo* pFbi, const SSourcePicture* kpSrcPic);
-
 
 /*
  * Force coding IDR as follows

@@ -42,7 +42,6 @@
 #define NUM_SPATIAL_LAYERS_CONSTRAINT
 #define NUM_QUALITY_LAYERS_CONSTRAINT
 
-
 #define STATISTICS_LOG_INTERVAL_MS (5000) // output statistics log every 5s
 
 #define INTRA_4x4_MODE_NUM              8

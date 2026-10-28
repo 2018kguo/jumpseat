@@ -42,7 +42,6 @@
 //          ONLY except with the interface file !!!!!
 ////////////////////////////////////////////////////////////////////////////
 
-
 #define __STDC_FORMAT_MACROS
 #include <stdint.h>
 #include <inttypes.h>
@@ -52,7 +51,6 @@ typedef int64_t intX_t;
 #else
 typedef int32_t intX_t;
 #endif
-
 
 // The 'float' type is portable and usable without any need for any extra typedefs.
 

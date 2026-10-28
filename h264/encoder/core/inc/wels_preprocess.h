@@ -60,7 +60,6 @@ typedef  struct {
   int32_t       iScaledHeight[MAX_DEPENDENCY_LAYER];
 } Scaled_Picture;
 
-
 typedef struct {
   int64_t iMinFrameComplexity;
   int64_t iMinFrameComplexity08;
@@ -139,12 +138,10 @@ class CWelsPreProcess {
                                     const int32_t kiDependencyId, const bool kbCalculateBGD);
   int32_t UpdateBlockIdcForScreen (uint8_t*  pCurBlockStaticPointer, const SPicture* kpRefPic, const SPicture* kpSrcPic);
 
-
   void UpdateSrcList (SPicture* pCurPicture, const int32_t kiCurDid, SPicture** pShortRefList,
                       const uint32_t kuiShortRefCount);
   void UpdateSrcListLosslessScreenRefSelectionWithLtr (SPicture* pCurPicture, const int32_t kiCurDid,
       const int32_t kuiMarkLongTermPicIdx, SPicture** pLongRefList);
-
 
  protected:
   bool GetSceneChangeFlag (ESceneChangeIdc eSceneChangeIdc);
@@ -233,7 +230,6 @@ class CWelsPreProcessScreen : public CWelsPreProcess {
                            SRefInfoParam* pRefSaved);
   void SaveBestRefToVaa (SRefInfoParam& sRefSaved, SRefInfoParam* pVaaBestRef);
 };
-
 
 }
 

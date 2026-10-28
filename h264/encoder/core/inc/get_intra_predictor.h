@@ -62,7 +62,6 @@ void WelsI4x4LumaPredVL_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride
 void WelsI4x4LumaPredVLTop_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 void WelsI4x4LumaPredHU_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 
-
 void WelsIChromaPredV_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 void WelsIChromaPredH_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 void WelsIChromaPredPlane_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
@@ -111,7 +110,6 @@ void WelsI4x4LumaPredVL_mmx (uint8_t* pPred, uint8_t* pRef, const int32_t kiStri
 void WelsI4x4LumaPredHU_mmx (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 #endif//X86_ASM
 
-
 #if defined(HAVE_NEON_AARCH64)
 void WelsI16x16LumaPredDc_AArch64_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 void WelsI16x16LumaPredPlane_AArch64_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
@@ -136,9 +134,6 @@ void WelsIChromaPredPlane_AArch64_neon (uint8_t* pPred, uint8_t* pRef, const int
 void WelsIChromaPredDcTop_AArch64_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 #endif//HAVE_NEON_AARCH64
 
-
-
-
 #if defined(__cplusplus)
 }
 #endif//__cplusplus
@@ -147,5 +142,4 @@ void WelsInitIntraPredFuncs (SWelsFuncPtrList* pFuncList, const uint32_t kuiCpuF
 
 }
 #endif //GET_INTRA_PREDICTOR_H
-
 

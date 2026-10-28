@@ -63,7 +63,6 @@ namespace WelsEnc {
 
 int32_t WelsWriteSpsNal (SWelsSPS* pSps, SBitStringAux* pBitStringAux, int32_t* pSpsIdDelta);
 
-
 /*!
  *************************************************************************************
  * \brief   to write SubSet Sequence Parameter Set
@@ -78,7 +77,6 @@ int32_t WelsWriteSpsNal (SWelsSPS* pSps, SBitStringAux* pBitStringAux, int32_t* 
  *************************************************************************************
  */
 int32_t WelsWriteSubsetSpsSyntax (SSubsetSps* pSubsetSps, SBitStringAux* pBitStringAux , int32_t* pSpsIdDelta);
-
 
 /*!
  *************************************************************************************

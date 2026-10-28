@@ -53,13 +53,6 @@ LTR_DIRECT_MARK = 0,
 LTR_DELAY_MARK = 1
 } LTR_MARKING_PROCESS_MODE;
 
-typedef enum {
-FRAME_NUM_EQUAL    = 0x01,
-FRAME_NUM_BIGGER   = 0x02,
-FRAME_NUM_SMALLER  = 0x04,
-FRAME_NUM_OVER_MAX = 0x08
-} COMPARE_FRAME_NUM;
-
 /*
 *   reset LTR marking , recovery ,feedback state to default
 */
@@ -83,14 +76,12 @@ bool WelsBuildRefList (sWelsEncCtx* pCtx, const int32_t kiPOC, int32_t iBestLtrR
  */
 void WelsUpdateRefSyntax (sWelsEncCtx* pCtx, const int32_t kiPOC, const int32_t kiFrameType);
 
-
 /*
 *   decide whether current frame include long term reference mark and update long term reference mark syntax
 */
 void WelsMarkPic (sWelsEncCtx* pCtx);
 void UpdateBlockStatic (sWelsEncCtx* pCtx);
 void UpdateSrcPicList (sWelsEncCtx* pCtx);
-
 
 }
 #endif//REFERENCE_PICTURE_LIST_MANAGEMENT_SVC_H__

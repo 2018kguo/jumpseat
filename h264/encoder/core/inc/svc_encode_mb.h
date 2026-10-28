@@ -40,7 +40,6 @@
 #if !defined(ENCODE_MB_H)
 #define ENCODE_MB_H
 
-
 #include "typedefs.h"
 #include "wels_common_basis.h"
 #include "slice.h"

@@ -72,8 +72,6 @@ void WelsMdInterMb (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SSlice* pSlice, SMB*
 //both used in BL and EL
 //void wels_md_inter_init ( SWelsMD* pMd, const uint8_t ref_idx, const bool is_highest_dlayer_flag );
 
-
-
 bool WelsMdInterJudgePskip (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SSlice* pSlice, SMB* pCurMb, SMbCache* pMbCache,
                             bool bTrySkip);
 void WelsMdInterUpdatePskip (SDqLayer* pCurDqLayer, SSlice* pSlice, SMB* pCurMb, SMbCache* pMbCache);
@@ -89,7 +87,6 @@ void WelsMdInterSecondaryModesEnc (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SSlic
                                    SMbCache* pMbCache, const bool kbSkip);
 void WelsMdIntraSecondaryModesEnc (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCache* pMbCache);
 //end of: both used in BL and EL
-
 
 }
 #endif//WELS_MACROBLOCK_MODE_DECISION_H__

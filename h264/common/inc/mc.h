@@ -54,11 +54,9 @@ void InitMcFunc (SMcFunc* pMcFunc, uint32_t iCpu);
 
 } // namespace WelsCommon
 
-
 #if defined(__cplusplus)
 extern "C" {
 #endif//__cplusplus
-
 
 #if defined(HAVE_NEON_AARCH64)
 void McCopyWidthEq4_AArch64_neon (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
@@ -80,11 +78,6 @@ void McCopyWidthEq8_mmx (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst,
 
 void McCopyWidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
                            int32_t iHeight);
-
-
-
-
-
 
 //***************************************************************************//
 //                       SSSE3 definition                                    //

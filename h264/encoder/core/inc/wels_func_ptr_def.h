@@ -85,7 +85,6 @@ typedef void (*PDeblockingBSCalc) (SWelsFuncPtrList* pFunc, SMB* pCurMb, uint8_t
                                    int32_t iMbStride, int32_t iLeftFlag, int32_t iTopFlag);
 typedef void (*PDeblockingFilterSlice) (SDqLayer* pCurDq, SWelsFuncPtrList* pFunc, SSlice* pSlice);
 
-
 typedef int32_t (*PIntraFineMdFunc) (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCache* pMbCache);
 typedef void (*PInterFineMdFunc) (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SSlice* slice, SMB* pCurMb, int32_t bestCost);
 typedef bool (*PInterMdFirstIntraModeFunc) (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCache* pMbCache);
@@ -242,8 +241,6 @@ struct TagWelsFuncPointerList {
   PIDctFunc                              pfIDctFourT4;
   PIDctFunc                              pfIDctT4;
   PIDctFunc                              pfIDctI16x16Dc;
-
-
 
   // OPTI: if MT under diff uiSliceMode, need change here
   //PDynamicSlicingStepBackFunc  dynslc_funcpointer_stepback;//svc_encode_slice.c
