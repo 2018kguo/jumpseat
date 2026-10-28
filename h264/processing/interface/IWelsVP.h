@@ -210,18 +210,7 @@ typedef struct {
 } SComplexityAnalysisScreenParam;
 /////////////////////////////////////////////////////////////////////////////////////////////
 
-typedef struct {
-  void*    pCtx;
-  EResult (*Init) (void* pCtx, int iType, void* pCfg);
-  EResult (*Uninit) (void* pCtx, int iType);
-  EResult (*Flush) (void* pCtx, int iType);
-  EResult (*Process) (void* pCtx, int iType, SPixMap* pSrc, SPixMap* dst);
-  EResult (*Get) (void* pCtx, int iType, void* pParam);
-  EResult (*Set) (void* pCtx, int iType, void* pParam);
-  EResult (*SpecialFeature) (void* pCtx, int iType, void* pIn, void* pOut);
-} IWelsVPc;
 
-#if defined(__cplusplus) && !defined(CINTERFACE)  /* C++ style interface */
 
 class IWelsVP {
  public:
@@ -237,37 +226,12 @@ class IWelsVP {
   virtual EResult SpecialFeature (int iType, void* pIn, void* pOut) = 0;
 };
 
-/* Recommend to invoke the interface via the micro for convenient */
-#define IWelsVPFunc_Init(p, a, b)                  (p)->Init(a, b)
-#define IWelsVPFunc_Uninit(p, a)                   (p)->Uninit(a)
-#define IWelsVPFunc_Flush(p, a)                    (p)->Flush(a)
-#define IWelsVPFunc_Process(p, a, b, c)            (p)->Process(a, b, c)
-#define IWelsVPFunc_Get(p, a, b)                   (p)->Get(a, b)
-#define IWelsVPFunc_Set(p, a, b)                   (p)->Set(a, b)
-#define IWelsVPFunc_SpecialFeature(p, a, b, c)     (p)->SpecialFeature(a, b, c)
 
 /* C++ interface version */
 #define WELSVP_INTERFACE_VERION                    (0x8000 + (WELSVP_VERSION & 0x7fff))
 #define WELSVP_EXTERNC_BEGIN                       extern "C" {
 #define WELSVP_EXTERNC_END                         }
 
-#else    /* C style interface */
-
-/* Recommend to invoke the interface via the micro for convenient */
-#define IWelsVPFunc_Init(p, a, b)                  (p)->Init(p->h, a, b)
-#define IWelsVPFunc_Uninit(p, a)                   (p)->Uninit(p->h, a)
-#define IWelsVPFunc_Flush(p, a)                    (p)->Flush(p->h, a)
-#define IWelsVPFunc_Process(p, a, b, c)            (p)->Process(p->h, a, b, c)
-#define IWelsVPFunc_Get(p, a, b)                   (p)->Get(p->h, a, b)
-#define IWelsVPFunc_Set(p, a, b)                   (p)->Set(p->h, a, b)
-#define IWelsVPFunc_SpecialFeature(p, a, b, c)     (p)->SpecialFeature(p->h, a, b, c)
-
-/* C interface version */
-#define WELSVP_INTERFACE_VERION                    (0x0001 + (WELSVP_VERSION & 0x7fff))
-#define WELSVP_EXTERNC_BEGIN
-#define WELSVP_EXTERNC_END
-
-#endif
 
 WELSVP_EXTERNC_BEGIN
 EResult WelsCreateVpInterface (void** ppCtx, int iVersion /*= WELSVP_INTERFACE_VERION*/);

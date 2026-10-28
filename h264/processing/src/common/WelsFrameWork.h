@@ -50,8 +50,6 @@ WELSVP_NAMESPACE_BEGIN
 EResult CreateSpecificVpInterface (IWelsVP** ppCtx);
 EResult DestroySpecificVpInterface (IWelsVP* pCtx);
 
-EResult CreateSpecificVpInterface (IWelsVPc** ppCtx);
-EResult DestroySpecificVpInterface (IWelsVPc* pCtx);
 
 #define MAX_STRATEGY_NUM (METHOD_MASK - 1)
 

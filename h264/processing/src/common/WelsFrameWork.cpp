@@ -40,21 +40,11 @@
 /* interface API implement */
 
 EResult WelsCreateVpInterface (void** ppCtx, int iVersion) {
-  if (iVersion & 0x8000)
-    return WelsVP::CreateSpecificVpInterface ((IWelsVP**)ppCtx);
-  else if (iVersion & 0x7fff)
-    return WelsVP::CreateSpecificVpInterface ((IWelsVPc**)ppCtx);
-  else
-    return RET_INVALIDPARAM;
+  return WelsVP::CreateSpecificVpInterface ((IWelsVP**)ppCtx);
 }
 
 EResult WelsDestroyVpInterface (void* pCtx, int iVersion) {
-  if (iVersion & 0x8000)
-    return WelsVP::DestroySpecificVpInterface ((IWelsVP*)pCtx);
-  else if (iVersion & 0x7fff)
-    return WelsVP::DestroySpecificVpInterface ((IWelsVPc*)pCtx);
-  else
-    return RET_INVALIDPARAM;
+  return WelsVP::DestroySpecificVpInterface ((IWelsVP*)pCtx);
 }
 
 WELSVP_NAMESPACE_BEGIN
