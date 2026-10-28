@@ -1,0 +1,5 @@
+client/dist/
+client/node_modules/
+server/web/agentview.js
+e2e/node_modules/
+e2e/bun.lock*

@@ -1,0 +1,62 @@
+<!doctype html>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>agentview</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #111; color: #eee; font: 14px system-ui, sans-serif; }
+  header { display: flex; gap: 8px; align-items: center; padding: 8px 12px; }
+  header .grow { flex: 1; opacity: 0.7; }
+  button { font: inherit; padding: 6px 12px; border-radius: 6px; border: 1px solid #444; background: #222; color: #eee; cursor: pointer; }
+  button.primary { background: #eee; color: #111; border-color: #eee; }
+  #screen { position: relative; height: calc(100% - 52px); }
+  #frame { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 0 3px #3b82f6; display: none; }
+  .pill { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); padding: 6px 12px; border-radius: 999px; background: rgba(0,0,0,.7); color: #fff; font-size: 12px; display: none; }
+  #handoff { background: #fff; color: #111; border-radius: 8px; font-size: 14px; pointer-events: auto; }
+</style>
+<header>
+  <span class="grow" id="state">Connecting…</span>
+  <button id="done">Done, continue</button>
+  <button id="control">Take over</button>
+</header>
+<div id="screen"><div id="frame"></div><div class="pill" id="caption"></div><div class="pill" id="handoff"></div></div>
+<script type="module">
+  import { canDecodeDesktop, connect } from "./agentview.js";
+  // The demo viewer: ?token=… is the server's --token.
+  const token = new URLSearchParams(location.search).get("token") ?? "";
+  const $ = (id) => document.getElementById(id);
+  const socketUrl = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/stream?token=${encodeURIComponent(token)}`;
+  let controlling = false;
+  let captionTimer;
+  const answer = (reply) =>
+    fetch("/agent/answer", { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ reply }) });
+  if (!canDecodeDesktop()) {
+    $("state").textContent = "This browser can't decode the stream (needs WebCodecs H.264).";
+  } else {
+    const view = connect($("screen"), socketUrl, {
+      connected: () => ($("state").textContent = "Agent in control"),
+      dropped: () => ($("state").textContent = "Disconnected — reload to retry"),
+      unsupported: () => ($("state").textContent = "This browser has no H.264 decoder: use Chrome, Edge, Safari or Firefox."),
+      status: ({ kind, text }) => {
+        $("handoff").style.display = kind === "handoff" ? "block" : "none";
+        $("handoff").textContent = kind === "handoff" ? `Your turn: ${text}` : "";
+        $("control").className = kind === "handoff" && !controlling ? "primary" : "";
+        clearTimeout(captionTimer);
+        if (kind === "acting" || kind === "waiting") {
+          $("caption").textContent = kind === "waiting" ? "Waiting for you" : text;
+          $("caption").style.display = "block";
+        } else {
+          captionTimer = setTimeout(() => ($("caption").style.display = "none"), 2500);
+        }
+      },
+    });
+    const setControlling = (next) => {
+      controlling = next;
+      view.setControlling(next);
+      $("frame").style.display = next ? "block" : "none";
+      $("control").textContent = next ? "Stop controlling" : "Take over";
+      $("state").textContent = next ? "You're in control" : "Agent in control";
+    };
+    $("control").onclick = () => setControlling(!controlling);
+    $("done").onclick = () => { setControlling(false); answer("done"); };
+  }
+</script>

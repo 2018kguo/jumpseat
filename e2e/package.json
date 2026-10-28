@@ -1,0 +1,6 @@
+{
+  "private": true,
+  "type": "module",
+  "scripts": { "test": "node demo.e2e.mjs" },
+  "devDependencies": { "playwright": "1.56.1" }
+}
