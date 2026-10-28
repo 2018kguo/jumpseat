@@ -18,6 +18,8 @@ void *x264_side_open(int width, int height, int fps, int crf, int threads) {
   p.rc.i_vbv_max_bitrate = 100000; p.rc.i_vbv_buffer_size = 100000;
   p.vui.i_colorprim = 6; p.vui.i_transfer = 6; p.vui.i_colmatrix = 6;
   if (threads > 0) p.i_threads = threads;
+  // X264_NO_AVX512=1: what x264's AVX-512 kernels are worth on this CPU.
+  if (getenv("X264_NO_AVX512")) p.cpu &= ~X264_CPU_AVX512;
   if (x264_param_apply_profile(&p, "baseline") < 0) return 0;
   side *s = malloc(sizeof *s);
   s->enc = x264_encoder_open(&p); s->w = width; s->h = height;
