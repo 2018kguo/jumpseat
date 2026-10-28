@@ -54,9 +54,7 @@ SECTION .rodata align=16
 ;align 16
 ;se2_2 dw 2, 2, 2, 2, 2, 2, 2, 2
 align 16
-sse2_1: dw 1, 1, 1, 1, 1, 1, 1, 1
 align 16
-sse2_b1: db 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1
 i_ds_table: db 3, 2, 2, 1, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
 align 16
 sse2_plane_inc_minus: dw -7, -6, -5, -4, -3, -2, -1, 0
@@ -69,9 +67,7 @@ pb_scanacdc_maska:db 0,1,2,3,8,9,14,15,10,11,4,5,6,7,12,13
 align 16
 pb_scanacdc_maskb:db 2,3,8,9,10,11,4,5,0,1,6,7,12,13,14,15
 align 16
-pb_scandc_maska:db 2,3,8,9,14,15,10,11,4,5,6,7,12,13,0,1
 align 16
-pb_scandc_maskb:db 8,9,10,11,4,5,0,1,6,7,12,13,14,15,128,128
 
 align 16
 nozero_count_table:

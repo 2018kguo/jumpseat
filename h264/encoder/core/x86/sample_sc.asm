@@ -43,37 +43,12 @@ mx_x_offset_x4  dw  0x00, 0x04, 0x08, 0x0C
 
 SECTION .text
 
-%macro COUNT_SUM 4
-%define xmm_reg %1
-%define tmp_dreg %2
-%define tmp_qreg %3
-    movd    tmp_dreg,   xmm_reg
-    inc     dword [r5+tmp_qreg*4]
-%if %4 == 1
-    psrldq  xmm_reg,    4
-%endif
-%endmacro
-
 ; requires:  width % 16 == 0 && height > 1
 ;-----------------------------------------------------------------------------------------------------------------------------
 ;void SumOf16x16BlockOfFrame_sse4(uint8_t* pRefPicture, const int32_t kiWidth, const int32_t kiHeight, const int32_t kiRefStride,
 ;                             uint16_t* pFeatureOfBlock, uint32_t pTimesOfFeatureValue[]);
 ;-----------------------------------------------------------------------------------------------------------------------------
 ; try 8 mv via offset
-%macro SUM_LINE_X16_SSE41  5    ; ref, dst0, dst1, tmp0, tmp1
-    movdqu  %2, [%1]
-    movdqu  %3, [%1+8h]
-    movdqa  %4, %2
-    movdqa  %5, %3
-
-    mpsadbw %2, xmm0,   0   ; 000 B
-    mpsadbw %4, xmm0,   5   ; 101 B
-    mpsadbw %3, xmm0,   2   ; 010 B
-    mpsadbw %5, xmm0,   7   ; 111 B
-    paddw   %2, %4
-    paddw   %3, %5
-    paddw   %2, %3  ; accumulate cost
-%endmacro   ; end of SAD_16x16_LINE_SSE41
 
 ;**********************************************************************************************************************************
 ;

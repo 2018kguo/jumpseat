@@ -110,7 +110,6 @@
 //  }
 .endm
 
-
 .macro DC_ZERO_COUNT_IN_DUALWORD arg0, arg1, arg2
 //  {   //  input:  coef, dst_d, working_d (all 0x01)
     cmeq    \arg0\().4h, \arg0\().4h, #0
@@ -159,20 +158,6 @@
     trn2 \arg2\().4s, v4.4s, v6.4s
     trn1 \arg1\().4s, v5.4s, v7.4s
     trn2 \arg3\().4s, v5.4s, v7.4s
-//  }
-.endm
-
-.macro MATRIX_TRANSFORM_EACH_16BITS_4x4_OUT2 arg0, arg1, arg2, arg3
-//  {   //  input & output: src_d[0]~[3];[0 1 2 3],[4 5 6 7],[8 9 10 11],[12 13 14 15]
-    mov  \arg0\().d[1], \arg1\().d[0]  //[0 1 2 3]+[4 5 6 7]
-    mov  \arg2\().d[1], \arg3\().d[0]  //[8 9 10 11]+[12 13 14 15]
-    uzp1 \arg1\().4s, \arg0\().4s, \arg2\().4s   //[0 1 4 5]+[8 9 12 13]
-    uzp2 \arg3\().4s, \arg0\().4s, \arg2\().4s   //[2 3 6 7]+[10 11 14 15]
-
-    uzp1 \arg0\().8h, \arg1\().8h, \arg3\().8h   //[0 4 8 12]+[2 6 10 14]
-    uzp2 \arg2\().8h, \arg1\().8h, \arg3\().8h   //[1 5 9 13]+[3 7 11 15]
-    zip2 \arg1\().2d, \arg0\().2d, \arg2\().2d   //[2 6 10 14]+[3 7 11 15]
-    zip1 \arg0\().2d, \arg0\().2d, \arg2\().2d   //[0 4 8 12]+[1 5 9 13]
 //  }
 .endm
 
@@ -297,7 +282,6 @@ WELS_ASM_AARCH64_FUNC_BEGIN WelsQuant4x4_AArch64_neon
     st1     {v4.8h}, [x0], #16
 WELS_ASM_AARCH64_FUNC_END
 
-
 WELS_ASM_AARCH64_FUNC_BEGIN WelsQuant4x4Dc_AArch64_neon
     ld1     {v0.8h, v1.8h}, [x0]
     dup     v2.8h, w1      // even ff range [0, 768]
@@ -324,7 +308,6 @@ WELS_ASM_AARCH64_FUNC_BEGIN WelsQuantFour4x4_AArch64_neon
     st1     {v4.8h}, [x1], #16
 .endr
 WELS_ASM_AARCH64_FUNC_END
-
 
 WELS_ASM_AARCH64_FUNC_BEGIN WelsQuantFour4x4Max_AArch64_neon
     ld1     {v2.8h}, [x1]
@@ -370,7 +353,6 @@ WELS_ASM_AARCH64_FUNC_BEGIN WelsQuantFour4x4Max_AArch64_neon
     st4 {v20.h,v21.h,v22.h,v23.h}[0], [x3]
 WELS_ASM_AARCH64_FUNC_END
 
-
 WELS_ASM_AARCH64_FUNC_BEGIN WelsDequant4x4_AArch64_neon
     ld1    {v0.8h, v1.8h}, [x0]
     ld1    {v2.8h}, [x1]
@@ -409,7 +391,6 @@ WELS_ASM_AARCH64_FUNC_BEGIN WelsHadamardQuant2x2SkipKernel_AArch64_neon
     orr   w0, w0, w1
 WELS_ASM_AARCH64_FUNC_END
 
-
 WELS_ASM_AARCH64_FUNC_BEGIN WelsHadamardQuant2x2_AArch64_neon
 
     dup   v1.8h, w1 //ff
@@ -426,7 +407,6 @@ WELS_ASM_AARCH64_FUNC_BEGIN WelsHadamardQuant2x2_AArch64_neon
     st1   {v3.h}[2], [x2], x1      //rs[32]=0
     ld1   {v0.h}[3], [x0], x1       //rs[48]
     st1   {v3.h}[3], [x2], x1      //rs[48]=0
-
 
     HDM_QUANT_2x2_TOTAL_16BITS  v0, v4, v5      // output v4
 
@@ -447,8 +427,6 @@ WELS_ASM_AARCH64_FUNC_BEGIN WelsHadamardQuant2x2_AArch64_neon
     mov     x1, #4
     subs    x0, x1, x0
 WELS_ASM_AARCH64_FUNC_END
-
-
 
 WELS_ASM_AARCH64_FUNC_BEGIN WelsDequantIHadamard4x4_AArch64_neon
     ld1    {v0.8h, v1.8h}, [x0]

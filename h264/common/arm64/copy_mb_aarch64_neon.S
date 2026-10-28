@@ -33,24 +33,6 @@
 #ifdef HAVE_NEON_AARCH64
 #include "arm_arch64_common_macro.S"
 
-.macro LOAD_ALIGNED_DATA_WITH_STRIDE arg0, arg1, arg2, arg3, arg4, arg5
-//  {   //  input: $0~$3, src*, src_stride
-    ld1 {\arg0\().d}[0], [\arg4], \arg5
-    ld1 {\arg1\().d}[0], [\arg4], \arg5
-    ld1 {\arg2\().d}[0], [\arg4], \arg5
-    ld1 {\arg3\().d}[0], [\arg4], \arg5
-//  }
-.endm
-
-.macro STORE_ALIGNED_DATA_WITH_STRIDE arg0, arg1, arg2, arg3, arg4, arg5
-//  {   //  input: $0~$3, dst*, dst_stride
-    st1 {\arg0\().d}[0], [\arg4], \arg5
-    st1 {\arg1\().d}[0], [\arg4], \arg5
-    st1 {\arg2\().d}[0], [\arg4], \arg5
-    st1 {\arg3\().d}[0], [\arg4], \arg5
-//  }
-.endm
-
 .macro LOAD_UNALIGNED_DATA_WITH_STRIDE arg0, arg1, arg2, arg3, arg4, arg5
 //  {   //  input: $0~$3, src*, src_stride
     ld1 {\arg0\().8b}, [\arg4], \arg5
@@ -119,7 +101,6 @@ WELS_ASM_AARCH64_FUNC_BEGIN WelsCopy8x8_AArch64_neon
 
 WELS_ASM_AARCH64_FUNC_END
 
-
 WELS_ASM_AARCH64_FUNC_BEGIN WelsCopy16x16_AArch64_neon
     SIGN_EXTENSION x1,w1
     SIGN_EXTENSION x3,w3
@@ -140,7 +121,6 @@ WELS_ASM_AARCH64_FUNC_BEGIN WelsCopy16x16_AArch64_neon
     STORE16_ALIGNED_DATA_WITH_STRIDE  v16, v17, v18, v19, x0, x1
 
 WELS_ASM_AARCH64_FUNC_END
-
 
 WELS_ASM_AARCH64_FUNC_BEGIN WelsCopy16x16NotAligned_AArch64_neon
     SIGN_EXTENSION x1,w1
@@ -163,7 +143,6 @@ WELS_ASM_AARCH64_FUNC_BEGIN WelsCopy16x16NotAligned_AArch64_neon
 
 WELS_ASM_AARCH64_FUNC_END
 
-
 WELS_ASM_AARCH64_FUNC_BEGIN WelsCopy16x8NotAligned_AArch64_neon
     SIGN_EXTENSION x1,w1
     SIGN_EXTENSION x3,w3
@@ -176,7 +155,6 @@ WELS_ASM_AARCH64_FUNC_BEGIN WelsCopy16x8NotAligned_AArch64_neon
     STORE16_UNALIGNED_DATA_WITH_STRIDE    v16, v17, v18, v19, x0, x1
 
 WELS_ASM_AARCH64_FUNC_END
-
 
 WELS_ASM_AARCH64_FUNC_BEGIN WelsCopy8x16_AArch64_neon
     SIGN_EXTENSION x1,w1

@@ -101,55 +101,6 @@ SECTION .text
     SSE2_SumSub %1, %3, %5
 %endmacro
 
-%macro SSE2_SumAbs4 7
-    WELS_AbsW %1, %3
-    WELS_AbsW %2, %3
-    WELS_AbsW %4, %6
-    WELS_AbsW %5, %6
-    paddusw       %1, %2
-    paddusw       %4, %5
-    paddusw       %7, %1
-    paddusw       %7, %4
-%endmacro
-
-%macro SSE2_SumWHorizon 3
-    movhlps     %2, %1          ; x2 = xx xx xx xx d7 d6 d5 d4
-    paddw       %1, %2          ; x1 = xx xx xx xx d37 d26 d15 d04
-    punpcklwd   %1, %3          ; x1 =  d37  d26 d15 d04
-    movhlps     %2, %1          ; x2 = xxxx xxxx d37 d26
-    paddd       %1, %2          ; x1 = xxxx xxxx d1357 d0246
-    pshuflw     %2, %1, 0x4e    ; x2 = xxxx xxxx d0246 d1357
-    paddd       %1, %2          ; x1 = xxxx xxxx xxxx  d01234567
-%endmacro
-
-%macro SSE2_GetSatd8x8 0
-    SSE2_LoadDiff8P    xmm0,xmm4,xmm7,[r0],[r2]
-    SSE2_LoadDiff8P    xmm1,xmm5,xmm7,[r0+r1],[r2+r3]
-    lea                 r0, [r0+2*r1]
-    lea                 r2, [r2+2*r3]
-    SSE2_LoadDiff8P    xmm2,xmm4,xmm7,[r0],[r2]
-    SSE2_LoadDiff8P    xmm3,xmm5,xmm7,[r0+r1],[r2+r3]
-
-    SSE2_HDMTwo4x4       xmm0,xmm1,xmm2,xmm3,xmm4
-    SSE2_TransTwo4x4W     xmm3,xmm1,xmm0,xmm2,xmm4
-    SSE2_HDMTwo4x4       xmm3,xmm1,xmm2,xmm4,xmm5
-    SSE2_SumAbs4         xmm4,xmm1,xmm0,xmm2,xmm3,xmm5,xmm6
-
-    lea                 r0,    [r0+2*r1]
-    lea                 r2,    [r2+2*r3]
-    SSE2_LoadDiff8P    xmm0,xmm4,xmm7,[r0],[r2]
-    SSE2_LoadDiff8P    xmm1,xmm5,xmm7,[r0+r1],[r2+r3]
-    lea                 r0, [r0+2*r1]
-    lea                 r2, [r2+2*r3]
-    SSE2_LoadDiff8P    xmm2,xmm4,xmm7,[r0],[r2]
-    SSE2_LoadDiff8P    xmm3,xmm5,xmm7,[r0+r1],[r2+r3]
-
-    SSE2_HDMTwo4x4       xmm0,xmm1,xmm2,xmm3,xmm4
-    SSE2_TransTwo4x4W     xmm3,xmm1,xmm0,xmm2,xmm4
-    SSE2_HDMTwo4x4       xmm3,xmm1,xmm2,xmm4,xmm5
-    SSE2_SumAbs4         xmm4,xmm1,xmm0,xmm2,xmm3,xmm5,xmm6
-%endmacro
-
 ;***********************************************************************
 ;
 ;Pixel_satd_wxh_sse2 END
@@ -976,55 +927,6 @@ return_sad_intra_16x16_x3:
 ;***********************************************************************
 
 ;SSE4.1
-%macro SSE41_GetSatd8x4 0
-    movq             xmm0, [r0]
-    punpcklqdq       xmm0, xmm0
-    pmaddubsw        xmm0, xmm7
-    movq             xmm1, [r0+r1]
-    punpcklqdq       xmm1, xmm1
-    pmaddubsw        xmm1, xmm7
-    movq             xmm2, [r2]
-    punpcklqdq       xmm2, xmm2
-    pmaddubsw        xmm2, xmm7
-    movq             xmm3, [r2+r3]
-    punpcklqdq       xmm3, xmm3
-    pmaddubsw        xmm3, xmm7
-    psubsw           xmm0, xmm2
-    psubsw           xmm1, xmm3
-    movq             xmm2, [r0+2*r1]
-    punpcklqdq       xmm2, xmm2
-    pmaddubsw        xmm2, xmm7
-    movq             xmm3, [r0+r4]
-    punpcklqdq       xmm3, xmm3
-    pmaddubsw        xmm3, xmm7
-    movq             xmm4, [r2+2*r3]
-    punpcklqdq       xmm4, xmm4
-    pmaddubsw        xmm4, xmm7
-    movq             xmm5, [r2+r5]
-    punpcklqdq       xmm5, xmm5
-    pmaddubsw        xmm5, xmm7
-    psubsw           xmm2, xmm4
-    psubsw           xmm3, xmm5
-    SSE2_HDMTwo4x4   xmm0, xmm1, xmm2, xmm3, xmm4
-    pabsw            xmm0, xmm0
-    pabsw            xmm2, xmm2
-    pabsw            xmm1, xmm1
-    pabsw            xmm3, xmm3
-    movdqa           xmm4, xmm3
-    pblendw          xmm3, xmm1, 0xAA
-    pslld            xmm1, 16
-    psrld            xmm4, 16
-    por              xmm1, xmm4
-    pmaxuw           xmm1, xmm3
-    paddw            xmm6, xmm1
-    movdqa           xmm4, xmm0
-    pblendw          xmm0, xmm2, 0xAA
-    pslld            xmm2, 16
-    psrld            xmm4, 16
-    por              xmm2, xmm4
-    pmaxuw           xmm0, xmm2
-    paddw            xmm6, xmm0
-%endmacro
 
 %macro SSSE3_SumWHorizon 4 ;eax, srcSSE, tempSSE, tempSSE
     MMX_DW_1_2REG    %3, %4

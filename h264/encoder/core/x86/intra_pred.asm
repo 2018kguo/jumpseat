@@ -66,7 +66,6 @@ mmx_01bytes:        times 16    db 1
 align 16
 mmx_0x02: dw 0x02, 0x00, 0x00, 0x00
 
-
 ;***********************************************************************
 ; macros
 ;***********************************************************************
@@ -80,33 +79,6 @@ mmx_0x02: dw 0x02, 0x00, 0x00, 0x00
 
 ;xmm0, xmm1, xmm2, eax, ecx
 ;lower 64 bits of xmm0 save the result
-%macro SSE2_PRED_H_4X4_TWO_LINE 5
-    movd        %1, [%4-1]
-    movdqa      %3, %1
-    punpcklbw   %1, %3
-    movdqa      %3, %1
-    punpcklbw   %1, %3
-
-    ;add            %4, %5
-    movd        %2, [%4+%5-1]
-    movdqa      %3, %2
-    punpcklbw   %2, %3
-    movdqa      %3, %2
-    punpcklbw   %2, %3
-    punpckldq   %1, %2
-%endmacro
-
-%macro SUMW_HORIZON1 2
-    movdqa      %2, %1
-    psrldq      %2, 8
-    paddusw     %1, %2
-    movdqa      %2, %1
-    psrldq      %2, 4
-    paddusw     %1, %2
-    movdqa      %2, %1
-    psrldq      %2, 2
-    paddusw     %1, %2
-%endmacro
 
 %macro LOAD_COLUMN 6
     movd    %1, [%5]
@@ -138,21 +110,6 @@ mmx_0x02: dw 0x02, 0x00, 0x00, 0x00
     paddd       %1, %2          ; x1 = xxxx xxxx d1357 d0246
     pshuflw     %2, %1, 0x4e    ; x2 = xxxx xxxx d0246 d1357
     paddd       %1, %2          ; x1 = xxxx xxxx xxxx  d01234567
-%endmacro
-
-
-%macro COPY_16_TIMES 2
-    movdqa      %2, [%1-16]
-    psrldq      %2, 15
-    pmuludq     %2, [pic(mmx_01bytes)]
-    pshufd      %2, %2, 0
-%endmacro
-
-%macro COPY_16_TIMESS 3
-    movdqa      %2, [%1+%3-16]
-    psrldq      %2, 15
-    pmuludq     %2, [pic(mmx_01bytes)]
-    pshufd      %2, %2, 0
 %endmacro
 
 %macro LOAD_COLUMN_C 6
@@ -752,8 +709,6 @@ WELS_EXTERN WelsI4x4LumaPredHU_mmx
     WELSEMMS
     ret
 
-
-
 ;***********************************************************************
 ;   lt|t0|t1|t2|t3|
 ;   l0|
@@ -905,7 +860,6 @@ WELS_EXTERN WelsI4x4LumaPredDDL_mmx
     DEINIT_X86_32_PIC
     WELSEMMS
     ret
-
 
 ;***********************************************************************
 ;   lt|t0|t1|t2|t3|t4|t5|t6|t7
@@ -1060,8 +1014,6 @@ WELS_EXTERN WelsIChromaPredDc_sse2
     pop r3
     WELSEMMS
     ret
-
-
 
 ;***********************************************************************
 ;

@@ -47,33 +47,6 @@ SECTION .text
 ;NEW_QUANT
 ;************************************************
 
-%macro SSE2_Quant8  5
-    MOVDQ   %1, %5
-    pxor    %2, %2
-    pcmpgtw %2, %1
-    pxor    %1, %2
-    psubw   %1, %2
-    paddusw %1, %3
-    pmulhuw %1, %4
-    pxor    %1, %2
-    psubw   %1, %2
-    MOVDQ   %5, %1
-%endmacro
-
-%macro SSE2_QuantMax8  6
-    MOVDQ   %1, %5
-    pxor    %2, %2
-    pcmpgtw %2, %1
-    pxor    %1, %2
-    psubw   %1, %2
-    paddusw %1, %3
-    pmulhuw %1, %4
-    pmaxsw  %6, %1
-    pxor    %1, %2
-    psubw   %1, %2
-    MOVDQ   %5, %1
-%endmacro
-
 %define pDct                esp + 4
 %define ff                  esp + 8
 %define mf                  esp + 12

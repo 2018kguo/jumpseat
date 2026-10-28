@@ -55,11 +55,9 @@
     %define WELSEMMS
 %endif
 
-
 ;***********************************************************************
 ; Macros
 ;***********************************************************************
-
 
 DEFAULT REL
 
@@ -129,11 +127,6 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-
 %define  retrq          rax
 %define  retrd          eax
 
-
-%macro LOAD_PARA 2
-    mov %1, %2
-%endmacro
-
 %macro LOAD_1_PARA 0
 %endmacro
 
@@ -155,8 +148,6 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-
 %macro LOAD_7_PARA 0
         mov r6, [rsp + push_num*8 + 8]
 %endmacro
-
-
 
 %macro LOAD_4_PARA_POP 0
 %endmacro
@@ -184,10 +175,6 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-
         movsx %1, %2
 %endmacro
 
-%macro ZERO_EXTENSION 1
-        mov dword %1, %1
-%endmacro
-
 %macro WELS_EXTERN 1
     ALIGN 16, nop
         %ifdef WELS_PRIVATE_EXTERN
@@ -211,12 +198,6 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-
 %endmacro
 
 ; pOut mm1, mm4, mm5, mm3
-%macro MMX_Trans4x4W 5
-    MMX_XSwap wd, %1, %2, %5
-    MMX_XSwap wd, %3, %4, %2
-    MMX_XSwap dq, %1, %3, %4
-    MMX_XSwap dq, %5, %2, %3
-%endmacro
 
 ;for TRANSPOSE
 %macro SSE2_XSawp 4
@@ -245,61 +226,15 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-
 
 ;in:  m1, m2, m3, m4, m5, m6, m7, m8
 ;pOut: m5, m3, m4, m8, m6, m2, m7, m1
-%macro SSE2_TransTwo8x8B 9
-    movdqa  %9,     %8
-    SSE2_XSawp bw,  %1, %2, %8
-    SSE2_XSawp bw,  %3, %4, %2
-    SSE2_XSawp bw,  %5, %6, %4
-    movdqa  %6, %9
-    movdqa  %9, %4
-    SSE2_XSawp bw,  %7, %6, %4
-
-    SSE2_XSawp wd,  %1, %3, %6
-    SSE2_XSawp wd,  %8, %2, %3
-    SSE2_XSawp wd,  %5, %7, %2
-    movdqa  %7, %9
-    movdqa  %9, %3
-    SSE2_XSawp wd,  %7, %4, %3
-
-    SSE2_XSawp dq,  %1, %5, %4
-    SSE2_XSawp dq,  %6, %2, %5
-    SSE2_XSawp dq,  %8, %7, %2
-    movdqa  %7, %9
-    movdqa  %9, %5
-    SSE2_XSawp dq,  %7, %3, %5
-
-    SSE2_XSawp qdq,  %1, %8, %3
-    SSE2_XSawp qdq,  %4, %2, %8
-    SSE2_XSawp qdq,  %6, %7, %2
-    movdqa  %7, %9
-    movdqa  %9, %1
-    SSE2_XSawp qdq,  %7, %5, %1
-    movdqa  %5, %9
-%endmacro
 
 ;xmm0, xmm6, xmm7, [eax], [ecx]
 ;xmm7 = 0, eax = pix1, ecx = pix2, xmm0 save the result
-%macro SSE2_LoadDiff8P 5
-    movq         %1, %4
-    punpcklbw    %1, %3
-    movq         %2, %5
-    punpcklbw    %2, %3
-    psubw        %1, %2
-%endmacro
 
 ; m2 = m1 + m2, m1 = m1 - m2
 %macro SSE2_SumSub 3
     movdqa  %3, %2
     paddw   %2, %1
     psubw   %1, %3
-%endmacro
-
-
-%macro butterfly_1to16_sse      3       ; xmm? for dst, xmm? for tmp, one byte for pSrc [generic register name: a/b/c/d]
-    mov %3h, %3l
-    movd %1, e%3x           ; i.e, 1% = eax (=b0)
-    pshuflw %2, %1, 00h     ; ..., b0 b0 b0 b0 b0 b0 b0 b0
-    pshufd %1, %2, 00h      ; b0 b0 b0 b0, b0 b0 b0 b0, b0 b0 b0 b0, b0 b0 b0 b0
 %endmacro
 
 ;copy a dw into a xmm for 8 times
@@ -317,8 +252,6 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-
     packuswb        %1,     %1
 %endmacro
 
-
-
 ;***********************************************************************
 ;preprocessor constants
 ;***********************************************************************
@@ -332,10 +265,6 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-
 
 ;dw 1, 1, 1, 1, 1, 1, 1, 1 for xmm
 ;dw 1, 1, 1, 1 for mm
-%macro WELS_DW1 1
-    pcmpeqw %1,%1
-    psrlw %1,15
-%endmacro
 
 ;all 0 for xmm and mm
 %macro WELS_Zero 1
@@ -350,28 +279,16 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-
 %endmacro
 
 ;dB 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
-%macro WELS_DB1 1
-    pcmpeqw %1,%1
-    psrlw %1,15
-    packuswb %1,%1
-%endmacro
 
 %macro WELS_DW1_VEX 1
     vpcmpeqw %1, %1, %1
     vpsrlw   %1, %1, 15
 %endmacro
 
-%macro WELS_DW32_VEX 1
-    vpcmpeqw %1, %1, %1
-    vpsrlw   %1, %1, 15
-    vpsllw   %1, %1,  5
-%endmacro
-
 %macro WELS_DW32767_VEX 1
     vpcmpeqw %1, %1, %1
     vpsrlw   %1, %1,  1
 %endmacro
-
 
 ;***********************************************************************
 ; Utility macros for X86_32 PIC support
@@ -403,5 +320,3 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-
 
 ; Equivalent as above, but without undefining. Useful for functions with
 ; multiple epilogues.
-%macro DEINIT_X86_32_PIC_KEEPDEF 0
-%endmacro

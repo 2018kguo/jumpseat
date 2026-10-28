@@ -39,12 +39,6 @@
 
 %include "asm_inc.asm"
 
-%macro LOAD_3_PARA_TO_5_PARA_IDCT 0
-    mov r4, r2
-    mov r2, r0
-    mov r3, r1
-%endmacro
-
     %define prefixed(a) a
 
 SECTION .rodata align=32
@@ -106,125 +100,9 @@ SECTION .text
 ; MMX functions
 ;***********************************************************************
 
-%macro MMX_LoadDiff4P 5
-    movd        %1, [%3]
-    movd        %2, [%4]
-    punpcklbw   %1, %5
-    punpcklbw   %2, %5
-    psubw       %1, %2
-%endmacro
-
-%macro MMX_LoadDiff4x4P 10 ;d0, d1, d2, d3, pix1address, pix1stride, pix2address, pix2stride, tmp(mm), 0(mm)
-    MMX_LoadDiff4P %1, %9, %5,    %7,    %10
-    MMX_LoadDiff4P %2, %9, %5+%6, %7+%8, %10
-    lea  %5, [%5+2*%6]
-    lea  %7, [%7+2*%8]
-    MMX_LoadDiff4P %3, %9, %5,    %7,    %10
-    MMX_LoadDiff4P %4, %9, %5+%6, %7+%8, %10
-%endmacro
-
-%macro MMX_SumSubMul2 3
-    movq    %3, %1
-    psllw   %1, $01
-    paddw   %1, %2
-    psllw   %2, $01
-    psubw   %3, %2
-%endmacro
-
-%macro MMX_SumSubDiv2 3
-    movq    %3, %2
-    psraw   %3, $01
-    paddw   %3, %1
-    psraw   %1, $01
-    psubw   %1, %2
-%endmacro
-
-%macro MMX_SumSub 3
-    movq    %3, %2
-    psubw   %2, %1
-    paddw   %1, %3
-%endmacro
-
-%macro MMX_DCT 6
-    MMX_SumSub      %4, %1, %6
-    MMX_SumSub      %3, %2, %6
-    MMX_SumSub      %3, %4, %6
-    MMX_SumSubMul2  %1, %2, %5
-%endmacro
-
-%macro MMX_IDCT 6
-    MMX_SumSub      %4, %5, %6
-    MMX_SumSubDiv2  %3, %2, %1
-    MMX_SumSub      %1, %4, %6
-    MMX_SumSub      %3, %5, %6
-%endmacro
-
-%macro MMX_StoreDiff4P 6
-    movd       %2, %6
-    punpcklbw  %2, %4
-    paddw      %1, %3
-    psraw      %1, $06
-    paddsw     %1, %2
-    packuswb   %1, %2
-    movd       %5, %1
-%endmacro
-
 ;***********************************************************************
 ; SSE2 functions
 ;***********************************************************************
-
-%macro SSE2_Store4x8p 6
-    movlps   [%1+0x00], %2
-    movhps   [%1+0x20], %2
-    movlps   [%1+0x08], %3
-    movhps   [%1+0x28], %3
-    movlps   [%1+0x10], %4
-    movhps   [%1+0x30], %4
-    movlps   [%1+0x18], %5
-    movhps   [%1+0x38], %5
-%endmacro
-
-%macro SSE2_Load4x8p 6
-    MOVDQ    %2,    [%1+0x00]
-    MOVDQ    %4,    [%1+0x10]
-    MOVDQ    %6,    [%1+0x20]
-    MOVDQ    %3,    [%1+0x30]
-    SSE2_XSawp qdq, %4, %3, %5
-    SSE2_XSawp qdq, %2, %6, %3
-%endmacro
-
-%macro SSE2_SumSubMul2 3
-    movdqa  %3, %1
-    psllw   %1, 1
-    paddw   %1, %2
-    psllw   %2, 1
-    psubw   %3, %2
-%endmacro
-
-%macro SSE2_SumSubDiv2 4
-    movdqa  %4, %1
-    movdqa  %3, %2
-    psraw   %2, $01
-    psraw   %4, $01
-    paddw   %1, %2
-    psubw   %4, %3
-%endmacro
-
-%macro SSE2_StoreDiff16p 9
-    paddw       %1, %4
-    psraw       %1, $06
-    movq        %3, %7
-    punpcklbw   %3, %5
-    paddsw      %1, %3
-    paddw       %2, %4
-    psraw       %2, $06
-    movq        %3, %9
-    punpcklbw   %3, %5
-    paddsw      %2, %3
-    packuswb    %1, %2
-    movlps      %6, %1
-    movhps      %8, %1
-%endmacro
 
 %macro SSE2_StoreDiff8p 5
     movq        %2, %5
@@ -234,41 +112,9 @@ SECTION .text
     movq        %4, %2
 %endmacro
 
-%macro SSE2_Load2x4P 2
-    MOVDQ       %1, [%2]
-%endmacro
-
-%macro SSE2_Store2x4P 2
-    MOVDQ       [%1], %2
-%endmacro
-
 ; out=%1 pPixel1Line1=%2 pPixel1Line2=%3 pPixel2Line1=%4 pPixel2Line2=%5 zero=%6 clobber=%7,%8
-%macro SSE2_LoadDiff2x4P 8
-    movd        %1, [%2]
-    movd        %7, [%3]
-    punpckldq   %1, %7
-    punpcklbw   %1, %6
-    movd        %7, [%4]
-    movd        %8, [%5]
-    punpckldq   %7, %8
-    punpcklbw   %7, %6
-    psubw       %1, %7
-%endmacro
 
 ; pRec1=%1 pRec2=%2 data=%3 pPred1=%4 pPred2=%5 dw32=%6 zero=%7 clobber=%8,%9
-%macro SSE2_StoreDiff2x4P 9
-    paddw       %3, %6
-    psraw       %3, 6
-    movd        %8, [%4]
-    movd        %9, [%5]
-    punpckldq   %8, %9
-    punpcklbw   %8, %7
-    paddsw      %3, %8
-    packuswb    %3, %3
-    movd        [%1], %3
-    psrlq       %3, 32
-    movd        [%2], %3
-%endmacro
 
 %macro SSE2_Load8DC 6
     movdqa      %1,     %6      ; %1 = dc0 dc1
@@ -294,32 +140,8 @@ SECTION .text
     punpckldq   %1,     %1      ; %1 = dc0 dc0 dc0 dc0 dc1 dc1 dc1 dc1
 %endmacro
 
-%macro SSE2_DCT 6
-    SSE2_SumSub     %6, %3, %5
-    SSE2_SumSub     %1, %2, %5
-    SSE2_SumSub     %3, %2, %5
-    SSE2_SumSubMul2     %6, %1, %4
-%endmacro
-
-%macro SSE2_IDCT 7
-    SSE2_SumSub       %7, %2, %6
-    SSE2_SumSubDiv2     %1, %3, %5, %4
-    SSE2_SumSub      %2, %1, %5
-    SSE2_SumSub      %7, %4, %5
-%endmacro
-
 ; Do 2 horizontal 4-pt DCTs in parallel packed as 8 words in an xmm register.
 ; out=%1 in=%1 clobber=%2
-%macro SSE2_DCT_HORIZONTAL 2
-    pshuflw       %2, %1, 1bh                    ; [x[3],x[2],x[1],x[0]] low qw
-    pmullw        %1, [pic(wels_p1m1p1m1w_128)]  ; [x[0],-x[1],x[2],-x[3], ...]
-    pshufhw       %2, %2, 1bh                    ; [x[3],x[2],x[1],x[0]] high qw
-    paddw         %1, %2                         ; s = [x[0]+x[3],-x[1]+x[2],x[2]+x[1],-x[3]+x[0], ...]
-    pshufd        %2, %1, 0b1h                   ; [s[2],s[3],s[0],s[1], ...]
-    pmullw        %1, [pic(wels_p1m1m1p1w_128)]  ; [s[0],-s[1],-s[2],s[3], ...]
-    pmullw        %2, [pic(wels_p1p2p1p2w_128)]  ; [s[2],2*s[3],s[0],2*s[1], ...]]
-    paddw         %1, %2                         ; y = [s[0]+s[2],-s[1]+2*s[3],-s[2]+s[0],s[3]+2*s[1], ...]
-%endmacro
 
 ; Do 2 horizontal 4-pt IDCTs in parallel packed as 8 words in an xmm register.
 ;
@@ -328,56 +150,14 @@ SECTION .text
 ; elements.
 ;
 ; out=%1 in=%1 wels_p1m1m1p1w_128=%2 clobber=%3,%4
-%macro SSE2_IDCT_HORIZONTAL 4
-    movdqa        %3, [pic(wels_p0m8000p0m8000w_128)]
-    pmulhw        %3, %1                    ; x[0:7] * [0,-8000h,0,-8000h, ...] >> 16
-    pshufd        %4, %1, 0b1h              ; [x[2],x[3],x[0],x[1], ...]
-    pmullw        %4, %2                    ; [x[2],-x[3],-x[0],x[1], ...]
-    paddw         %1, %3                    ; [x[0]+0,x[1]+(-x[1]>>1),x[2]+0,x[3]+(-x[3]>>1), ...]
-    paddw         %1, %4                    ; s = [x[0]+x[2],(x[1]>>1)-x[3],x[2]-x[0],(x[3]>>1)+x[1], ...]
-    pshuflw       %3, %1, 1bh               ; [s[3],s[2],s[1],s[0]] low qw
-    pmullw        %1, [pic(wels_p1p1m1m1w_128)]  ; [s[0],s[1],-s[2],-s[3], ...]
-    pshufhw       %3, %3, 1bh               ; [s[3],s[2],s[1],s[0]] high qw
-    pmullw        %3, %2                    ; [s[3],-s[2],-s[1],s[0], ...]
-    paddw         %1, %3                    ; y = [s[0]+s[3],s[1]-s[2],-s[2]-s[1],-s[3]+s[0], ...]
-%endmacro
 
 ; Do 4 vertical 4-pt DCTs in parallel packed as 16 words in 2 xmm registers.
 ; Uses scrambled input to save a negation.
 ; [y0,y1]=%1 [y2,y3]=%2 [x1,x0]=%1 [x2,x3]=%2 clobber=%3
-%macro SSE2_DCT_4x4P 3
-    movdqa        %3, %1
-    psubw         %1, %2                    ; [x1-x2,x0-x3]
-    paddw         %2, %3                    ; [x1+x2,x0+x3]
-    movdqa        %3, %2
-    punpckhqdq    %2, %1                    ; s03 = [x0+x3,x0-x3]
-    punpcklqdq    %3, %1                    ; s12 = [x1+x2,x1-x2]
-    movdqa        %1, %2
-    pmullw        %1, [pic(wels_4xp1w_4xp2w)] ; [s03[0],2*s03[1]]
-    paddw         %1, %3                      ; [y0,y1] = [s03[0]+s12[0],2*s03[1]+s12[1]]
-    pmullw        %3, [pic(wels_4xp1w_4xp2w)] ; [s12[0],2*s12[1]]
-    psubw         %2, %3                    ; [y2,y3] = [s03[0]-s12[0],s03[1]-2*s12[1]]
-%endmacro
 
 ; Do 4 vertical 4-pt IDCTs in parallel packed as 16 words in 2 xmm registers.
 ; Output is scrambled to save a negation.
 ; [y1,y0]=%1 [y2,y3]=%2 [x0,x1]=%1 [x2,x3]=%2 clobber=%3,%4
-%macro SSE2_IDCT_4x4P 4
-    movdqa        %4, [pic(wels_4xp0w_4xm8000w)]
-    movdqa        %3, %1
-    pmulhw        %3, %4                    ; x[0:1] * [0,-8000h] >> 16
-    pmulhw        %4, %2                    ; x[2:3] * [0,-8000h] >> 16
-    paddw         %3, %1                    ; [x[0],x[1]>>1]
-    paddw         %4, %2                    ; [x[2],x[3]>>1]
-    psubw         %3, %2                    ; [x[0]-x[2],(x[1]>>1)-x[3]]
-    paddw         %1, %4                    ; [x[2]+x[0],(x[3]>>1)+x[1]]
-    movdqa        %2, %3
-    punpckhqdq    %3, %1                    ; s13 = [(x[1]>>1)-x[3],(x[3]>>1)+x[1]]
-    punpcklqdq    %2, %1                    ; s02 = [x[0]-x[2], x[2]+x[0]]
-    movdqa        %1, %2
-    paddw         %1, %3                    ; [y1,y0] = [s02[0]+s13[0],s02[1]+s13[1]]
-    psubw         %2, %3                    ; [y2,y3] = [s02[0]-s13[0],s02[1]-s13[1]]
-%endmacro
 
 %macro SSE2_StoreDiff4x8p 8
     SSE2_StoreDiff8p    %1, %3, %4, [%5],           [%6]
