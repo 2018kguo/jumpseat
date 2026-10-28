@@ -3,7 +3,7 @@
 package main
 
 /*
-#cgo LDFLAGS: -lopenh264 -lyuv
+#cgo LDFLAGS: -lopenh264 -lyuv -lstdc++ -lm
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>

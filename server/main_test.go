@@ -15,7 +15,7 @@ func TestRoutesNeedTheToken(t *testing.T) {
 	handler := routes(":0", "secret")
 	for _, c := range []struct {
 		method, path, auth string
-		want              int
+		want               int
 	}{
 		{"GET", "/stream", "", http.StatusUnauthorized},
 		{"GET", "/agent/lease", "", http.StatusUnauthorized},

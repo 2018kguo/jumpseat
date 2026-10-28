@@ -47,7 +47,15 @@ func main() {
 	token := flag.String("token", os.Getenv("JUMPSEAT_TOKEN"), "bearer token for every route on a TCP listener (or JUMPSEAT_TOKEN)")
 	display := flag.String("display", ":0", "X display")
 	dir := flag.String("dir", "/run/jumpseat", "directory for the agent status and user-input files")
+	recordTo := flag.String("record", "", "record the next --frames changed frames (raw BGRX) to this file, for bench/, and exit")
+	frames := flag.Int("frames", 300, "how many frames --record writes")
 	flag.Parse()
+	if *recordTo != "" {
+		if err := record(*display, *recordTo, *frames); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 
 	if err := os.MkdirAll(*dir, 0o700); err != nil {
 		log.Fatal(err)
