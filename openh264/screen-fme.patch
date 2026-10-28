@@ -45,7 +45,7 @@ index 71ec0d1..066c000 100644
          //PerformFMEPreprocess
          SScreenBlockFeatureStorage* pScreenBlockFeatureStorage = pCurLayer->pRefPic->pScreenBlockFeatureStorage;
 diff --git a/codec/encoder/core/src/svc_motion_estimate.cpp b/codec/encoder/core/src/svc_motion_estimate.cpp
-index 4429ebc..e9751c1 100644
+index 4429ebc..259f71c 100644
 --- a/codec/encoder/core/src/svc_motion_estimate.cpp
 +++ b/codec/encoder/core/src/svc_motion_estimate.cpp
 @@ -43,6 +43,7 @@
@@ -56,24 +56,20 @@ index 4429ebc..e9751c1 100644
  namespace WelsEnc {
  
  const int32_t QStepx16ByQp[52] = {  /* save QStep<<4 for int32_t */
-@@ -98,8 +99,8 @@ void WelsInitMeFunc (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag, bool bScre
- 
+@@ -99,7 +100,7 @@ void WelsInitMeFunc (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag, bool bScre
      //for feature search
      pFuncList->pfInitializeHashforFeature = InitializeHashforFeature_c;
--    pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_c;
+     pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_c;
 -    pFuncList->pfCalculateBlockFeatureOfFrame[0] = SumOf8x8BlockOfFrame_c;
-+    pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_sparse;
 +    pFuncList->pfCalculateBlockFeatureOfFrame[0] = SumOf8x8BlockOfFrame_sliding;
      pFuncList->pfCalculateBlockFeatureOfFrame[1] = SumOf16x16BlockOfFrame_c;
      //TODO: it is possible to differentiate width that is times of 8, so as to accelerate the speed when width is times of 8?
      pFuncList->pfCalculateSingleBlockFeature[0] = SumOf8x8SingleBlock_c;
-@@ -108,8 +109,8 @@ void WelsInitMeFunc (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag, bool bScre
-     if (uiCpuFlag & WELS_CPU_SSE2) {
+@@ -109,7 +110,7 @@ void WelsInitMeFunc (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag, bool bScre
        //for feature search
        pFuncList->pfInitializeHashforFeature = InitializeHashforFeature_sse2;
--      pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_sse2;
+       pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_sse2;
 -      pFuncList->pfCalculateBlockFeatureOfFrame[0] = SumOf8x8BlockOfFrame_sse2;
-+      pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_sparse;
 +      pFuncList->pfCalculateBlockFeatureOfFrame[0] = SumOf8x8BlockOfFrame_sliding;
        pFuncList->pfCalculateBlockFeatureOfFrame[1] = SumOf16x16BlockOfFrame_sse2;
        //TODO: it is possible to differentiate width that is times of 8, so as to accelerate the speed when width is times of 8?
@@ -87,24 +83,20 @@ index 4429ebc..e9751c1 100644
        pFuncList->pfCalculateBlockFeatureOfFrame[1] = SumOf16x16BlockOfFrame_sse4;
      }
  #endif
-@@ -126,8 +127,8 @@ void WelsInitMeFunc (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag, bool bScre
-     if (uiCpuFlag & WELS_CPU_NEON) {
+@@ -127,7 +128,7 @@ void WelsInitMeFunc (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag, bool bScre
        //for feature search
        pFuncList->pfInitializeHashforFeature = InitializeHashforFeature_neon;
--      pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_neon;
+       pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_neon;
 -      pFuncList->pfCalculateBlockFeatureOfFrame[0] = SumOf8x8BlockOfFrame_neon;
-+      pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_sparse;
 +      pFuncList->pfCalculateBlockFeatureOfFrame[0] = SumOf8x8BlockOfFrame_sliding;
        pFuncList->pfCalculateBlockFeatureOfFrame[1] = SumOf16x16BlockOfFrame_neon;
        //TODO: it is possible to differentiate width that is times of 8, so as to accelerate the speed when width is times of 8?
        pFuncList->pfCalculateSingleBlockFeature[0] = SumOf8x8SingleBlock_neon;
-@@ -139,8 +140,8 @@ void WelsInitMeFunc (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag, bool bScre
-     if (uiCpuFlag & WELS_CPU_NEON) {
+@@ -140,7 +141,7 @@ void WelsInitMeFunc (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag, bool bScre
        //for feature search
        pFuncList->pfInitializeHashforFeature = InitializeHashforFeature_AArch64_neon;
--      pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_AArch64_neon;
+       pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_AArch64_neon;
 -      pFuncList->pfCalculateBlockFeatureOfFrame[0] = SumOf8x8BlockOfFrame_AArch64_neon;
-+      pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_sparse;
 +      pFuncList->pfCalculateBlockFeatureOfFrame[0] = SumOf8x8BlockOfFrame_sliding;
        pFuncList->pfCalculateBlockFeatureOfFrame[1] = SumOf16x16BlockOfFrame_AArch64_neon;
        //TODO: it is possible to differentiate width that is times of 8, so as to accelerate the speed when width is times of 8?
@@ -172,3 +164,12 @@ index 4429ebc..e9751c1 100644
  void SumOf16x16BlockOfFrame_c (uint8_t* pRefPicture, const int32_t kiWidth, const int32_t kiHeight,
                                 const int32_t kiRefStride,
                                 uint16_t* pFeatureOfBlock, uint32_t pTimesOfFeatureValue[]) {
+@@ -869,7 +917,7 @@ bool CalculateFeatureOfBlock (SWelsFuncPtrList* pFunc, SPicture* pRef,
+                                      pLocationOfFeature, pScreenBlockFeatureStorage->pFeatureValuePointerList);
+ 
+   //assign each pixel's pLocationOfFeature
+-  pFunc->pfFillQpelLocationByFeatureValue (pFeatureOfBlock, iWidth, kiHeight,
++  (iIs16x16 ? pFunc->pfFillQpelLocationByFeatureValue : FillQpelLocationByFeatureValue_sparse) (pFeatureOfBlock, iWidth, kiHeight,
+       pScreenBlockFeatureStorage->pFeatureValuePointerList);
+   return true;
+ }
