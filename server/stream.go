@@ -219,7 +219,7 @@ func serve(ws *websocket.Conn, display string) {
 	}
 	pointer := time.NewTicker(pointerPoll)
 	defer pointer.Stop()
-	// What the agent is doing (the daemon's agent-status file), relayed as
+	// What the agent is doing (the agent-status file POST /agent/status writes), relayed as
 	// it changes; a new viewer gets it on its first tick.
 	agent := &agentStatusWatch{}
 	statusTick := time.NewTicker(statusPoll)

@@ -282,7 +282,7 @@ var humanInputFile = "/run/agentview/human-input"
 var lastStamp atomic.Int64
 
 // stampHumanInput records now as the user's last input, at most every
-// 250 ms; written whole then renamed, so the daemon never reads half.
+// 250 ms; written whole then renamed, so a reader never sees half.
 func stampHumanInput() {
 	now := time.Now().UnixMilli()
 	if now-lastStamp.Load() < 250 {
