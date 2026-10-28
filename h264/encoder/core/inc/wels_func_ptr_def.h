@@ -158,7 +158,6 @@ typedef struct TagSampleDealingFunc {
 } SSampleDealingFunc;
 typedef void (*PGetIntraPredFunc) (uint8_t* pPrediction, uint8_t* pRef, const int32_t kiStride);
 
-typedef int32_t (*PGetVarianceFromIntraVaaFunc) (uint8_t* pSampelY, const int32_t kiStride);
 typedef uint8_t (*PGetMbSignFromInterVaaFunc) (int32_t* pSad8x8);
 typedef void (*PUpdateMbMvFunc) (SMVUnitXY* pMvUnit, const SMVUnitXY ksMv);
 
@@ -180,7 +179,6 @@ struct TagWelsFuncPointerList {
   SExpandPicFunc sExpandPicFunc;
   PFillInterNeighborCacheFunc       pfFillInterNeighborCache;
 
-  PGetVarianceFromIntraVaaFunc  pfGetVarianceFromIntraVaa;
   PGetMbSignFromInterVaaFunc  pfGetMbSignFromInterVaa;
   PUpdateMbMvFunc              pfUpdateMbMv;
   PInterMdFirstIntraModeFunc      pfFirstIntraMode; //svc_encode_slice.c svc_mode_decision.c svc_base_layer_md.c

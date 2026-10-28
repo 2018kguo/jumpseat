@@ -312,50 +312,8 @@ uint8_t MdInterAnalysisVaaInfo_c (int32_t* pSad8x8) {
   return (uiMbSign);
 }
 
-int32_t AnalysisVaaInfoIntra_c (uint8_t* pDataY, const int32_t kiLineSize) {
-  ENFORCE_STACK_ALIGN_1D (uint16_t, uiAvgBlock, 16, 16)
-  uint16_t* pBlock = &uiAvgBlock[0];
-  uint8_t* pEncData         = pDataY;
-  const int32_t kiLineSize2 = kiLineSize << 1;
-  const int32_t kiLineSize3 = kiLineSize + kiLineSize2;
-  const int32_t kiLineSize4 = kiLineSize << 2;
-  int32_t i = 0, j = 0, num = 0;
-  int32_t iSumAvg = 0, iSumSqr = 0;
 
-//  analysis_vaa_info_intra_core_c( pDataY, iLineSize, pBlock );
-  for (; j < 16; j += 4) {
-    num = 0;
-    for (i = 0; i < 16; i += 4, num ++) {
-      pBlock[num] =  pEncData[i              ] + pEncData[i + 1              ] + pEncData[i + 2              ] + pEncData[i +
-                     3              ];
-      pBlock[num] += pEncData[i + kiLineSize ] + pEncData[i + kiLineSize  + 1] + pEncData[i + kiLineSize  + 2] + pEncData[i +
-                     kiLineSize  + 3];
-      pBlock[num] += pEncData[i + kiLineSize2] + pEncData[i + kiLineSize2 + 1] + pEncData[i + kiLineSize2 + 2] + pEncData[i +
-                     kiLineSize2 + 3];
-      pBlock[num] += pEncData[i + kiLineSize3] + pEncData[i + kiLineSize3 + 1] + pEncData[i + kiLineSize3 + 2] + pEncData[i +
-                     kiLineSize3 + 3];
-      pBlock[num] >>=  4;
-    }
-    pBlock += 4;
-    pEncData += kiLineSize4;
-  }
-
-  pBlock = &uiAvgBlock[0];
-  i = 4;
-  for (; i > 0; --i) {
-    iSumAvg += pBlock[0] + pBlock[1] + pBlock[2] + pBlock[3];
-    iSumSqr += pBlock[0] * pBlock[0] + pBlock[1] * pBlock[1] + pBlock[2] * pBlock[2] + pBlock[3] * pBlock[3];
-
-    pBlock += 4;
-  }
-
-
-  return /*variance =*/ (iSumSqr - ((iSumAvg * iSumAvg) >> 4));
-}
-
-// for pfGetVarianceFromIntraVaa function ptr adaptive by CPU features, 6/7/2010
 void InitIntraAnalysisVaaInfo (SWelsFuncPtrList* pFuncList, const uint32_t kuiCpuFlag) {
-  pFuncList->pfGetVarianceFromIntraVaa      = AnalysisVaaInfoIntra_c;
   pFuncList->pfGetMbSignFromInterVaa        = MdInterAnalysisVaaInfo_c;
   pFuncList->pfUpdateMbMv                   = UpdateMbMv_c;
 
@@ -363,22 +321,12 @@ void InitIntraAnalysisVaaInfo (SWelsFuncPtrList* pFuncList, const uint32_t kuiCp
   if ((kuiCpuFlag & WELS_CPU_SSE2) == WELS_CPU_SSE2) {
     pFuncList->pfUpdateMbMv                 = UpdateMbMv_sse2;
   }
-  if ((kuiCpuFlag & WELS_CPU_SSSE3) == WELS_CPU_SSSE3) {
-    pFuncList->pfGetVarianceFromIntraVaa    = AnalysisVaaInfoIntra_ssse3;
-  }
   if ((kuiCpuFlag & WELS_CPU_SSE41) == WELS_CPU_SSE41) {
     pFuncList->pfGetMbSignFromInterVaa      = MdInterAnalysisVaaInfo_sse41;
   }
 #endif//X86_ASM
 }
 
-bool MdIntraAnalysisVaaInfo (sWelsEncCtx* pEncCtx, uint8_t* pEncMb) {
-
-  SDqLayer* pCurDqLayer     = pEncCtx->pCurDqLayer;
-  const int32_t kiLineSize  = pCurDqLayer->iEncStride[0];
-  const int32_t kiVariance  = pEncCtx->pFuncList->pfGetVarianceFromIntraVaa (pEncMb, kiLineSize);
-  return (kiVariance >= INTRA_VARIANCE_SAD_THRESHOLD);
-}
 
 void InitMeRefinePointer (SMeRefinePointer* pMeRefine, SMbCache* pMbCache, int32_t iStride) {
   pMeRefine->pHalfPixH    = &pMbCache->pBufferInterPredMe[0] + iStride;

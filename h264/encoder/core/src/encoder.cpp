@@ -113,7 +113,6 @@ int32_t InitFunctionPointers (sWelsEncCtx* pEncCtx, SWelsSvcCodingParam* pParam,
   WelsInitBGDFunc (pFuncList, pParam->bEnableBackgroundDetection);
   pFuncList->pfSCDPSkipDecision = WelsMdInterJudgeSCDPskip;
 
-  // for pfGetVarianceFromIntraVaa function ptr adaptive by CPU features, 6/7/2010
   InitIntraAnalysisVaaInfo (pFuncList, uiCpuFlag);
 
   /* Motion compensation */

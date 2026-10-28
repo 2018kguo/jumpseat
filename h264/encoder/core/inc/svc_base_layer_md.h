@@ -49,7 +49,6 @@ int32_t WelsMdI16x16 (SWelsFuncPtrList* pFunc, SDqLayer* pCurDqLayer, SMbCache* 
 int32_t WelsMdIntraChroma (SWelsFuncPtrList* pFunc, SDqLayer* pCurDqLayer, SMbCache* pMbCache, int32_t iLambda);
 
 int32_t WelsMdI4x4 (sWelsEncCtx* pEnc, SWelsMD* pMd, SMB* pCurMb, SMbCache* pMbCache);
-int32_t WelsMdI4x4Fast (sWelsEncCtx* pEnc, SWelsMD* pMd, SMB* pCurMb, SMbCache* pMbCache);
 
 int32_t WelsMdIntraFinePartition (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCache* pMbCache);
 int32_t WelsMdIntraFinePartitionVaa (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCache* pMbCache);

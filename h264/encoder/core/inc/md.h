@@ -141,9 +141,7 @@ void PredictSad (int8_t* pRefIndexCache, int32_t* pSadCostCache, int32_t uiRef, 
 void PredictSadSkip (int8_t* pRefIndexCache, bool* pMbSkipCache, int32_t* pSadCostCache, int32_t uiRef,
                      int32_t* iSadPredSkip);
 
-//  for pfGetVarianceFromIntraVaa function ptr adaptive by CPU features, 6/7/2010
 void InitIntraAnalysisVaaInfo (SWelsFuncPtrList* pFuncList, const uint32_t kuiCpuFlag);
-bool MdIntraAnalysisVaaInfo (sWelsEncCtx* pEncCtx, uint8_t* pEncMb);
 
 uint8_t MdInterAnalysisVaaInfo_c (int32_t* pSad8x8);
 
@@ -161,7 +159,6 @@ extern "C" {
 
 #if defined(X86_ASM)
 
-int32_t AnalysisVaaInfoIntra_ssse3 (uint8_t* pDataY, const int32_t kiLineSize);
 uint8_t MdInterAnalysisVaaInfo_sse41 (int32_t* pSad8x8);
 void UpdateMbMv_sse2 (SMVUnitXY* pMvBuffer, const SMVUnitXY ksMv);
 
