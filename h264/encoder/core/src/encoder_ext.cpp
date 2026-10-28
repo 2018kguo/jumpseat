@@ -1450,9 +1450,6 @@ int32_t RequestMemorySvc (sWelsEncCtx** ppCtx, SExistingParasetList* pExistingPa
 
   // for dynamic slice mode&& CABAC,allocate slice buffer to restore slice data
   // for pSlice bs buffers
-  (*ppCtx)->pReferenceStrategy = IWelsReferenceStrategy::CreateReferenceStrategy ((*ppCtx), pParam->iUsageType,
-                                 pParam->bEnableLongTermReference);
-  WELS_VERIFY_RETURN_IF (1, (NULL == (*ppCtx)->pReferenceStrategy))
 
   (*ppCtx)->pIntra4x4PredModeBlocks = static_cast<int8_t*>
                                       (pMa->WelsMallocz (iCountMaxMbNum * INTRA_4x4_MODE_NUM, "pIntra4x4PredModeBlocks"));
@@ -1630,9 +1627,6 @@ void FreeMemorySvc (sWelsEncCtx** ppCtx) {
     }
 
 
-    if (NULL != pCtx->pReferenceStrategy) {
-      WELS_DELETE_OP (pCtx->pReferenceStrategy);
-    }
 
     // frame bitstream pBuffer
     if (NULL != pCtx->pFrameBs) {
@@ -2159,43 +2153,16 @@ static inline void SetNormalCodingFunc (SWelsFuncPtrList* pFuncList) {
   pFuncList->sSampleDealingFuncs.pfIntra4x4Combined3 =
     pFuncList->sSampleDealingFuncs.pfIntra4x4Combined3Satd;
 }
-bool SetMeMethod (const uint8_t uiMethod, PSearchMethodFunc& pSearchMethodFunc) {
-  switch (uiMethod) {
-  case  ME_DIA:
-    pSearchMethodFunc  = WelsDiamondSearch;
-    break;
-  case  ME_CROSS:
-    pSearchMethodFunc = WelsMotionCrossSearch;
-    break;
-  case  ME_DIA_CROSS:
-    pSearchMethodFunc = WelsDiamondCrossSearch;
-    break;
-  case  ME_DIA_CROSS_FME:
-    pSearchMethodFunc = WelsDiamondCrossFeatureSearch;
-    break;
-  case ME_FULL:
-    pSearchMethodFunc = WelsDiamondSearch;
-    return false;
-  default:
-    pSearchMethodFunc = WelsDiamondSearch;
-    return false;
-  }
-  return true;
-}
 
 
 
 void PreprocessSliceCoding (sWelsEncCtx* pCtx) {
   SDqLayer* pCurLayer           = pCtx->pCurDqLayer;
   //const bool kbBaseAvail      = pCurLayer->bBaseLayerAvailableFlag;
-  bool bFastMode = (pCtx->pSvcParam->iComplexityMode == LOW_COMPLEXITY);
   SWelsFuncPtrList* pFuncList = pCtx->pFuncList;
   SLogContext* pLogCtx = & (pCtx->sLogCtx);
   /* function pointers conditional assignment under sWelsEncCtx, layer_mb_enc_rec (in stack) is exclusive */
-  if ((pCtx->pSvcParam->iUsageType == CAMERA_VIDEO_REAL_TIME && bFastMode) ||
-      (pCtx->pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME && P_SLICE == pCtx->eSliceType
-       && bFastMode) //TODO: here is for sync with the origin code, consider the design again with more tests
-     ) {
+  if (P_SLICE == pCtx->eSliceType) {
     SetFastCodingFunc (pFuncList);
   } else {
     SetNormalCodingFunc (pFuncList);
@@ -2215,14 +2182,7 @@ void PreprocessSliceCoding (sWelsEncCtx* pCtx) {
     pFuncList->pfFirstIntraMode = WelsMdFirstIntraMode;
     pFuncList->sSampleDealingFuncs.pfMeCost = pCtx->pFuncList->sSampleDealingFuncs.pfSampleSatd;
     pFuncList->pfSetScrollingMv = SetScrollingMvToMdNull;
-
-    if (bFastMode) {
-      pFuncList->pfCalculateSatd = NotCalculateSatdCost;
-      pFuncList->pfInterFineMd = WelsMdInterFinePartitionVaa;
-    } else {
-      pFuncList->pfCalculateSatd = CalculateSatdCost;
-      pFuncList->pfInterFineMd = WelsMdInterFinePartition;
-    }
+    pFuncList->pfCalculateSatd = NotCalculateSatdCost;
   } else {
     pFuncList->sSampleDealingFuncs.pfMeCost = NULL;
   }
@@ -2245,9 +2205,7 @@ void PreprocessSliceCoding (sWelsEncCtx* pCtx) {
     pFuncList->pfMotionSearch[COLLOCATED_STATIC] = WelsMotionEstimateSearchStatic;
     pFuncList->pfMotionSearch[SCROLLED_STATIC] = WelsMotionEstimateSearchScrolled;
     //ME16x16
-    if (!SetMeMethod (ME_DIA_CROSS, pFuncList->pfSearchMethod[BLOCK_16x16])) {
-      WelsLog (pLogCtx, WELS_LOG_WARNING, "SetMeMethod(BLOCK_16x16) ME_DIA_CROSS unsuccessful, switched to default search");
-    }
+    pFuncList->pfSearchMethod[BLOCK_16x16] = WelsDiamondCrossSearch;
     // jumpseat: on scrolling frames, the cross search (16x16 and 8x8
     // partitions) finds content moved along an axis. OpenH264 enabled it
     // only by building a per-pixel feature index of the reference frame,
@@ -2263,7 +2221,7 @@ void PreprocessSliceCoding (sWelsEncCtx* pCtx) {
       SetCrossSearchThresholds (pCurLayer->pRefPic, pRefStorage, kbScrolling);
     }
     if (kbScrolling) {
-      SetMeMethod (ME_DIA_CROSS, pFuncList->pfSearchMethod[BLOCK_8x8]);
+      pFuncList->pfSearchMethod[BLOCK_8x8] = WelsDiamondCrossSearch;
     }
   }
 
@@ -2826,8 +2784,8 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
 
     WelsInitCurrentLayer (pCtx, iCurWidth, iCurHeight);
 
-    pCtx->pReferenceStrategy->MarkPic();
-    if (!pCtx->pReferenceStrategy->BuildRefList (pParamInternal->iPOC, 0)) {
+    WelsMarkPic (pCtx);
+    if (!WelsBuildRefList (pCtx, pParamInternal->iPOC, 0)) {
       WelsLog (pLogCtx, WELS_LOG_WARNING,
                "WelsEncoderEncodeExt(), WelsBuildRefList failed for P frames, pCtx->iNumRef0= %d. ForceCodingIDR!",
                pCtx->iNumRef0);
@@ -2836,7 +2794,7 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
       break;
     }
     if (pCtx->eSliceType != I_SLICE) {
-      pCtx->pReferenceStrategy->AfterBuildRefList();
+      UpdateBlockStatic (pCtx);
     }
 #ifdef LONG_TERM_REF_DUMP
     DumpRef (pCtx);
@@ -2901,11 +2859,10 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
     pCtx->pDecPic->iFrameAverageQp = pCtx->pWelsSvcRc[iCurDid].iAverageFrameQp;
 
     //update scc related
-    pCtx->pFuncList->pfUpdateFMESwitch (pCtx->pCurDqLayer);
 
     // reference picture list update
     if (eNalRefIdc != NRI_PRI_LOWEST) {
-      if (!pCtx->pReferenceStrategy->UpdateRefList()) {
+      if (!WelsUpdateRefList (pCtx)) {
         WelsLog (pLogCtx, WELS_LOG_WARNING, "WelsEncoderEncodeExt(), WelsUpdateRefList failed. ForceCodingIDR!");
         //the above is to set the next frame to be IDR
         pCtx->iEncoderError = ENC_RETURN_CORRECTED;

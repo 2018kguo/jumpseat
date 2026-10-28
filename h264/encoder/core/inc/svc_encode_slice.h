@@ -47,7 +47,6 @@
 
 namespace WelsEnc {
 
-void UpdateMbNeighbor(SDqLayer* pCurDq, SMB* pMb, const int32_t kiMbWidth, uint16_t uiSliceIdc);
 
 void UpdateNonZeroCountCache (SMB* pMb, SMbCache* pMbCache);
 
@@ -58,7 +57,6 @@ void WelsSliceHeaderScalExtInit (SDqLayer* pCurLayer, SSlice* pSlice);
 void WelsSliceHeaderExtInit (sWelsEncCtx* pEncCtx, SDqLayer* pCurLayer, SSlice* pSlice);
 
 void WelsSliceHeaderWrite (SBitStringAux* pBs, SDqLayer* pCurLayer, SSlice* pSlice, uint32_t uiPpsIdBasis);
-void WelsSliceHeaderExtWrite (SBitStringAux* pBs, SDqLayer* pCurLayer, SSlice* pSlice, uint32_t uiPpsIdBasis);
 
 //===================MB-leve encode====================//
 void WelsInterMbEncode (sWelsEncCtx* pEncCtx, SSlice* pSlice, SMB* pCurMb); //only for inter part
@@ -71,11 +69,9 @@ void WelsPMbChromaEncode (sWelsEncCtx* pEncCtx, SSlice* pSlice, SMB* pCurMb);
 //===================MB-level encode====================//
 //encapsulation func: store base rec, highest Dependency Layer(only one quality) rec, single layer rec
 int32_t WelsPSliceMdEnc (sWelsEncCtx* pEncCtx, SSlice* pSlice,  const bool kbIsHighestDlayerFlag);
-int32_t WelsPSliceMdEncDynamic (sWelsEncCtx* pEncCtx, SSlice* pSlice,  const bool kbIsHighestDlayerFlag);
 
 //encapsulation func: store base rec, highest Dependency Layer(only one quality) rec, single layer rec
-int32_t WelsISliceMdEnc (sWelsEncCtx* pEncCtx, SSlice* pSlice);         // for intra non-dynamic slice
-int32_t WelsISliceMdEncDynamic (sWelsEncCtx* pEncCtx, SSlice* pSlice);  // for intra dynamic slice
+int32_t WelsISliceMdEnc (sWelsEncCtx* pEncCtx, SSlice* pSlice);// for intra dynamic slice
 
 //slice buffer init, allocate/re-allocate and free process
 int32_t AllocMbCacheAligned (SMbCache* pMbCache, CMemoryAlign* pMa);
@@ -125,26 +121,15 @@ int32_t InitSliceInLayer (sWelsEncCtx* pCtx,
 
 //slice encoding process
 int32_t WelsCodePSlice (sWelsEncCtx* pEncCtx, SSlice* pSlice);
-int32_t WelsCodePOverDynamicSlice (sWelsEncCtx* pEncCtx, SSlice* pSlice);
 
 int32_t WelsCodeOneSlice (sWelsEncCtx* pEncCtx, SSlice* pCurSlice,
                           const int32_t keNalType);
 
 void WelsInitSliceEncodingFuncs (uint32_t uiCpuFlag);
 
-void UpdateMbNeighbourInfoForNextSlice (SDqLayer* pCurDq,
-                                        SMB* pMbList,
-                                        const int32_t kiNextSliceFirstMbIdx,
-                                        const int32_t kiLastMbIdxInPartition);
-void AddSliceBoundary (sWelsEncCtx* pEncCtx, SSlice* pCurSlice, SSliceCtx* pSliceCtx, SMB* pCurMb,
-                       int32_t iNextSliceFirstMbIdx, const int32_t kiLastMbIdxInPartition);
 int32_t WelsMdInterMbLoop (sWelsEncCtx* pEncCtx, SSlice* pSlice, void* pMd,
-                           const int32_t kiSliceFirstMbXY); // for inter non-dynamic slice
-int32_t WelsMdInterMbLoopOverDynamicSlice (sWelsEncCtx* pEncCtx, SSlice* pSlice, void* pMd,
-    const int32_t kiSliceFirstMbXY); // for inter dynamic slice
+                           const int32_t kiSliceFirstMbXY);// for inter dynamic slice
 
 
-bool DynSlcJudgeSliceBoundaryStepBack (void* pEncCtx, void* pSlice, SSliceCtx* pSliceCtx, SMB* pCurMb,
-                                       SDynamicSlicingStack* pDss);
 }
 #endif //SVC_ENCODE_SLICE_H__

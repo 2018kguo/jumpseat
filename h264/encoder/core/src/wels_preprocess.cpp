@@ -858,14 +858,6 @@ ESceneChangeIdc CWelsPreProcessScreen::DetectSceneChange (SPicture* pCurPicture,
   return static_cast<ESceneChangeIdc> (iVaaFrameSceneChangeIdc);
 }
 
-int32_t CWelsPreProcess::GetRefFrameInfo (int32_t iRefIdx, bool bCurrentFrameIsSceneLtr, SPicture*& pRefOri) {
-  const int32_t iTargetDid = m_pEncCtx->pSvcParam->iSpatialLayerNum - 1;
-  SVAAFrameInfoExt* pVaaExt = static_cast<SVAAFrameInfoExt*> (m_pEncCtx->pVaa);
-  SRefInfoParam* pBestRefCandidateParam = (bCurrentFrameIsSceneLtr) ? (& (pVaaExt->sVaaLtrBestRefCandidate[iRefIdx])) :
-                                          (& (pVaaExt->sVaaStrBestRefCandidate[iRefIdx]));
-  pRefOri = m_pSpatialPic[iTargetDid][pBestRefCandidateParam->iSrcListIdx];
-  return (m_pSpatialPic[iTargetDid][pBestRefCandidateParam->iSrcListIdx]->iLongTermPicNum);
-}
 void  CWelsPreProcess::Padding (uint8_t* pSrcY, uint8_t* pSrcU, uint8_t* pSrcV, int32_t iStrideY, int32_t iStrideUV,
                                 int32_t iActualWidth, int32_t iPaddingWidth, int32_t iActualHeight, int32_t iPaddingHeight) {
   int32_t i;
@@ -929,22 +921,6 @@ void CWelsPreProcess::WelsExchangeSpatialPictures (SPicture** ppPic1, SPicture**
   *ppPic2 = tmp;
 }
 
-void CWelsPreProcess::UpdateSrcListLosslessScreenRefSelectionWithLtr (SPicture* pCurPicture, const int32_t kiCurDid,
-    const int32_t kuiMarkLongTermPicIdx, SPicture** pLongRefList) {
-  SPicture** pLongRefSrcList = &m_pSpatialPic[kiCurDid][0];
-  for (int32_t i = 0; i < MAX_REF_PIC_COUNT; ++i) {
-    if (NULL == pLongRefSrcList[i + 1] || (NULL != pLongRefList[i] && pLongRefList[i]->bUsedAsRef
-                                           && pLongRefList[i]->bIsLongRef)) {
-      continue;
-    } else {
-      pLongRefSrcList[i + 1]->SetUnref();
-    }
-  }
-  WelsExchangeSpatialPictures (&m_pSpatialPic[kiCurDid][0],
-                               &m_pSpatialPic[kiCurDid][1 + kuiMarkLongTermPicIdx]);
-  m_iAvaliableRefInSpatialPicList = MAX_REF_PIC_COUNT;
-  (GetCurrentOrigFrame (kiCurDid))->SetUnref();
-}
 void CWelsPreProcess::UpdateSrcList (SPicture* pCurPicture, const int32_t kiCurDid, SPicture** pShortRefList,
                                      const uint32_t kuiShortRefCount) {
   SPicture** pRefSrcList = &m_pSpatialPic[kiCurDid][0];

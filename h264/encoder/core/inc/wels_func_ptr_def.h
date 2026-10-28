@@ -207,13 +207,9 @@ struct TagWelsFuncPointerList {
   PCalculateSatdFunc pfCalculateSatd;
   PCheckDirectionalMv pfCheckDirectionalMv;
 
-  PInitializeHashforFeatureFunc         pfInitializeHashforFeature;
-  PFillQpelLocationByFeatureValueFunc   pfFillQpelLocationByFeatureValue;
-  PCalculateBlockFeatureOfFrame pfCalculateBlockFeatureOfFrame[2];//0 - for 8x8, 1 for 16x16
   PCalculateSingleBlockFeature pfCalculateSingleBlockFeature[2];//0 - for 8x8, 1 for 16x16
   PLineFullSearchFunc pfVerticalFullSearch;
   PLineFullSearchFunc pfHorizontalFullSearch;
-  PUpdateFMESwitch pfUpdateFMESwitch;
 
   PCopyFunc      pfCopy16x16Aligned;    //svc_encode_slice.c svc_mode_decision.c svc_base_layer_md.c
   PCopyFunc      pfCopy16x16NotAligned;  //md.c

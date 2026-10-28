@@ -349,44 +349,6 @@ void UpdateP4x8MotionInfo (SMbCache* pMbCache, SMB* pCurMb, const int32_t kiPart
 //=========================update motion info(MV and ref_idx) into Mb_cache==========================
 //update pMv and uiRefIndex cache only for Mb_cache, only for P_16*16 (SKIP inclusive)
 
-//update uiRefIndex and pMv of only Mb_cache, only for P16x8
-void UpdateP16x8Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef, SMVUnitXY* pMv) {
-  SMVComponentUnit* pMvComp = &pMbCache->sMvComponents;
-  int32_t i;
-
-  for (i = 0; i < 2; i++, iPartIdx += 4) {
-    //cache
-    const uint8_t kuiCacheIdx = g_kuiCache30ScanIdx[iPartIdx];
-
-    pMvComp->iRefIndexCache[  kuiCacheIdx] =
-      pMvComp->iRefIndexCache[1 + kuiCacheIdx] =
-        pMvComp->iRefIndexCache[6 + kuiCacheIdx] =
-          pMvComp->iRefIndexCache[7 + kuiCacheIdx] = iRef;
-    pMvComp->sMotionVectorCache[  kuiCacheIdx] =
-      pMvComp->sMotionVectorCache[1 + kuiCacheIdx] =
-        pMvComp->sMotionVectorCache[6 + kuiCacheIdx] =
-          pMvComp->sMotionVectorCache[7 + kuiCacheIdx] = *pMv;
-  }
-}
-//update uiRefIndex and pMv of only Mb_cache, only for P8x16
-void UpdateP8x16Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef, SMVUnitXY* pMv) {
-  SMVComponentUnit* pMvComp = &pMbCache->sMvComponents;
-  int32_t i;
-
-  for (i = 0; i < 2; i++, iPartIdx += 8) {
-    //cache
-    const uint8_t kuiCacheIdx = g_kuiCache30ScanIdx[iPartIdx];
-
-    pMvComp->iRefIndexCache[  kuiCacheIdx] =
-      pMvComp->iRefIndexCache[1 + kuiCacheIdx] =
-        pMvComp->iRefIndexCache[6 + kuiCacheIdx] =
-          pMvComp->iRefIndexCache[7 + kuiCacheIdx] = iRef;
-    pMvComp->sMotionVectorCache[  kuiCacheIdx] =
-      pMvComp->sMotionVectorCache[1 + kuiCacheIdx] =
-        pMvComp->sMotionVectorCache[6 + kuiCacheIdx] =
-          pMvComp->sMotionVectorCache[7 + kuiCacheIdx] = *pMv;
-  }
-}
 
 //update uiRefIndex and pMv of only Mb_cache, only for P8x8
 void UpdateP8x8Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t pRef, SMVUnitXY* pMv) {

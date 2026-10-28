@@ -146,19 +146,7 @@ void PredInter8x16Mv (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef, SMVUnit
  */
 //void update_p16x16_motion2cache(SMbCache* pMbCache, int8_t pRef, SMVUnitXY* pMv);
 
-/*!
- * \brief   only update pMv cache for current MB, only for P_16x8
- * \param
- * \param
- */
-void UpdateP16x8Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef, SMVUnitXY* pMv);
 
-/*!
- * \brief   only update pMv cache for current MB, only for P_8x16
- * \param
- * \param
- */
-void UpdateP8x16Motion2Cache (SMbCache* pMbCache, int32_t iPartIdx, int8_t iRef, SMVUnitXY* pMv);
 
 /*!
  * \brief   only update pMv cache for current MB, only for P_8x8

@@ -134,7 +134,7 @@ extern const int32_t QStepx16ByQp[52];
 
 // Function definitions below
 
-void WelsInitMeFunc (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag, bool bScreenContent);
+void WelsInitMeFunc (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag);
 
 /*!
  * \brief  BL mb motion estimate search
@@ -188,15 +188,11 @@ void WelsDiamondSearch (SWelsFuncPtrList* pFuncList, SWelsME* pMe, SSlice* pSlic
 bool WelsMeSadCostSelect (int32_t* pSadCost, const uint16_t* kpMvdCost, int32_t* pBestCost, const int32_t kiDx,
                           const int32_t kiDy, int32_t* pIx, int32_t* pIy);
 
-void CalculateSatdCost (PSampleSadSatdCostFunc pSatd, SWelsME* pMe, const int32_t kiEncStride, const int32_t kiRefStride);
 void NotCalculateSatdCost (PSampleSadSatdCostFunc pSatd, SWelsME* pMe, const int32_t kiEncStride,
                            const int32_t kiRefStride);
 bool CheckDirectionalMv (PSampleSadSatdCostFunc pSad, SWelsME* pMe,
                          const SMVUnitXY ksMinMv, const SMVUnitXY ksMaxMv, const int32_t kiEncStride, const int32_t kiRefStride,
                          int32_t& iBestSadCost);
-bool CheckDirectionalMvFalse (PSampleSadSatdCostFunc pSad, SWelsME* pMe,
-                              const SMVUnitXY ksMinMv, const SMVUnitXY ksMaxMv, const int32_t kiEncStride, const int32_t kiRefStride,
-                              int32_t& iBestSadCost);
 
 // Cross Search Basics
 void LineFullSearch_c (SWelsFuncPtrList* pFuncList, SWelsME* pMe,
@@ -236,18 +232,6 @@ void WelsDiamondCrossSearch (SWelsFuncPtrList* pFuncList, SWelsME* pMe, SSlice* 
 #define FMESWITCH_DEFAULT_GOODFRAME_NUM (2)
 #define FMESWITCH_MBSAD_THRESHOLD   30 // empirically set.
 
-void InitializeHashforFeature_c (uint32_t* pTimesOfFeatureValue, uint16_t* pBuf, const int32_t kiListSize,
-                                 uint16_t** pLocationOfFeature, uint16_t** pFeatureValuePointerList);
-void FillQpelLocationByFeatureValue_c (uint16_t* pFeatureOfBlock, const int32_t kiWidth, const int32_t kiHeight,
-                                       uint16_t** pFeatureValuePointerList);
-int32_t SumOf8x8SingleBlock_c (uint8_t* pRef, const int32_t kiRefStride);
-int32_t SumOf16x16SingleBlock_c (uint8_t* pRef, const int32_t kiRefStride);
-void SumOf8x8BlockOfFrame_c (uint8_t* pRefPicture, const int32_t kiWidth, const int32_t kiHeight,
-                             const int32_t kiRefStride,
-                             uint16_t* pFeatureOfBlock, uint32_t pTimesOfFeatureValue[]);
-void SumOf16x16BlockOfFrame_c (uint8_t* pRefPicture, const int32_t kiWidth, const int32_t kiHeight,
-                               const int32_t kiRefStride,
-                               uint16_t* pFeatureOfBlock, uint32_t pTimesOfFeatureValue[]);
 
 #ifdef X86_ASM
 extern "C"
@@ -302,17 +286,7 @@ int32_t ReleaseFeatureSearchPreparation (CMemoryAlign* pMa, uint16_t*& pFeatureO
 
 
 void SetCrossSearchThresholds (SPicture* pRef, SScreenBlockFeatureStorage* pStorage, const bool kbOn);
-bool SetFeatureSearchIn (SWelsFuncPtrList* pFunc,  const SWelsME& sMe,
-                         const SSlice* pSlice, SScreenBlockFeatureStorage* pRefFeatureStorage,
-                         const int32_t kiEncStride, const int32_t kiRefStride,
-                         SFeatureSearchIn* pFeatureSearchIn);
-void MotionEstimateFeatureFullSearch (SFeatureSearchIn& sFeatureSearchIn,
-                                      const uint32_t kuiMaxSearchPoint,
-                                      SWelsME* pMe);
-void UpdateFMESwitchNull (SDqLayer* pCurLayer);
 
-void WelsDiamondCrossFeatureSearch (SWelsFuncPtrList* pFuncList, SWelsME* pMe, SSlice* pSlice,
-                                    const int32_t kiEncStride, const int32_t kiRefStride);
 
 //inline functions
 inline void SetMvWithinIntegerMvRange (const int32_t kiMbWidth, const int32_t kiMbHeight, const int32_t kiMbX,

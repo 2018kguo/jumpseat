@@ -74,7 +74,6 @@ void WelsInitBGDFunc (SWelsFuncPtrList* pFuncList, const bool kbEnableBackground
 int32_t InitFunctionPointers (sWelsEncCtx* pEncCtx, SWelsSvcCodingParam* pParam, uint32_t uiCpuFlag) {
   int32_t iReturn = ENC_RETURN_SUCCESS;
   SWelsFuncPtrList* pFuncList = pEncCtx->pFuncList;
-  bool bScreenContent = (SCREEN_CONTENT_REAL_TIME == pParam->iUsageType);
 
   /* Functionality utilization of CPU instructions dependency */
   pFuncList->pfSetMemZeroSize8              = WelsSetMemZero_c;             // confirmed_safe_unsafe_usage
@@ -106,16 +105,14 @@ int32_t InitFunctionPointers (sWelsEncCtx* pEncCtx, SWelsSvcCodingParam* pParam,
   WelsInitIntraPredFuncs (pFuncList, uiCpuFlag);
 
   /* ME func */
-  WelsInitMeFunc (pFuncList, uiCpuFlag, bScreenContent);
+  WelsInitMeFunc (pFuncList, uiCpuFlag);
 
   /* sad, satd, average */
   WelsInitSampleSadFunc (pFuncList, uiCpuFlag);
 
   //
   WelsInitBGDFunc (pFuncList, pParam->bEnableBackgroundDetection);
-	WelsInitSCDPskipFunc (pFuncList, bScreenContent &&
-                        (pParam->bEnableSceneChangeDetect) &&
-                        (pEncCtx->pSvcParam->iComplexityMode < HIGH_COMPLEXITY));
+  pFuncList->pfSCDPSkipDecision = WelsMdInterJudgeSCDPskip;
 
   // for pfGetVarianceFromIntraVaa function ptr adaptive by CPU features, 6/7/2010
   InitIntraAnalysisVaaInfo (pFuncList, uiCpuFlag);

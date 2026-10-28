@@ -59,7 +59,6 @@
 
 namespace WelsEnc {
 
-class IWelsReferenceStrategy;
 
 /*
  *  reference list for each quality layer in SVC
@@ -132,7 +131,6 @@ typedef struct TagWelsEncCtx {
   SStrideTables*    pStrideTab;     // stride tables for internal coding used
   SWelsFuncPtrList* pFuncList;
 
-  IWelsReferenceStrategy* pReferenceStrategy;
 
   // pointers
   SPicture*         pEncPic;                // pointer to current picture to be encoded
