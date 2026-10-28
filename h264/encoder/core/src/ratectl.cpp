@@ -350,35 +350,6 @@ bool RcJudgeBitrateFpsUpdate (sWelsEncCtx* pEncCtx) {
     return false;
 }
 
-#if GOM_TRACE_FLAG
-void RcTraceVGopBitrate (sWelsEncCtx* pEncCtx) {
-  const int32_t kiDid    = pEncCtx->uiDependencyId;
-  SWelsSvcRc* pWelsSvcRc = &pEncCtx->pWelsSvcRc[kiDid];
-
-  if (pWelsSvcRc->iFrameCodedInVGop) {
-    const int32_t kiHighestTid  = pEncCtx->pSvcParam->sDependencyLayers[kiDid].iHighestTemporalId;
-    SRCTemporal* pTOverRc       = pWelsSvcRc->pTemporalOverRc;
-    int32_t iVGopBitrate = 0;
-    int32_t iTotalBits = pWelsSvcRc->iPaddingBitrateStat;
-    int32_t iTid = 0;
-    while (iTid <= kiHighestTid) {
-      iTotalBits += pTOverRc[iTid].iGopBitsDq;
-      ++ iTid;
-    }
-    int32_t iFrameInVGop = pWelsSvcRc->iFrameCodedInVGop + pWelsSvcRc->iSkipFrameInVGop;
-    if (0 != iFrameInVGop)
-      iVGopBitrate = WELS_ROUND (iTotalBits / iFrameInVGop * pWelsSvcRc->fFrameRate);
-    WelsLog (& (pEncCtx->sLogCtx), WELS_LOG_DEBUG, "[Rc] VGOPbitrate%d: %d ", kiDid, iVGopBitrate);
-    if (iTotalBits > 0) {
-      iTid = 0;
-      while (iTid <= kiHighestTid) {
-        WelsLog (& (pEncCtx->sLogCtx), WELS_LOG_DEBUG, "T%d=%8.3f ", iTid, (double) (pTOverRc[iTid].iGopBitsDq / iTotalBits));
-        ++ iTid;
-      }
-    }
-  }
-}
-#endif
 
 void RcUpdateTemporalZero (sWelsEncCtx* pEncCtx) {
   const int32_t kiDid                   = pEncCtx->uiDependencyId;
@@ -387,15 +358,9 @@ void RcUpdateTemporalZero (sWelsEncCtx* pEncCtx) {
   const int32_t kiGopSize               = (1 << pDLayerParam->iDecompositionStages);
 
   if (pWelsSvcRc->iPreviousGopSize  != kiGopSize) {
-#if GOM_TRACE_FLAG
-    RcTraceVGopBitrate (pEncCtx);
-#endif
     RcInitTlWeight (pEncCtx);
     RcInitVGop (pEncCtx);
   } else if (pWelsSvcRc->iGopIndexInVGop == pWelsSvcRc->iGopNumberInVGop || pEncCtx->eSliceType == I_SLICE) {
-#if GOM_TRACE_FLAG
-    RcTraceVGopBitrate (pEncCtx);
-#endif
     RcInitVGop (pEncCtx);
   }
   pWelsSvcRc->iGopIndexInVGop++;

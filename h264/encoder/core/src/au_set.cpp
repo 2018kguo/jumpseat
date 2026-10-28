@@ -407,45 +407,7 @@ int32_t WelsWritePpsSyntax (SWelsPPS* pPps, SBitStringAux* pBitStringAux,
   BsWriteOneBit (pLocalBitStringAux, pPps->bEntropyCodingModeFlag);
   BsWriteOneBit (pLocalBitStringAux, false/*pPps->bPicOrderPresentFlag*/);
 
-#ifdef DISABLE_FMO_FEATURE
   BsWriteUE (pLocalBitStringAux, 0/*pPps->uiNumSliceGroups - 1*/);
-#else
-  BsWriteUE (pLocalBitStringAux, pPps->uiNumSliceGroups - 1);
-  if (pPps->uiNumSliceGroups > 1) {
-    uint32_t i, uiNumBits;
-
-    BsWriteUE (pLocalBitStringAux, pPps->uiSliceGroupMapType);
-
-    switch (pPps->uiSliceGroupMapType) {
-    case 0:
-      for (i = 0; i < pPps->uiNumSliceGroups; i ++) {
-        BsWriteUE (pLocalBitStringAux, pPps->uiRunLength[i] - 1);
-      }
-      break;
-    case 2:
-      for (i = 0; i < pPps->uiNumSliceGroups; i ++) {
-        BsWriteUE (pLocalBitStringAux, pPps->uiTopLeft[i]);
-        BsWriteUE (pLocalBitStringAux, pPps->uiBottomRight[i]);
-      }
-      break;
-    case 3:
-    case 4:
-    case 5:
-      BsWriteOneBit (pLocalBitStringAux, pPps->bSliceGroupChangeDirectionFlag);
-      BsWriteUE (pLocalBitStringAux, pPps->uiSliceGroupChangeRate - 1);
-      break;
-    case 6:
-      BsWriteUE (pLocalBitStringAux, pPps->uiPicSizeInMapUnits - 1);
-      uiNumBits = 0;///////////////////WELS_CEILLOG2(pPps->uiPicSizeInMapUnits);
-      for (i = 0; i < pPps->uiPicSizeInMapUnits; i ++) {
-        BsWriteBits (pLocalBitStringAux, uiNumBits, pPps->uiSliceGroupId[i]);
-      }
-      break;
-    default:
-      break;
-    }
-  }
-#endif//!DISABLE_FMO_FEATURE
 
   BsWriteUE (pLocalBitStringAux, 0/*pPps->uiNumRefIdxL0Active - 1*/);
   BsWriteUE (pLocalBitStringAux, 0/*pPps->uiNumRefIdxL1Active - 1*/);
@@ -605,29 +567,6 @@ int32_t WelsInitPps (SWelsPPS* pPps,
   pPps->iPpsId = kuiPpsId;
   pPps->iSpsId = pUsedSps->uiSpsId;
   pPps->bEntropyCodingModeFlag = kbEntropyCodingModeFlag;
-#if !defined(DISABLE_FMO_FEATURE)
-  pPps->uiNumSliceGroups = 1; //param->qos_param.sliceGroupCount;
-  if (pPps->uiNumSliceGroups > 1) {
-    pPps->uiSliceGroupMapType = 0; //param->qos_param.sliceGroupType;
-    if (pPps->uiSliceGroupMapType == 0) {
-      uint32_t uiGroup = 0;
-      while (uiGroup < pPps->uiNumSliceGroups) {
-        pPps->uiRunLength[uiGroup] = 25;
-        ++ uiGroup;
-      }
-    } else if (pPps->uiSliceGroupMapType == 2) {
-      memset (&pPps->uiTopLeft[0], 0, MAX_SLICEGROUP_IDS * sizeof (pPps->uiTopLeft[0]));
-      memset (&pPps->uiBottomRight[0], 0, MAX_SLICEGROUP_IDS * sizeof (pPps->uiBottomRight[0]));
-    } else if (pPps->uiSliceGroupMapType >= 3 &&
-               pPps->uiSliceGroupMapType <= 5) {
-      pPps->bSliceGroupChangeDirectionFlag = false;
-      pPps->uiSliceGroupChangeRate = 0;
-    } else if (pPps->uiSliceGroupMapType == 6) {
-      pPps->uiPicSizeInMapUnits = 1;
-      memset (&pPps->uiSliceGroupId[0], 0, MAX_SLICEGROUP_IDS * sizeof (pPps->uiSliceGroupId[0]));
-    }
-  }
-#endif//!DISABLE_FMO_FEATURE
 
   pPps->iPicInitQp = 26;
   pPps->iPicInitQs = 26;

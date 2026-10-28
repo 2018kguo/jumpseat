@@ -91,9 +91,6 @@ void WelsMarkPic (sWelsEncCtx* pCtx);
 void UpdateBlockStatic (sWelsEncCtx* pCtx);
 void UpdateSrcPicList (sWelsEncCtx* pCtx);
 
-#ifdef LONG_TERM_REF_DUMP
-void DumpRef (sWelsEncCtx* ctx);
-#endif
 
 }
 #endif//REFERENCE_PICTURE_LIST_MANAGEMENT_SVC_H__

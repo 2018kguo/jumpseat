@@ -78,7 +78,6 @@
 #endif//WELS_ALIGN
 
 
-#if 1 // Alternative implementation of WELS_MAX and WELS_MIN
 #ifndef WELS_MAX
 #define WELS_MAX(x, y) ((x) > (y) ? (x) : (y))
 #endif//WELS_MAX
@@ -89,15 +88,6 @@
 #ifndef WELS_MIN_POSITIVE
 #define WELS_MIN_POSITIVE(x, y) (x >= 0 && y >= 0) ? WELS_MIN(x, y) : WELS_MAX(x, y);
 #endif//WELS_MIN_POSITIVE
-#else // Alternative implementation of WELS_MAX and WELS_MIN
-#ifndef WELS_MAX
-#define WELS_MAX(x, y) ((x) - (((x)-(y))&(((x)-(y))>>31)))
-#endif//WELS_MAX
-
-#ifndef WELS_MIN
-#define WELS_MIN(x, y) ((y) + (((x)-(y))&(((x)-(y))>>31)))
-#endif//WELS_MIN
-#endif // Alternative implementation of WELS_MAX and WELS_MIN
 
 
 #ifndef WELS_CEIL
@@ -142,7 +132,6 @@ static inline int32_t CeilLog2 (int32_t i) {
 /*
 the second path will degrades the performance
 */
-#if 1
 static inline int32_t WelsMedian (int32_t iX,  int32_t iY, int32_t iZ) {
   int32_t iMin = iX, iMax = iX;
 
@@ -158,17 +147,6 @@ static inline int32_t WelsMedian (int32_t iX,  int32_t iY, int32_t iZ) {
 
   return (iX + iY + iZ) - (iMin + iMax);
 }
-#else
-static inline int32_t WelsMedian (int32_t iX,  int32_t iY, int32_t iZ) {
-  int32_t iTmp = (iX - iY) & ((iX - iY) >> 31);
-  iX -= iTmp;
-  iY += iTmp;
-  iY -= (iY - iZ) & ((iY - iZ) >> 31);
-  iY += (iX - iY) & ((iX - iY) >> 31);
-  return iY;
-}
-
-#endif
 
 #ifndef NEG_NUM
 //#define NEG_NUM( num ) (-num)
@@ -184,11 +162,7 @@ static inline uint8_t WelsClip1 (int32_t iX) {
 #define WELS_SIGN(iX) ((int32_t)(iX) >> 31)
 #endif //WELS_SIGN
 #ifndef WELS_ABS
-#if 1
 #define WELS_ABS(iX) ((iX)>0 ? (iX) : -(iX))
-#else
-#define WELS_ABS(iX) ((WELS_SIGN(iX) ^ (int32_t)(iX)) - WELS_SIGN(iX))
-#endif
 #endif //WELS_ABS
 
 // WELS_CLIP3

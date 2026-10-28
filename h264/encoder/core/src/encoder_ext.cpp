@@ -2796,9 +2796,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
     if (pCtx->eSliceType != I_SLICE) {
       UpdateBlockStatic (pCtx);
     }
-#ifdef LONG_TERM_REF_DUMP
-    DumpRef (pCtx);
-#endif
     pCtx->pVpp->AnalyzePictureComplexity (pCtx, pCtx->pEncPic, ((pCtx->eSliceType == P_SLICE)
                                             && (pCtx->iNumRef0 > 0)) ? pCtx->pRefList0[0] : NULL,
                                             iCurDid, (pCtx->eSliceType == P_SLICE) && pSvcParam->bEnableBackgroundDetection);

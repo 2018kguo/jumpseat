@@ -137,22 +137,6 @@ typedef struct TagWelsPPS {
 uint32_t        iSpsId;
 uint32_t        iPpsId;
 
-#if !defined(DISABLE_FMO_FEATURE)
-uint32_t        uiNumSliceGroups;
-uint32_t        uiSliceGroupMapType;
-/* uiSliceGroupMapType = 0 */
-uint32_t        uiRunLength[MAX_SLICEGROUP_IDS];
-/* uiSliceGroupMapType = 2 */
-uint32_t        uiTopLeft[MAX_SLICEGROUP_IDS];
-uint32_t        uiBottomRight[MAX_SLICEGROUP_IDS];
-/* uiSliceGroupMapType = 3, 4 or 5 */
-/* uiSliceGroupMapType = 3, 4 or 5 */
-bool            bSliceGroupChangeDirectionFlag;
-uint32_t        uiSliceGroupChangeRate;
-/* uiSliceGroupMapType = 6 */
-uint32_t        uiPicSizeInMapUnits;
-uint32_t        uiSliceGroupId[MAX_SLICEGROUP_IDS];
-#endif//!DISABLE_FMO_FEATURE
 
 // uint32_t        uiNumRefIdxL0Active;
 // uint32_t        uiNumRefIdxL1Active;

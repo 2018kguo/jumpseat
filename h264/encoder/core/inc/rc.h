@@ -53,7 +53,6 @@ namespace WelsEnc {
 typedef struct TagWelsEncCtx sWelsEncCtx;
 
 //trace
-#define GOM_TRACE_FLAG 0
 #define GOM_H_SCC               8
 
 enum {

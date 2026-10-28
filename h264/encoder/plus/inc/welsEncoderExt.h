@@ -50,9 +50,7 @@
 #include "extern.h"
 #include "cpu.h"
 
-//#define OUTPUT_BIT_STREAM
 //#define DUMP_SRC_PICTURE
-//#define REC_FRAME_COUNT
 
 class ISVCEncoder;
 namespace WelsEnc {
@@ -111,16 +109,7 @@ class CWelsH264SVCEncoder : public ISVCEncoder {
   int32_t           m_iCspInternal;
   bool              m_bInitialFlag;
 
-#ifdef OUTPUT_BIT_STREAM
-  FILE*             m_pFileBs;
-  FILE*             m_pFileBsSize;
-  bool              m_bSwitch;
-  int32_t           m_iSwitchTimes;
-#endif//OUTPUT_BIT_STREAM
 
-#ifdef REC_FRAME_COUNT
-  int32_t           m_uiCountFrameNum;
-#endif//REC_FRAME_COUNT
 
   void    InitEncoder (void);
   void    DumpSrcPicture (const SSourcePicture*  pSrcPic, const int iUsageType);

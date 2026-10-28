@@ -429,35 +429,6 @@ void WelsMdInterFinePartitionVaaOnScreen (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd
     iBestCost = iCostP8x8;
     pCurMb->uiMbType = MB_TYPE_8x8;
     memset (pCurMb->uiSubMbType, SUB_MB_TYPE_8x8, 4);
-#if 0 //Disable for sub8x8 modes for now
-    iBestCost = 0;
-    //reset neighbor info for sub8x8
-    pMbCache->sMvComponents.iRefIndexCache [9] = pMbCache->sMvComponents.iRefIndexCache [21] = REF_NOT_AVAIL;
-    for (int32_t i8x8Idx = 0; i8x8Idx < 4; ++i8x8Idx) {
-      int32_t iCurCostSub8x8, iBestCostSub8x8 = pWelsMd->sMe.sMe8x8[i8x8Idx].uiSatdCost;
-      //4x4
-      iCurCostSub8x8 = WelsMdP4x4 (pEncCtx->pFuncList, pCurDqLayer, pWelsMd, pSlice, i8x8Idx);
-      if (iCurCostSub8x8 < iBestCostSub8x8) {
-        pCurMb->uiSubMbType[i8x8Idx] = SUB_MB_TYPE_4x4;
-        iBestCostSub8x8 = iCurCostSub8x8;
-      }
-      //8x4
-      iCurCostSub8x8 = WelsMdP8x4 (pEncCtx->pFuncList, pCurDqLayer, pWelsMd, pSlice, i8x8Idx);
-      if (iCurCostSub8x8 < iBestCostSub8x8) {
-        pCurMb->uiSubMbType[i8x8Idx] = SUB_MB_TYPE_8x4;
-        iBestCostSub8x8 = iCurCostSub8x8;
-      }
-      //4x8
-      iCurCostSub8x8 = WelsMdP4x8 (pEncCtx->pFuncList, pCurDqLayer, pWelsMd, pSlice, i8x8Idx);
-      if (iCurCostSub8x8 < iBestCostSub8x8) {
-        pCurMb->uiSubMbType[i8x8Idx] = SUB_MB_TYPE_4x8;
-        iBestCostSub8x8 = iCurCostSub8x8;
-      }
-      iBestCost += iBestCostSub8x8;
-    }
-    if ((pCurMb->uiSubMbType[0] == SUB_MB_TYPE_8x8) && (pCurMb->uiSubMbType[1] == SUB_MB_TYPE_8x8)
-        && (pCurMb->uiSubMbType[2] == SUB_MB_TYPE_8x8) && (pCurMb->uiSubMbType[3] == SUB_MB_TYPE_8x8)) //all 8x8
-#endif
       TryModeMerge (pMbCache, pWelsMd, pCurMb);
   }
   pWelsMd->iCostLuma = iBestCost;

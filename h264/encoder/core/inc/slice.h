@@ -120,9 +120,6 @@ int8_t          iSliceQpDelta;
 uint8_t         uiDisableDeblockingFilterIdc;
 int8_t          iSliceAlphaC0Offset;
 int8_t          iSliceBetaOffset;
-#if !defined(DISABLE_FMO_FEATURE)
-int32_t         iSliceGroupChangeCycle;
-#endif//!DISABLE_FMO_FEATURE
 
 SWelsSPS*       pSps;
 SWelsPPS*       pPps;
