@@ -86,45 +86,10 @@ CVpFrameWork::CVpFrameWork (uint32_t uiThreadsNum, EResult& eReturn) {
 CVpFrameWork::~CVpFrameWork() {
   for (int32_t i = 0; i < MAX_STRATEGY_NUM; i++) {
     if (m_pStgChain[i]) {
-      Uninit (m_pStgChain[i]->m_eMethod);
       delete m_pStgChain[i];
     }
   }
 
-}
-
-EResult CVpFrameWork::Init (int32_t iType, void* pCfg) {
-  EResult eReturn   = RET_SUCCESS;
-  int32_t iCurIdx    = WelsStaticCast (int32_t, WelsVpGetValidMethod (iType)) - 1;
-
-  Uninit (iType);
-
-
-  IStrategy* pStrategy = m_pStgChain[iCurIdx];
-  if (pStrategy)
-    eReturn = pStrategy->Init (0, pCfg);
-
-
-  return eReturn;
-}
-
-EResult CVpFrameWork::Uninit (int32_t iType) {
-  EResult eReturn        = RET_SUCCESS;
-  int32_t iCurIdx    = WelsStaticCast (int32_t, WelsVpGetValidMethod (iType)) - 1;
-
-
-  IStrategy* pStrategy = m_pStgChain[iCurIdx];
-  if (pStrategy)
-    eReturn = pStrategy->Uninit (0);
-
-
-  return eReturn;
-}
-
-EResult CVpFrameWork::Flush (int32_t iType) {
-  EResult eReturn        = RET_SUCCESS;
-
-  return eReturn;
 }
 
 EResult CVpFrameWork::Process (int32_t iType, SPixMap* pSrcPixMap, SPixMap* pDstPixMap) {
@@ -178,12 +143,6 @@ EResult CVpFrameWork::Set (int32_t iType, void* pParam) {
   if (pStrategy)
     eReturn = pStrategy->Set (0, pParam);
 
-
-  return eReturn;
-}
-
-EResult CVpFrameWork::SpecialFeature (int32_t iType, void* pIn, void* pOut) {
-  EResult eReturn        = RET_SUCCESS;
 
   return eReturn;
 }

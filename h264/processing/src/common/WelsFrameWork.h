@@ -65,22 +65,10 @@ class IStrategy : public IWelsVP {
   virtual ~IStrategy() {}
 
  public:
-  virtual EResult Init (int32_t iType, void* pCfg)  {
-    return RET_SUCCESS;
-  }
-  virtual EResult Uninit (int32_t iType)              {
-    return RET_SUCCESS;
-  }
-  virtual EResult Flush (int32_t iType)               {
-    return RET_SUCCESS;
-  }
   virtual EResult Get (int32_t iType, void* pParam) {
     return RET_SUCCESS;
   }
   virtual EResult Set (int32_t iType, void* pParam) {
-    return RET_SUCCESS;
-  }
-  virtual EResult SpecialFeature (int32_t iType, void* pIn, void* pOut) {
     return RET_SUCCESS;
   }
   virtual EResult Process (int32_t iType, SPixMap* pSrc, SPixMap* pDst) = 0;
@@ -98,19 +86,11 @@ class CVpFrameWork : public IWelsVP {
   ~CVpFrameWork();
 
  public:
-  EResult Init (int32_t iType, void* pCfg);
-
-  EResult Uninit (int32_t iType);
-
-  EResult Flush (int32_t iType);
-
   EResult Process (int32_t iType, SPixMap* pSrc, SPixMap* pDst);
 
   EResult Get (int32_t iType, void* pParam);
 
   EResult Set (int32_t iType, void* pParam);
-
-  EResult SpecialFeature (int32_t iType, void* pIn, void* pOut);
 
  private:
   bool  CheckValid (EMethods eMethod, SPixMap& sSrc, SPixMap& sDst);

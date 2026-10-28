@@ -217,13 +217,9 @@ class IWelsVP {
   virtual ~IWelsVP() {}
 
  public:
-  virtual EResult Init (int iType, void* pCfg) = 0;
-  virtual EResult Uninit (int iType) = 0;
-  virtual EResult Flush (int iType) = 0;
   virtual EResult Process (int iType, SPixMap* pSrc, SPixMap* dst) = 0;
   virtual EResult Get (int iType, void* pParam) = 0;
   virtual EResult Set (int iType, void* pParam) = 0;
-  virtual EResult SpecialFeature (int iType, void* pIn, void* pOut) = 0;
 };
 
 
