@@ -214,11 +214,6 @@ typedef struct TagWelsEncCtx {
   SParaSetOffset*   pPSOVector;
   CMemoryAlign*     pMemAlign;
 
-#if defined(STAT_OUTPUT)
-// overall stat pData, refer to SStatData in stat.h, in case avc to use stat[0][0]
-  SStatData         sStatData [ MAX_DEPENDENCY_LAYER ] [ MAX_QUALITY_LEVEL ];
-  SStatSliceInfo    sPerInfo;
-#endif//STAT_OUTPUT
 
   //related to Statistics
   int64_t            uiStartTimestamp;
@@ -229,9 +224,6 @@ typedef struct TagWelsEncCtx {
   int32_t iEncoderError;
   WELS_MUTEX mutexEncoderError;
   bool bDeliveryFlag;
-#ifdef ENABLE_FRAME_DUMP
-  bool bDependencyRecFlag[MAX_DEPENDENCY_LAYER];
-#endif
   int64_t            uiLastTimestamp;
   uint8_t*           pDynamicBsBuffer[MAX_THREADS_NUM];
 } sWelsEncCtx/*, *PWelsEncCtx*/;

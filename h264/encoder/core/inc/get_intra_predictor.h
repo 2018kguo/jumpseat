@@ -111,24 +111,6 @@ void WelsI4x4LumaPredVL_mmx (uint8_t* pPred, uint8_t* pRef, const int32_t kiStri
 void WelsI4x4LumaPredHU_mmx (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 #endif//X86_ASM
 
-#if defined(HAVE_NEON)
-void WelsI16x16LumaPredDc_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI16x16LumaPredPlane_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-
-void WelsI4x4LumaPredV_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI4x4LumaPredH_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI4x4LumaPredDDL_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI4x4LumaPredDDR_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI4x4LumaPredVL_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI4x4LumaPredVR_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI4x4LumaPredHU_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI4x4LumaPredHD_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-
-void WelsIChromaPredV_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsIChromaPredH_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsIChromaPredDc_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsIChromaPredPlane_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-#endif//HAVE_NEON
 
 #if defined(HAVE_NEON_AARCH64)
 void WelsI16x16LumaPredDc_AArch64_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
@@ -154,25 +136,8 @@ void WelsIChromaPredPlane_AArch64_neon (uint8_t* pPred, uint8_t* pRef, const int
 void WelsIChromaPredDcTop_AArch64_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 #endif//HAVE_NEON_AARCH64
 
-#if defined(HAVE_MMI)
-void WelsI16x16LumaPredDc_mmi (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI16x16LumaPredPlane_mmi (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 
-void WelsIChromaPredH_mmi (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsIChromaPredV_mmi (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsIChromaPredDc_mmi (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsIChromaPredPlane_mmi (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-#endif//HAVE_MMI
 
-#if defined(HAVE_LSX)
-void WelsI16x16LumaPredPlane_lsx (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-#endif//HAVE_LSX
-
-#if defined(HAVE_LASX)
-void WelsIChromaPredV_lasx (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsIChromaPredH_lasx (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsIChromaPredDc_lasx (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-#endif//HAVE_LASX
 
 #if defined(__cplusplus)
 }

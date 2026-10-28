@@ -122,18 +122,6 @@ void WelsInitMeFunc (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag, bool bScre
     }
 #endif
 
-#if defined (HAVE_NEON)
-    if (uiCpuFlag & WELS_CPU_NEON) {
-      //for feature search
-      pFuncList->pfInitializeHashforFeature = InitializeHashforFeature_neon;
-      pFuncList->pfFillQpelLocationByFeatureValue = FillQpelLocationByFeatureValue_neon;
-      pFuncList->pfCalculateBlockFeatureOfFrame[0] = SumOf8x8BlockOfFrame_neon;
-      pFuncList->pfCalculateBlockFeatureOfFrame[1] = SumOf16x16BlockOfFrame_neon;
-      //TODO: it is possible to differentiate width that is times of 8, so as to accelerate the speed when width is times of 8?
-      pFuncList->pfCalculateSingleBlockFeature[0] = SumOf8x8SingleBlock_neon;
-      pFuncList->pfCalculateSingleBlockFeature[1] = SumOf16x16SingleBlock_neon;
-    }
-#endif
 
 #if defined (HAVE_NEON_AARCH64)
     if (uiCpuFlag & WELS_CPU_NEON) {
@@ -148,13 +136,6 @@ void WelsInitMeFunc (SWelsFuncPtrList* pFuncList, uint32_t uiCpuFlag, bool bScre
     }
 #endif
 
-#if defined (HAVE_LSX)
-    if (uiCpuFlag & WELS_CPU_LSX) {
-      pFuncList->pfCalculateBlockFeatureOfFrame[0] = SumOf8x8BlockOfFrame_lsx;
-      //TODO: it is possible to differentiate width that is times of 8, so as to accelerate the speed when width is times of 8?
-      pFuncList->pfCalculateSingleBlockFeature[0] = SumOf8x8SingleBlock_lsx;
-    }
-#endif
   }
 }
 

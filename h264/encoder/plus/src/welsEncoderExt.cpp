@@ -44,15 +44,7 @@
 
 #include <time.h>
 #include <measure_time.h>
-#if defined(_WIN32) /*&& defined(_DEBUG)*/
-
-#include <windows.h>
-#include <stdio.h>
-#include <stdarg.h>
-#include <sys/types.h>
-#else
 #include <sys/time.h>
-#endif
 
 namespace WelsEnc {
 
@@ -1074,13 +1066,6 @@ int CWelsH264SVCEncoder::SetOption (ENCODER_OPTION eOptionId, void* pOption) {
   }
   break;
   case ENCODER_OPTION_DUMP_FILE: {
-#ifdef ENABLE_FRAME_DUMP
-    if (m_pEncContext->pSvcParam != NULL) {
-      SDumpLayer* pDump = (static_cast<SDumpLayer*> (pOption));
-      WelsStrncpy (m_pEncContext->pSvcParam->sDependencyLayers[pDump->iLayer].sRecFileName,
-                   sizeof (m_pEncContext->pSvcParam->sDependencyLayers[pDump->iLayer].sRecFileName), pDump->pFileName);
-    }
-#endif
   }
   break;
   case ENCODER_OPTION_TRACE_LEVEL: {

@@ -67,15 +67,7 @@
     _tp (*_nm)[(_cy)] = (_tp (*)[(_cy)])_nm ## _tEmP_al;
 
 
-#if defined(_MSC_VER)
-
-#if(_MSC_VER < 1700)
-#define inline __inline
-#endif
-
-#define ALIGNED_DECLARE( type, var, n ) __declspec(align(n)) type var
-
-#elif defined(__GNUC__)
+#if   defined(__GNUC__)
 
 #define ALIGNED_DECLARE( type, var, n ) type var __attribute__((aligned(n)))
 #endif//_MSC_VER

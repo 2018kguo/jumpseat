@@ -39,9 +39,6 @@
  */
 #include <string.h>
 #include <stdio.h>
-#ifdef ANDROID_NDK
-#include <cpu-features.h>
-#endif
 #include "cpu.h"
 #include "cpu_core.h"
 
@@ -225,85 +222,6 @@ void WelsCPURestore (const uint32_t kuiCPU) {
   }
 }
 
-#elif defined(HAVE_NEON) //For supporting both android platform and iOS platform
-#if defined(ANDROID_NDK)
-uint32_t WelsCPUFeatureDetect (int32_t* pNumberOfLogicProcessors) {
-  uint32_t         uiCPU = 0;
-  AndroidCpuFamily cpuFamily = ANDROID_CPU_FAMILY_UNKNOWN;
-  uint64_t         uiFeatures = 0;
-  cpuFamily = android_getCpuFamily();
-  if (cpuFamily == ANDROID_CPU_FAMILY_ARM) {
-    uiFeatures = android_getCpuFeatures();
-    if (uiFeatures & ANDROID_CPU_ARM_FEATURE_ARMv7) {
-      uiCPU |= WELS_CPU_ARMv7;
-    }
-    if (uiFeatures & ANDROID_CPU_ARM_FEATURE_VFPv3) {
-      uiCPU |= WELS_CPU_VFPv3;
-    }
-    if (uiFeatures & ANDROID_CPU_ARM_FEATURE_NEON) {
-      uiCPU |= WELS_CPU_NEON;
-    }
-  }
-
-  if (pNumberOfLogicProcessors != NULL) {
-    *pNumberOfLogicProcessors = android_getCpuCount();
-  }
-
-  return uiCPU;
-}
-
-#elif defined(__APPLE__)
-uint32_t WelsCPUFeatureDetect (int32_t* pNumberOfLogicProcessors) {
-  uint32_t       uiCPU = 0;
-
-#if defined(__ARM_NEON__)
-  uiCPU |= WELS_CPU_ARMv7;
-  uiCPU |= WELS_CPU_VFPv3;
-  uiCPU |= WELS_CPU_NEON;
-#endif
-  return uiCPU;
-}
-#elif defined(__linux__)
-
-/* Generic arm/linux cpu feature detection */
-uint32_t WelsCPUFeatureDetect (int32_t* pNumberOfLogicProcessors) {
-  int flags = 0;
-  FILE* f = fopen ("/proc/cpuinfo", "r");
-
-#if defined(__chromeos__)
-  flags |= WELS_CPU_NEON;
-#endif
-
-  if (!f) {
-    return flags;
-  }
-
-  char buf[200];
-  while (fgets (buf, sizeof (buf), f)) {
-    if (!strncmp (buf, "Features", strlen ("Features"))) {
-      // The asimd and fp features are listed on 64 bit ARMv8 kernels
-      if (strstr (buf, " neon ") || strstr (buf, " asimd "))
-        flags |= WELS_CPU_NEON;
-      if (strstr (buf, " vfpv3 ") || strstr (buf, " fp "))
-        flags |= WELS_CPU_VFPv3;
-      break;
-    }
-  }
-  fclose (f);
-  return flags;
-}
-
-#else /* HAVE_NEON enabled but no runtime detection */
-
-/* No runtime feature detection available, but built with HAVE_NEON - assume
- * that NEON and all associated features are available. */
-
-uint32_t WelsCPUFeatureDetect (int32_t* pNumberOfLogicProcessors) {
-  return WELS_CPU_ARMv7 |
-         WELS_CPU_VFPv3 |
-         WELS_CPU_NEON;
-}
-#endif
 #elif defined(HAVE_NEON_AARCH64)
 
 /* For AArch64, no runtime detection actually is necessary for now, since
@@ -357,23 +275,6 @@ static uint32_t get_cpu_flags_from_cpuinfo(void)
 
 uint32_t WelsCPUFeatureDetect (int32_t* pNumberOfLogicProcessors) {
   return get_cpu_flags_from_cpuinfo();
-}
-
-#elif defined(__loongarch__) && defined(__linux__)
-/* The getauxval is used to dynamically identify the characteristics
- * of the loongarch in the running processor during software execution. */
-#include <sys/auxv.h>
-#define LA_HWCAP_LSX    (1 << 4)
-#define LA_HWCAP_LASX   (1 << 5)
-
-uint32_t WelsCPUFeatureDetect (int32_t* pNumberOfLogicProcessors) {
-  uint32_t flags = 0;
-  uint32_t flag  = (uint32_t)getauxval(AT_HWCAP);
-  if (flag & LA_HWCAP_LSX)
-    flags |= WELS_CPU_LSX;
-  if (flag & LA_HWCAP_LASX)
-    flags |= WELS_CPU_LASX;
-  return flags;
 }
 
 #else /* Neither X86_ASM, HAVE_NEON, HAVE_NEON_AARCH64, loongarch nor mips */

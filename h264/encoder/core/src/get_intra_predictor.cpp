@@ -644,28 +644,6 @@ void WelsInitIntraPredFuncs (SWelsFuncPtrList* pFuncList, const uint32_t kuiCpuF
   pFuncList->pfGetChromaPred[C_PRED_DC_L] = WelsIChromaPredDcLeft_c;
   pFuncList->pfGetChromaPred[C_PRED_DC_T] = WelsIChromaPredDcTop_c;
   pFuncList->pfGetChromaPred[C_PRED_DC_128] = WelsIChromaPredDcNA_c;
-#ifdef HAVE_NEON
-  if (kuiCpuFlag & WELS_CPU_NEON) {
-    pFuncList->pfGetLumaI4x4Pred[I4_PRED_DDR] = WelsI4x4LumaPredDDR_neon;
-    pFuncList->pfGetLumaI4x4Pred[I4_PRED_HD]  = WelsI4x4LumaPredHD_neon;
-    pFuncList->pfGetLumaI4x4Pred[I4_PRED_HU]  = WelsI4x4LumaPredHU_neon;
-    pFuncList->pfGetLumaI4x4Pred[I4_PRED_VR]  = WelsI4x4LumaPredVR_neon;
-    pFuncList->pfGetLumaI4x4Pred[I4_PRED_DDL] = WelsI4x4LumaPredDDL_neon;
-    pFuncList->pfGetLumaI4x4Pred[I4_PRED_VL]  = WelsI4x4LumaPredVL_neon;
-    pFuncList->pfGetLumaI4x4Pred[I4_PRED_H] = WelsI4x4LumaPredH_neon;
-    pFuncList->pfGetLumaI4x4Pred[I4_PRED_V] = WelsI4x4LumaPredV_neon;
-
-    pFuncList->pfGetLumaI16x16Pred[I16_PRED_V] = WelsI16x16LumaPredV_neon;
-    pFuncList->pfGetLumaI16x16Pred[I16_PRED_H] = WelsI16x16LumaPredH_neon;
-    pFuncList->pfGetLumaI16x16Pred[I16_PRED_DC] = WelsI16x16LumaPredDc_neon;
-    pFuncList->pfGetLumaI16x16Pred[I16_PRED_P] = WelsI16x16LumaPredPlane_neon;
-
-    pFuncList->pfGetChromaPred[C_PRED_DC]   = WelsIChromaPredDc_neon;
-    pFuncList->pfGetChromaPred[C_PRED_V]    = WelsIChromaPredV_neon;
-    pFuncList->pfGetChromaPred[C_PRED_P]    = WelsIChromaPredPlane_neon;
-    pFuncList->pfGetChromaPred[C_PRED_H]    = WelsIChromaPredH_neon;
-  }
-#endif
 
 #if defined(HAVE_NEON_AARCH64)
   if (kuiCpuFlag & WELS_CPU_NEON) {
@@ -721,34 +699,7 @@ void WelsInitIntraPredFuncs (SWelsFuncPtrList* pFuncList, const uint32_t kuiCpuF
   }
 #endif
 
-#if defined(HAVE_MMI)
-  if (kuiCpuFlag & WELS_CPU_MMI) {
-    pFuncList->pfGetLumaI16x16Pred[I16_PRED_V] = WelsI16x16LumaPredV_mmi;
-    pFuncList->pfGetLumaI16x16Pred[I16_PRED_H] = WelsI16x16LumaPredH_mmi;
-    pFuncList->pfGetLumaI16x16Pred[I16_PRED_DC] = WelsI16x16LumaPredDc_mmi;
-    pFuncList->pfGetLumaI16x16Pred[I16_PRED_P] = WelsI16x16LumaPredPlane_mmi;
 
-    pFuncList->pfGetChromaPred[C_PRED_H] = WelsIChromaPredH_mmi;
-    pFuncList->pfGetChromaPred[C_PRED_DC]   = WelsIChromaPredDc_mmi;
-    pFuncList->pfGetChromaPred[C_PRED_V]    = WelsIChromaPredV_mmi;
-    pFuncList->pfGetChromaPred[C_PRED_P]    = WelsIChromaPredPlane_mmi;
-  }
-#endif//HAVE_MMI
 
-#if defined(HAVE_LSX)
-  if (kuiCpuFlag & WELS_CPU_LSX) {
-    pFuncList->pfGetLumaI16x16Pred[I16_PRED_V] = WelsI16x16LumaPredV_lsx;
-    pFuncList->pfGetLumaI16x16Pred[I16_PRED_H] = WelsI16x16LumaPredH_lsx;
-    pFuncList->pfGetLumaI16x16Pred[I16_PRED_P] = WelsI16x16LumaPredPlane_lsx;
-  }
-#endif//HAVE_LSX
-
-#if defined(HAVE_LASX)
-  if (kuiCpuFlag & WELS_CPU_LASX) {
-    pFuncList->pfGetChromaPred[C_PRED_V]    = WelsIChromaPredV_lasx;
-    pFuncList->pfGetChromaPred[C_PRED_H]    = WelsIChromaPredH_lasx;
-    pFuncList->pfGetChromaPred[C_PRED_DC]   = WelsIChromaPredDc_lasx;
-  }
-#endif//HAVE_LASX
 }
 }

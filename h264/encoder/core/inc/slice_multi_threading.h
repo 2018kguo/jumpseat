@@ -70,9 +70,7 @@ void ReleaseMtResource (sWelsEncCtx** ppCtx);
 
 int32_t AppendSliceToFrameBs (sWelsEncCtx* pCtx, SLayerBSInfo* pLbi, const int32_t kiSliceCount);
 
-#if !defined(_WIN32)
 WELS_THREAD_ROUTINE_TYPE UpdateMbListThreadProc (void* arg);
-#endif//!_WIN32
 
 int32_t DynamicDetectCpuCores();
 

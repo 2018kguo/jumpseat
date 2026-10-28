@@ -59,20 +59,8 @@ $(TargetPath)
 #define SINGLE_REF_FRAME            // need to disable it when use multi-reference
 
 
-#if defined(WELS_TESTBED)               // for SGE testing
-#define ENABLE_FRAME_DUMP
-
-#ifdef FRAME_INFO_OUTPUT
-#undef FRAME_INFO_OUTPUT
-#endif//FRAME_INFO_OUTPUT
-#endif//WELS_TESTBED
 
 
-#if defined(__UNITTEST__)               // for unittest
-#ifndef ENABLE_FRAME_DUMP
-#define ENABLE_FRAME_DUMP
-#endif//ENABLE_FRAME_DUMP
-#endif//__UNITTEST__
 
 //#define STAT_OUTPUT
 //#define MB_TYPES_CHECK
@@ -85,54 +73,19 @@ $(TargetPath)
 
 /* macros dependencies check */
 //@if !FRAME_INFO_OUTPUT
-#if !defined(FRAME_INFO_OUTPUT)
 
 //#if defined(STAT_OUTPUT)
 //#undef STAT_OUTPUT
 //#endif//STAT_OUTPUT
 
-#if defined(LAYER_INFO_OUTPUT)
-#undef LAYER_INFO_OUTPUT
-#endif//LAYER_INFO_OUTPUT
 
-#if defined(SLICE_INFO_OUTPUT)
-#undef SLICE_INFO_OUTPUT
-#endif//SLICE_INFO_OUTPUT
 
-#if defined(MB_TYPES_INFO_OUTPUT)
-#undef MB_TYPES_INFO_OUTPUT
-#endif//MB_TYPES_INFO_OUTPUT
 
-#endif//FRAME_INFO_OUTPUT
 
 //@if SLICE_INFO_OUTPUT
-#if defined(SLICE_INFO_OUTPUT)
 
-#if !defined(FRAME_INFO_OUTPUT)
-#define FRAME_INFO_OUTPUT
-#endif//FRAME_INFO_OUTPUT
-
-#if !defined(LAYER_INFO_OUTPUT)
-#define LAYER_INFO_OUTPUT
-#endif//LAYER_INFO_OUTPUT
-
-#endif//SLICE_INFO_OUTPUT
-
-#if defined(LAYER_INFO_OUTPUT)
-
-#if !defined(FRAME_INFO_OUTPUT)
-#define FRAME_INFO_OUTPUT
-#endif//!FRAME_INFO_OUTPUT
-
-#endif//LAYER_INFO_OUTPUT
 
 //@if MB_TYPES_INFO_OUTPUT
-#if defined(MB_TYPES_INFO_OUTPUT)
-
-#if !defined(MB_TYPES_CHECK)
-#define MB_TYPES_CHECK
-#endif//MB_TYPES_CHECK
-#endif//MB_TYPES_INFO_OUTPUT
 
 #endif // AS264_COMMON_H_
 

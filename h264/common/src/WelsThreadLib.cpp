@@ -44,7 +44,7 @@
 #define _GNU_SOURCE
 #endif
 #include <sched.h>
-#elif !defined(_WIN32) && !defined(__CYGWIN__)
+#else
 #include <sys/types.h>
 #include <sys/param.h>
 #include <unistd.h>
@@ -61,45 +61,12 @@
 #define HW_NCPU_NAME "hw.ncpu"
 #endif
 #endif
-#ifdef ANDROID_NDK
-#include <cpu-features.h>
-#endif
-#ifdef __ANDROID__
-#include <android/api-level.h>
-#endif
 
 #include "WelsThreadLib.h"
 #include <stdio.h>
 #include <stdlib.h>
 
 
-#if defined(_WIN32) || defined(__CYGWIN__)
-
-WELS_THREAD_ERROR_CODE    WelsMutexInit (WELS_MUTEX*    mutex) {
-  InitializeCriticalSection (mutex);
-
-  return WELS_THREAD_ERROR_OK;
-}
-
-WELS_THREAD_ERROR_CODE    WelsMutexLock (WELS_MUTEX*    mutex) {
-  EnterCriticalSection (mutex);
-
-  return WELS_THREAD_ERROR_OK;
-}
-
-WELS_THREAD_ERROR_CODE    WelsMutexUnlock (WELS_MUTEX* mutex) {
-  LeaveCriticalSection (mutex);
-
-  return WELS_THREAD_ERROR_OK;
-}
-
-WELS_THREAD_ERROR_CODE    WelsMutexDestroy (WELS_MUTEX* mutex) {
-  DeleteCriticalSection (mutex);
-
-  return WELS_THREAD_ERROR_OK;
-}
-
-#else /* _WIN32 */
 
 WELS_THREAD_ERROR_CODE    WelsMutexInit (WELS_MUTEX*    mutex) {
   return pthread_mutex_init (mutex, NULL);
@@ -117,116 +84,7 @@ WELS_THREAD_ERROR_CODE    WelsMutexDestroy (WELS_MUTEX* mutex) {
   return pthread_mutex_destroy (mutex);
 }
 
-#endif /* !_WIN32 */
 
-#if defined(_WIN32) || defined(__CYGWIN__)
-
-WELS_THREAD_ERROR_CODE    WelsEventOpen (WELS_EVENT* event, const char* event_name) {
-  WELS_EVENT   h = CreateEvent (NULL, FALSE, FALSE, NULL);
-  *event = h;
-  if (h == NULL) {
-    return WELS_THREAD_ERROR_GENERAL;
-  }
-  return WELS_THREAD_ERROR_OK;
-}
-
-WELS_THREAD_ERROR_CODE    WelsEventSignal (WELS_EVENT* event, WELS_MUTEX *pMutex, int* iCondition) {
-  (*iCondition) --;
-  if ((*iCondition) <= 0) {
-    if (SetEvent (*event)) {
-      return WELS_THREAD_ERROR_OK;
-    }
-  }
-  return WELS_THREAD_ERROR_GENERAL;
-}
-
-WELS_THREAD_ERROR_CODE    WelsEventWait (WELS_EVENT* event, WELS_MUTEX* pMutex, int& iCondition) {
-  return WaitForSingleObject (*event, INFINITE);
-}
-
-WELS_THREAD_ERROR_CODE    WelsEventWaitWithTimeOut (WELS_EVENT* event, uint32_t dwMilliseconds, WELS_MUTEX* pMutex) {
-  return WaitForSingleObject (*event, dwMilliseconds);
-}
-
-WELS_THREAD_ERROR_CODE    WelsMultipleEventsWaitSingleBlocking (uint32_t nCount,
-    WELS_EVENT* event_list, WELS_EVENT* master_even, WELS_MUTEX* pMutext) {
-  // Don't need/use the master event for anything, since windows has got WaitForMultipleObjects
-  return WaitForMultipleObjects (nCount, event_list, FALSE, INFINITE);
-}
-
-WELS_THREAD_ERROR_CODE    WelsEventClose (WELS_EVENT* event, const char* event_name) {
-  CloseHandle (*event);
-
-  *event = NULL;
-  return WELS_THREAD_ERROR_OK;
-}
-
-#ifndef WP80
-void WelsSleep (uint32_t dwMilliSecond) {
-  ::Sleep (dwMilliSecond);
-}
-#else
-void WelsSleep (uint32_t dwMilliSecond) {
-  static WELS_EVENT hSleepEvent = NULL;
-  if (!hSleepEvent) {
-    WELS_EVENT hLocalSleepEvent = NULL;
-    WELS_THREAD_ERROR_CODE ret = WelsEventOpen (&hLocalSleepEvent);
-    if (WELS_THREAD_ERROR_OK != ret) {
-      return;
-    }
-    WELS_EVENT hPreviousEvent = InterlockedCompareExchangePointerRelease (&hSleepEvent, hLocalSleepEvent, NULL);
-    if (hPreviousEvent) {
-      WelsEventClose (&hLocalSleepEvent);
-    }
-    //On this singleton usage idea of using InterlockedCompareExchangePointerRelease:
-    //   similar idea of can be found at msdn blog when introducing InterlockedCompareExchangePointerRelease
-  }
-
-  WaitForSingleObject (hSleepEvent, dwMilliSecond);
-}
-#endif
-
-WELS_THREAD_ERROR_CODE    WelsThreadCreate (WELS_THREAD_HANDLE* thread,  LPWELS_THREAD_ROUTINE  routine,
-    void* arg, WELS_THREAD_ATTR attr) {
-  WELS_THREAD_HANDLE   h = CreateThread (NULL, 0, routine, arg, 0, NULL);
-
-  if (h == NULL) {
-    return WELS_THREAD_ERROR_GENERAL;
-  }
-  * thread = h;
-
-  return WELS_THREAD_ERROR_OK;
-}
-
-WELS_THREAD_ERROR_CODE WelsThreadSetName (const char* thread_name) {
-  // do nothing
-  return WELS_THREAD_ERROR_OK;
-}
-
-
-WELS_THREAD_ERROR_CODE    WelsThreadJoin (WELS_THREAD_HANDLE  thread) {
-  WaitForSingleObject (thread, INFINITE);
-  CloseHandle (thread);
-
-  return WELS_THREAD_ERROR_OK;
-}
-
-
-WELS_THREAD_HANDLE        WelsThreadSelf() {
-  return GetCurrentThread();
-}
-
-WELS_THREAD_ERROR_CODE    WelsQueryLogicalProcessInfo (WelsLogicalProcessInfo* pInfo) {
-  SYSTEM_INFO  si;
-
-  GetSystemInfo (&si);
-
-  pInfo->ProcessorCount = si.dwNumberOfProcessors;
-
-  return WELS_THREAD_ERROR_OK;
-}
-
-#else //platform: #ifdef _WIN32
 
 WELS_THREAD_ERROR_CODE    WelsThreadCreate (WELS_THREAD_HANDLE* thread,  LPWELS_THREAD_ROUTINE  routine,
     void* arg, WELS_THREAD_ATTR attr) {
@@ -254,9 +112,6 @@ WELS_THREAD_ERROR_CODE    WelsThreadCreate (WELS_THREAD_HANDLE* thread,  LPWELS_
 WELS_THREAD_ERROR_CODE WelsThreadSetName (const char* thread_name) {
 #ifdef APPLE_IOS
   pthread_setname_np (thread_name);
-#endif
-#if defined(__ANDROID__) && __ANDROID_API__ >= 9
-  pthread_setname_np (pthread_self(), thread_name);
 #endif
   // do nothing
   return WELS_THREAD_ERROR_OK;
@@ -482,10 +337,7 @@ WELS_THREAD_ERROR_CODE    WelsMultipleEventsWaitSingleBlocking (uint32_t nCount,
 }
 
 WELS_THREAD_ERROR_CODE    WelsQueryLogicalProcessInfo (WelsLogicalProcessInfo* pInfo) {
-#ifdef ANDROID_NDK
-  pInfo->ProcessorCount = android_getCpuCount();
-  return WELS_THREAD_ERROR_OK;
-#elif defined(__linux__) || defined(__GNU__)
+#if   defined(__linux__) || defined(__GNU__)
 
   cpu_set_t cpuset;
 
@@ -536,4 +388,3 @@ WELS_THREAD_ERROR_CODE    WelsQueryLogicalProcessInfo (WelsLogicalProcessInfo* p
 #endif//__linux__
 }
 
-#endif

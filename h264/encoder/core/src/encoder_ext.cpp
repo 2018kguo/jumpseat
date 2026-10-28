@@ -1982,9 +1982,7 @@ void FreeMemorySvc (sWelsEncCtx** ppCtx) {
       pCtx->pFuncList = NULL;
     }
 
-#if defined(MEMORY_MONITOR)
     assert (pMa->WelsGetMemoryUsage() == 0); // ensure all memory free well
-#endif//MEMORY_MONITOR
 
     if ((*ppCtx)->pMemAlign != NULL) {
       WelsLog (& (*ppCtx)->sLogCtx, WELS_LOG_INFO, "FreeMemorySvc(), verify memory usage (%d bytes) after free..",
@@ -2100,82 +2098,6 @@ void OutputCpuFeaturesLog (SLogContext* pLogCtx, uint32_t uiCpuFeatureFlags, uin
  *
  * status information output
  */
-#if defined(STAT_OUTPUT)
-void StatOverallEncodingExt (sWelsEncCtx* pCtx) {
-  int8_t i = 0;
-  int8_t j = 0;
-  for (i = 0; i < pCtx->pSvcParam->iSpatialLayerNum; i++) {
-    fprintf (stdout, "\nDependency layer : %d\n", i);
-    fprintf (stdout, "Quality layer : %d\n", j);
-    {
-      const int32_t iCount = pCtx->sStatData[i][j].sSliceData.iSliceCount[I_SLICE] +
-                             pCtx->sStatData[i][j].sSliceData.iSliceCount[P_SLICE] +
-                             pCtx->sStatData[i][j].sSliceData.iSliceCount[B_SLICE];
-#if defined(MB_TYPES_CHECK)
-      if (iCount > 0) {
-        int32_t iCountNumIMb = pCtx->sStatData[i][j].sSliceData.iMbCount[I_SLICE][Intra4x4] +
-                               pCtx->sStatData[i][j].sSliceData.iMbCount[I_SLICE][Intra16x16] + pCtx->sStatData[i][j].sSliceData.iMbCount[I_SLICE][7];
-        int32_t iCountNumPMb =  pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Intra4x4] +
-                                pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Intra16x16] +
-                                pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][7] +
-                                pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Inter16x16] +
-                                pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Inter16x8] +
-                                pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Inter8x16] +
-                                pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Inter8x8] +
-                                pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][10] +
-                                pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][PSkip];
-        int32_t count_p_mbL0 =  pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Inter16x16] +
-                                pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Inter16x8] +
-                                pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Inter8x16] +
-                                pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Inter8x8] +
-                                pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][10];
-
-        int32_t iMbCount = iCountNumIMb + iCountNumPMb;
-        if (iMbCount > 0) {
-          fprintf (stderr,
-                   "SVC: overall Slices MBs: %d Avg\nI4x4: %.3f%% I16x16: %.3f%% IBL: %.3f%%\nP16x16: %.3f%% P16x8: %.3f%% P8x16: %.3f%% P8x8: %.3f%% SUBP8x8: %.3f%% PSKIP: %.3f%%\nILP(All): %.3f%% ILP(PL0): %.3f%% BLSKIP(PL0): %.3f%% RP(PL0): %.3f%%\n",
-                   iMbCount,
-                   (100.0f * (pCtx->sStatData[i][j].sSliceData.iMbCount[I_SLICE][Intra4x4] +
-                              pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Intra4x4]) / iMbCount),
-                   (100.0f * (pCtx->sStatData[i][j].sSliceData.iMbCount[I_SLICE][Intra16x16] +
-                              pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Intra16x16]) / iMbCount),
-                   (100.0f * (pCtx->sStatData[i][j].sSliceData.iMbCount[I_SLICE][7] +
-                              pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][7]) / iMbCount),
-                   (100.0f * pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Inter16x16] / iMbCount),
-                   (100.0f * pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Inter16x8] / iMbCount),
-                   (100.0f * pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Inter8x16] / iMbCount),
-                   (100.0f * pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][Inter8x8] / iMbCount),
-                   (100.0f * pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][10] / iMbCount),
-                   (100.0f * pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][PSkip] / iMbCount),
-                   (100.0f * pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][11] / iMbCount),
-                   (100.0f * pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][11] / count_p_mbL0),
-                   (100.0f * pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][8] / count_p_mbL0),
-                   (100.0f * pCtx->sStatData[i][j].sSliceData.iMbCount[P_SLICE][9] / count_p_mbL0)
-                  );
-        }
-      }
-#endif //#if defined(MB_TYPES_CHECK)
-
-      if (iCount > 0) {
-        fprintf (stdout, "SVC: overall PSNR Y: %2.3f U: %2.3f V: %2.3f kb/s: %.1f fps: %.3f\n\n",
-                 (pCtx->sStatData[i][j].sQualityStat.rYPsnr[I_SLICE] + pCtx->sStatData[i][j].sQualityStat.rYPsnr[P_SLICE] +
-                  pCtx->sStatData[i][j].sQualityStat.rYPsnr[B_SLICE]) / (float) (iCount),
-                 (pCtx->sStatData[i][j].sQualityStat.rUPsnr[I_SLICE] + pCtx->sStatData[i][j].sQualityStat.rUPsnr[P_SLICE] +
-                  pCtx->sStatData[i][j].sQualityStat.rUPsnr[B_SLICE]) / (float) (iCount),
-                 (pCtx->sStatData[i][j].sQualityStat.rVPsnr[I_SLICE] + pCtx->sStatData[i][j].sQualityStat.rVPsnr[P_SLICE] +
-                  pCtx->sStatData[i][j].sQualityStat.rVPsnr[B_SLICE]) / (float) (iCount),
-                 1.0f * pCtx->pSvcParam->sDependencyLayers[i].fOutputFrameRate * (pCtx->sStatData[i][j].sSliceData.iSliceSize[I_SLICE] +
-                     pCtx->sStatData[i][j].sSliceData.iSliceSize[P_SLICE] + pCtx->sStatData[i][j].sSliceData.iSliceSize[B_SLICE]) / (float) (
-                   iCount + pCtx->pWelsSvcRc[i].iSkipFrameNum) / 1000,
-                 1.0f * pCtx->pSvcParam->sDependencyLayers[i].fOutputFrameRate);
-
-      }
-
-    }
-
-  }
-}
-#endif //#if defined(STAT_OUTPUT)
 
 
 int32_t GetMultipleThreadIdc (SLogContext* pLogCtx, SWelsSvcCodingParam* pCodingParam, int16_t& iSliceNum,
@@ -2233,9 +2155,6 @@ void WelsUninitEncoderExt (sWelsEncCtx** ppCtx) {
            "WelsUninitEncoderExt(), pCtx= %p, iMultipleThreadIdc= %d.",
            (void*) (*ppCtx), (*ppCtx)->pSvcParam->iMultipleThreadIdc);
 
-#if defined(STAT_OUTPUT)
-  StatOverallEncodingExt (*ppCtx);
-#endif
 
   if ((*ppCtx)->pSvcParam->iMultipleThreadIdc > 1 && (*ppCtx)->pSliceThreading != NULL) {
     const int32_t iThreadCount = (*ppCtx)->pSvcParam->iMultipleThreadIdc;
@@ -2351,12 +2270,10 @@ int32_t WelsInitEncoderExt (sWelsEncCtx** ppCtx, SWelsSvcCodingParam* pCodingPar
     return iRet;
   }
 
-#if defined(MEMORY_MONITOR)
   WelsLog (pLogCtx, WELS_LOG_INFO, "WelsInitEncoderExt() exit, overall memory usage: %llu bytes",
            static_cast<unsigned long long> (sizeof (sWelsEncCtx) /* requested size from malloc() or new operator */
                + pCtx->pMemAlign->WelsGetMemoryUsage())  /* requested size from CMemoryAlign::WelsMalloc() */
           );
-#endif//MEMORY_MONITOR
 
   pCtx->iStatisticsLogInterval = STATISTICS_LOG_INTERVAL_MS;
   pCtx->uiLastTimestamp = -1;
@@ -3420,9 +3337,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
   SLogContext* pLogCtx = & (pCtx->sLogCtx);
   float fSnrY = .0f, fSnrU = .0f, fSnrV = .0f;
 
-#if defined(_DEBUG)
-  int32_t i = 0, j = 0, k = 0;
-#endif//_DEBUG
   pCtx->iEncoderError = ENC_RETURN_SUCCESS;
   pCtx->bCurFrameMarkedAsSceneLtr = false;
   pFbi->eFrameType = videoFrameTypeSkip;
@@ -3777,14 +3691,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
           pCtx->iPosBsBuffer += iSliceSize;
           iLayerSize         += iSliceSize;
 
-#if defined(SLICE_INFO_OUTPUT)
-          fprintf (stderr,
-                   "@slice=%-6d sliceType:%c idc:%d size:%-6d\n",
-                   iSliceIdx,
-                   (pCtx->eSliceType == P_SLICE ? 'P' : 'I'),
-                   eNalRefIdc,
-                   iSliceSize);
-#endif//SLICE_INFO_OUTPUT
           ++ iNalIdxInLayer;
           ++ iSliceIdx;
         }
@@ -3846,13 +3752,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
         WelsLog (pLogCtx, WELS_LOG_WARNING,
                  "WelsEncoderEncodeExt()MinCr Checking,codec bitstream size is larger than Level limitation");
     }
-#ifdef ENABLE_FRAME_DUMP
-    {
-      DumpDependencyRec (fsnr, &pSvcParam->sDependencyLayers[iCurDid].sRecFileName[0], iCurDid,
-                         pCtx->bDependencyRecFlag[iCurDid], pCtx->pCurDqLayer, pSvcParam->bSimulcastAVC);
-      pCtx->bDependencyRecFlag[iCurDid] = true;
-    }
-#endif//ENABLE_FRAME_DUMP
 
     if (fsnr && (pSvcParam->bPsnrY || pSrcPic->bPsnrY)) {
       fSnrY = WelsCalcPsnr (fsnr->pData[0],
@@ -3879,21 +3778,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
                             (iCurHeight >> 1));
     }
 
-#if defined(LAYER_INFO_OUTPUT)
-    fprintf (stderr, "%2s %5d: %-5d %2s   T%1d D%1d Q%-2d  QP%3d   Y%2.2f  U%2.2f  V%2.2f  %8d bits\n",
-             (iSpatialIdx == 0) ? "#AU" : "   ",
-             pParamInternal->iPOC,
-             pParamInternal->iFrameNum,
-             (eFrameType == videoFrameTypeI || eFrameType == videoFrameTypeIDR) ? "I" : "P",
-             iCurTid,
-             iCurDid,
-             0,
-             pCtx->pWelsSvcRc[pCtx->uiDependencyId].iAverageFrameQp,
-             fSnrY,
-             fSnrU,
-             fSnrV,
-             (iLayerSize << 3));
-#endif//LAYER_INFO_OUTPUT
 
     pLayerBsInfo->rPsnr[0] = 0;
     pLayerBsInfo->rPsnr[1] = 0;
@@ -3908,48 +3792,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
       pLayerBsInfo->rPsnr[2] = fSnrV;
     }
 
-#if defined(STAT_OUTPUT)
-
-    {
-      if (pSvcParam->bPsnrY) {
-        pCtx->sStatData[iCurDid][0].sQualityStat.rYPsnr[pCtx->eSliceType] += fSnrY;
-      }
-      if (pSvcParam->bPsnrU) {
-        pCtx->sStatData[iCurDid][0].sQualityStat.rUPsnr[pCtx->eSliceType] += fSnrU;
-      }
-      if (pSvcParam->bPsnrV) {
-        pCtx->sStatData[iCurDid][0].sQualityStat.rVPsnr[pCtx->eSliceType] += fSnrV;
-      }
-    }
-
-#if defined(MB_TYPES_CHECK) //091025, frame output
-    if (pCtx->eSliceType == P_SLICE) {
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[P_SLICE][Intra4x4] += pCtx->sPerInfo.iMbCount[P_SLICE][Intra4x4];
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[P_SLICE][Intra16x16] += pCtx->sPerInfo.iMbCount[P_SLICE][Intra16x16];
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[P_SLICE][Inter16x16] += pCtx->sPerInfo.iMbCount[P_SLICE][Inter16x16];
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[P_SLICE][Inter16x8] += pCtx->sPerInfo.iMbCount[P_SLICE][Inter16x8];
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[P_SLICE][Inter8x16] += pCtx->sPerInfo.iMbCount[P_SLICE][Inter8x16];
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[P_SLICE][Inter8x8] += pCtx->sPerInfo.iMbCount[P_SLICE][Inter8x8];
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[P_SLICE][PSkip] += pCtx->sPerInfo.iMbCount[P_SLICE][PSkip];
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[P_SLICE][8] += pCtx->sPerInfo.iMbCount[P_SLICE][8];
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[P_SLICE][9] += pCtx->sPerInfo.iMbCount[P_SLICE][9];
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[P_SLICE][10] += pCtx->sPerInfo.iMbCount[P_SLICE][10];
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[P_SLICE][11] += pCtx->sPerInfo.iMbCount[P_SLICE][11];
-    } else if (pCtx->eSliceType == I_SLICE) {
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[I_SLICE][Intra4x4] += pCtx->sPerInfo.iMbCount[I_SLICE][Intra4x4];
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[I_SLICE][Intra16x16] += pCtx->sPerInfo.iMbCount[I_SLICE][Intra16x16];
-      pCtx->sStatData[iCurDid][0].sSliceData.iMbCount[I_SLICE][7] += pCtx->sPerInfo.iMbCount[I_SLICE][7];
-    }
-
-    memset (pCtx->sPerInfo.iMbCount[P_SLICE], 0, 18 * sizeof (int32_t));
-    memset (pCtx->sPerInfo.iMbCount[I_SLICE], 0, 18 * sizeof (int32_t));
-
-#endif//MB_TYPES_CHECK
-    {
-      ++ pCtx->sStatData[iCurDid][0].sSliceData.iSliceCount[pCtx->eSliceType]; // for multiple slices coding
-      pCtx->sStatData[iCurDid][0].sSliceData.iSliceSize[pCtx->eSliceType] += (iLayerSize << 3); // bits
-    }
-#endif//STAT_OUTPUT
 
     iCountNal = pLayerBsInfo->iNalCount;
     ++ iLayerNum;
@@ -4077,31 +3919,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
       pFbi->eFrameType = videoFrameTypeIPMixed;
     }
   }
-#ifdef _DEBUG
-  if (pFbi->iLayerNum > MAX_LAYER_NUM_OF_FRAME) {
-    WelsLog (& pCtx->sLogCtx, WELS_LOG_ERROR, "WelsEncoderEncodeExt(), iLayerNum(%d) > MAX_LAYER_NUM_OF_FRAME(%d)!",
-             pFbi->iLayerNum, MAX_LAYER_NUM_OF_FRAME);
-    return ENC_RETURN_UNEXPECTED;
-  }
-
-  int32_t iTotalNal = 0;
-  for (int32_t k = 0; k < pFbi->iLayerNum; k++) {
-    iTotalNal += pFbi->sLayerInfo[k].iNalCount;
-
-    if ((pCtx->iActiveThreadsNum > 1) && (MAX_NAL_UNITS_IN_LAYER < pFbi->sLayerInfo[k].iNalCount)) {
-      WelsLog (& pCtx->sLogCtx, WELS_LOG_ERROR,
-               "WelsEncoderEncodeExt(), iCountNumNals(%d) > MAX_NAL_UNITS_IN_LAYER(%d) under multi-thread(%d) NOT supported!",
-               pFbi->sLayerInfo[k].iNalCount, MAX_NAL_UNITS_IN_LAYER, pCtx->iActiveThreadsNum);
-      return ENC_RETURN_UNEXPECTED;
-    }
-  }
-
-  if (iTotalNal > pCtx->pOut->iCountNals) {
-    WelsLog (& pCtx->sLogCtx, WELS_LOG_ERROR, "WelsEncoderEncodeExt(), iTotalNal(%d) > iCountNals(%d)!",
-             iTotalNal, pCtx->pOut->iCountNals);
-    return ENC_RETURN_UNEXPECTED;
-  }
-#endif
   return ENC_RETURN_SUCCESS;
 }
 
@@ -4545,14 +4362,6 @@ int32_t WelsCodeOnePicPartition (sWelsEncCtx* pCtx,
     pCtx->iPosBsBuffer  += iSliceSize;
     iPartitionBsSize    += iSliceSize;
 
-#if defined(SLICE_INFO_OUTPUT)
-    fprintf (stderr,
-             "@slice=%-6d sliceType:%c idc:%d size:%-6d\n",
-             iSliceIdx,
-             (pCtx->eSliceType == P_SLICE ? 'P' : 'I'),
-             keNalRefIdc,
-             iSliceSize);
-#endif//SLICE_INFO_OUTPUT
 
     ++ iNalIdxInLayer;
     iSliceIdx += kiSliceStep; //if iSliceIdx is not continuous

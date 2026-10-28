@@ -258,11 +258,6 @@ void WelsWriteSliceEndSyn (SSlice* pSlice, bool bEntropyCodingModeFlag) {
 void InitCoeffFunc (SWelsFuncPtrList* pFuncList, const uint32_t uiCpuFlag, int32_t iEntropyCodingModeFlag) {
   pFuncList->pfCavlcParamCal = CavlcParamCal_c;
 
-#if defined(X86_32_ASM)
-  if (uiCpuFlag & WELS_CPU_SSE2) {
-    pFuncList->pfCavlcParamCal = CavlcParamCal_sse2;
-  }
-#endif
 
 #ifdef X86_ASM
   if (uiCpuFlag & WELS_CPU_SSE42) {

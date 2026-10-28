@@ -268,23 +268,6 @@ void SumOf16x16BlockOfFrame_sse4 (uint8_t* pRefPicture, const int32_t kiWidth, c
                 const int32_t kiRefStride, uint16_t* pFeatureOfBlock, uint32_t pTimesOfFeatureValue[]);
 }
 #endif
-#ifdef HAVE_NEON
-extern "C"
-{
-void InitializeHashforFeature_neon (uint32_t* pTimesOfFeatureValue, uint16_t* pBuf, const int32_t kiListSize,
-                                    uint16_t** pLocationOfFeature, uint16_t** pFeatureValuePointerList);
-void FillQpelLocationByFeatureValue_neon (uint16_t* pFeatureOfBlock, const int32_t kiWidth, const int32_t kiHeight,
-                                          uint16_t** pFeatureValuePointerList);
-int32_t SumOf8x8SingleBlock_neon (uint8_t* pRef, const int32_t kiRefStride);
-int32_t SumOf16x16SingleBlock_neon (uint8_t* pRef, const int32_t kiRefStride);
-void SumOf8x8BlockOfFrame_neon (uint8_t* pRefPicture, const int32_t kiWidth, const int32_t kiHeight,
-                                const int32_t kiRefStride,
-                                uint16_t* pFeatureOfBlock, uint32_t pTimesOfFeatureValue[]);
-void SumOf16x16BlockOfFrame_neon (uint8_t* pRefPicture, const int32_t kiWidth, const int32_t kiHeight,
-                                  const int32_t kiRefStride,
-                                  uint16_t* pFeatureOfBlock, uint32_t pTimesOfFeatureValue[]);
-}
-#endif
 
 #ifdef HAVE_NEON_AARCH64
 extern "C"
@@ -304,14 +287,6 @@ void SumOf16x16BlockOfFrame_AArch64_neon (uint8_t* pRefPicture, const int32_t ki
 }
 #endif
 
-#ifdef HAVE_LSX
-extern "C"
-{
-int32_t SumOf8x8SingleBlock_lsx (uint8_t* pRef, const int32_t kiRefStride);
-void SumOf8x8BlockOfFrame_lsx (uint8_t* pRefPicture, const int32_t kiWidth, const int32_t kiHeight,
-                const int32_t kiRefStride, uint16_t* pFeatureOfBlock, uint32_t pTimesOfFeatureValue[]);
-}
-#endif
 
 int32_t RequestScreenBlockFeatureStorage (CMemoryAlign* pMa, const int32_t kiFrameWidth,  const int32_t kiFrameHeight,
     const int32_t iNeedFeatureStorage,

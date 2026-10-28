@@ -82,11 +82,6 @@ class CSceneChangeDetectorVideo {
       m_pfSad = WelsSampleSad8x8_sse21;
     }
 #endif
-#ifdef HAVE_NEON
-    if (iCpuFlag & WELS_CPU_NEON) {
-      m_pfSad = WelsProcessingSampleSad8x8_neon;
-    }
-#endif
 
 #ifdef HAVE_NEON_AARCH64
     if (iCpuFlag & WELS_CPU_NEON) {
@@ -94,17 +89,7 @@ class CSceneChangeDetectorVideo {
     }
 #endif
 
-#ifdef HAVE_MMI
-    if (iCpuFlag & WELS_CPU_MMI) {
-      m_pfSad = WelsSampleSad8x8_mmi;
-    }
-#endif
 
-#ifdef HAVE_LASX
-    if (iCpuFlag & WELS_CPU_LASX) {
-      m_pfSad = WelsSampleSad8x8_lasx;
-    }
-#endif
 
     m_fSceneChangeMotionRatioLarge = SCENE_CHANGE_MOTION_RATIO_LARGE_VIDEO;
     m_fSceneChangeMotionRatioMedium = SCENE_CHANGE_MOTION_RATIO_MEDIUM;

@@ -38,16 +38,8 @@
 // NOTE: please do not clean below lines even comment, turn on for potential memory leak verify and memory usage monitor etc.
 //#define MEMORY_CHECK
 #define MEMORY_MONITOR
-#ifdef MEMORY_CHECK
-#ifndef MEMORY_MONITOR
-#define MEMORY_MONITOR
-#endif//MEMORY_MONITOR
-#endif//MEMORY_CHECK
 
 
-#ifdef MEMORY_CHECK
-#include <stdio.h>
-#endif//MEMORY_CHECK
 
 namespace WelsCommon {
 
@@ -70,9 +62,7 @@ CMemoryAlign& operator= (const CMemoryAlign& kcMa);
  protected:
 uint32_t        m_nCacheLineSize;
 
-#ifdef MEMORY_MONITOR
 uint32_t        m_nMemoryUsageInBytes;
-#endif//MEMORY_MONITOR
 };
 
 /*!

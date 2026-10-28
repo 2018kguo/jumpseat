@@ -112,15 +112,6 @@ VAACalcSadSsdFunc       VAACalcSadSsd_avx2;
 WELSVP_EXTERN_C_END
 #endif
 
-#ifdef HAVE_NEON
-WELSVP_EXTERN_C_BEGIN
-VAACalcSadBgdFunc       VAACalcSadBgd_neon;
-VAACalcSadSsdBgdFunc    VAACalcSadSsdBgd_neon;
-VAACalcSadFunc          VAACalcSad_neon;
-VAACalcSadVarFunc       VAACalcSadVar_neon;
-VAACalcSadSsdFunc       VAACalcSadSsd_neon;
-WELSVP_EXTERN_C_END
-#endif
 
 #ifdef HAVE_NEON_AARCH64
 WELSVP_EXTERN_C_BEGIN
@@ -132,28 +123,8 @@ VAACalcSadSsdFunc       VAACalcSadSsd_AArch64_neon;
 WELSVP_EXTERN_C_END
 #endif
 
-#ifdef HAVE_MMI
-WELSVP_EXTERN_C_BEGIN
-VAACalcSadBgdFunc       VAACalcSadBgd_mmi;
-VAACalcSadSsdBgdFunc    VAACalcSadSsdBgd_mmi;
-VAACalcSadFunc          VAACalcSad_mmi;
-VAACalcSadVarFunc       VAACalcSadVar_mmi;
-VAACalcSadSsdFunc       VAACalcSadSsd_mmi;
-WELSVP_EXTERN_C_END
-#endif
 
-#ifdef HAVE_LSX
-WELSVP_EXTERN_C_BEGIN
-VAACalcSadBgdFunc       VAACalcSadBgd_lsx;
-VAACalcSadFunc          VAACalcSad_lsx;
-WELSVP_EXTERN_C_END
-#endif
 
-#ifdef HAVE_LASX
-WELSVP_EXTERN_C_BEGIN
-VAACalcSadBgdFunc       VAACalcSadBgd_lasx;
-WELSVP_EXTERN_C_END
-#endif
 
 class CVAACalculation : public IStrategy {
  public:

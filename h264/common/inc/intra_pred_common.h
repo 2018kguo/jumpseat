@@ -58,25 +58,13 @@ void WelsI16x16LumaPredV_sse2 (uint8_t* pPred, uint8_t* pRef, const int32_t kiSt
 void WelsI16x16LumaPredH_sse2 (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 #endif//X86_ASM
 
-#if defined(HAVE_NEON)
-void WelsI16x16LumaPredV_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI16x16LumaPredH_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-#endif//HAVE_NEON
 
 #if defined(HAVE_NEON_AARCH64)
 void WelsI16x16LumaPredV_AArch64_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 void WelsI16x16LumaPredH_AArch64_neon (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 #endif//HAVE_NEON_AARCH64
 
-#if defined(HAVE_MMI)
-void WelsI16x16LumaPredV_mmi (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI16x16LumaPredH_mmi (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-#endif//HAVE_MMI
 
-#if defined(HAVE_LSX)
-void WelsI16x16LumaPredV_lsx (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI16x16LumaPredH_lsx (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-#endif//HAVE_LSX
 #if defined(__cplusplus)
 }
 #endif//__cplusplus

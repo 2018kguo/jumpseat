@@ -368,9 +368,7 @@ bool WelsUpdateRefList (sWelsEncCtx* pCtx) {
     return false;
 
   if (NULL != pCtx->pDecPic) {
-#if !defined(ENABLE_FRAME_DUMP) // to save complexity, 1/6/2009
     if ((pParamD->iHighestTemporalId == 0) || (kuiTid < pParamD->iHighestTemporalId))
-#endif// !ENABLE_FRAME_DUMP
       // Expanding picture for future reference
       ExpandReferencingPicture (pCtx->pDecPic->pData, pCtx->pDecPic->iWidthInPixel, pCtx->pDecPic->iHeightInPixel,
                                 pCtx->pDecPic->iLineSize,
@@ -772,9 +770,7 @@ bool WelsUpdateRefListScreen (sWelsEncCtx* pCtx) {
     return false;
 
   if (NULL != pCtx->pDecPic) {
-#if !defined(ENABLE_FRAME_DUMP) // to save complexity, 1/6/2009
     if ((pParamD->iHighestTemporalId == 0) || (kuiTid < pParamD->iHighestTemporalId))
-#endif// !ENABLE_FRAME_DUMP
       // Expanding picture for future reference
       ExpandReferencingPicture (pCtx->pDecPic->pData, pCtx->pDecPic->iWidthInPixel, pCtx->pDecPic->iHeightInPixel,
                                 pCtx->pDecPic->iLineSize,

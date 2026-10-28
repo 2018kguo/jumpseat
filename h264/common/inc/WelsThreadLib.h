@@ -47,33 +47,6 @@
 extern "C" {
 #endif
 
-#if defined(_WIN32) || defined(__CYGWIN__)
-
-#include <windows.h>
-
-typedef    HANDLE                    WELS_THREAD_HANDLE;
-typedef    LPTHREAD_START_ROUTINE    LPWELS_THREAD_ROUTINE;
-
-typedef    CRITICAL_SECTION          WELS_MUTEX;
-typedef    HANDLE                    WELS_EVENT;
-
-#define    WELS_THREAD_ROUTINE_TYPE         DWORD  WINAPI
-#define    WELS_THREAD_ROUTINE_RETURN(rc)   return (DWORD)rc;
-
-#ifdef WINAPI_FAMILY
-#if !WINAPI_FAMILY_PARTITION(WINAPI_PARTITION_DESKTOP)
-#define WP80
-
-#define InitializeCriticalSection(x) InitializeCriticalSectionEx(x, 0, 0)
-#define GetSystemInfo(x) GetNativeSystemInfo(x)
-#define CreateEvent(attr, reset, init, name) CreateEventEx(attr, name, ((reset) ? CREATE_EVENT_MANUAL_RESET : 0) | ((init) ? CREATE_EVENT_INITIAL_SET : 0), EVENT_ALL_ACCESS)
-#define CreateSemaphore(a, b, c, d) CreateSemaphoreEx(a, b, c, d, 0, SEMAPHORE_ALL_ACCESS)
-#define WaitForSingleObject(a, b) WaitForSingleObjectEx(a, b, FALSE)
-#define WaitForMultipleObjects(a, b, c, d) WaitForMultipleObjectsEx(a, b, c, d, FALSE)
-#endif
-#endif
-
-#else // NON-WINDOWS
 
 #include <stdlib.h>
 #include <unistd.h>
@@ -102,7 +75,6 @@ typedef   sem_t*                    WELS_EVENT;
 #define   WELS_THREAD_ROUTINE_TYPE         void *
 #define   WELS_THREAD_ROUTINE_RETURN(rc)   return (void*)(intptr_t)rc;
 
-#endif//_WIN32
 
 typedef    int32_t        WELS_THREAD_ERROR_CODE;
 typedef    int32_t        WELS_THREAD_ATTR;

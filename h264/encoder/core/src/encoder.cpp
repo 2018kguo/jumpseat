@@ -173,13 +173,6 @@ int32_t InitFunctionPointers (sWelsEncCtx* pEncCtx, SWelsSvcCodingParam* pParam,
   }
 #endif//X86_ASM
 
-#if defined(HAVE_NEON)
-  if (uiCpuFlag & WELS_CPU_NEON) {
-    pFuncList->pfSetMemZeroSize8            = WelsSetMemZero_neon;
-    pFuncList->pfSetMemZeroSize64Aligned16  = WelsSetMemZero_neon;
-    pFuncList->pfSetMemZeroSize64           = WelsSetMemZero_neon;
-  }
-#endif
 
 #if defined(HAVE_NEON_AARCH64)
   if (uiCpuFlag & WELS_CPU_NEON) {
@@ -324,9 +317,6 @@ void InitFrameCoding (sWelsEncCtx* pEncCtx, const EVideoFrameType keFrameType, c
     assert (0);
   }
 
-#if defined(STAT_OUTPUT)
-  memset (&pEncCtx->sPerInfo, 0, sizeof (SStatSliceInfo));
-#endif//FRAME_INFO_OUTPUT
 }
 
 EVideoFrameType DecideFrameType (sWelsEncCtx* pEncCtx, const int8_t kiSpatialNum, const int32_t kiDidx,

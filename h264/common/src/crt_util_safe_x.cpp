@@ -42,146 +42,11 @@
 #include <stdlib.h>
 #include <math.h>
 #include <time.h>
-#if defined(_WIN32)
-#include <windows.h>
-#include <sys/types.h>
-#include <sys/timeb.h>
-#ifndef _MSC_VER
 #include <sys/time.h>
-#endif //!_MSC_VER
-#else
-#include <sys/time.h>
-#endif //_WIN32
 
 #include "macros.h"
 #include "crt_util_safe_x.h" // Safe CRT routines like utils for cross platforms
 
-#if defined(_WIN32) && defined(_MSC_VER)
-
-#if defined(_MSC_VER) && (_MSC_VER>=1500)
-
-int32_t WelsSnprintf (char* pBuffer,  int32_t iSizeOfBuffer, const char* kpFormat, ...) {
-  va_list  pArgPtr;
-  int32_t  iRc;
-
-  va_start (pArgPtr, kpFormat);
-
-  iRc = vsnprintf_s (pBuffer, iSizeOfBuffer, _TRUNCATE, kpFormat, pArgPtr);
-  if (iRc < 0)
-    iRc = iSizeOfBuffer;
-
-  va_end (pArgPtr);
-
-  return iRc;
-}
-
-char* WelsStrncpy (char* pDest, int32_t iSizeInBytes, const char* kpSrc) {
-  strncpy_s (pDest, iSizeInBytes, kpSrc, _TRUNCATE);
-
-  return pDest;
-}
-
-int32_t WelsVsnprintf (char* pBuffer, int32_t iSizeOfBuffer, const char* kpFormat, va_list pArgPtr) {
-  int32_t iRc = vsnprintf_s (pBuffer, iSizeOfBuffer, _TRUNCATE, kpFormat, pArgPtr);
-  if (iRc < 0)
-    iRc = iSizeOfBuffer;
-  return iRc;
-}
-
-WelsFileHandle* WelsFopen (const char* kpFilename,  const char* kpMode) {
-  WelsFileHandle* pFp = NULL;
-  if (fopen_s (&pFp, kpFilename, kpMode) != 0) {
-    return NULL;
-  }
-
-  return pFp;
-}
-
-int32_t WelsFclose (WelsFileHandle* pFp) {
-  return fclose (pFp);
-}
-
-int32_t WelsGetTimeOfDay (SWelsTime* pTp) {
-  return _ftime_s (pTp);
-}
-
-int32_t WelsStrftime (char* pBuffer, int32_t iSize, const char* kpFormat, const SWelsTime* kpTp) {
-  struct tm   sTimeNow;
-  int32_t iRc;
-
-  localtime_s (&sTimeNow, &kpTp->time);
-
-  iRc = (int32_t)strftime (pBuffer, iSize, kpFormat, &sTimeNow);
-  if (iRc == 0)
-    pBuffer[0] = '\0';
-  return iRc;
-}
-
-#else
-
-int32_t WelsSnprintf (char* pBuffer,  int32_t iSizeOfBuffer, const char* kpFormat, ...) {
-  va_list pArgPtr;
-  int32_t iRc;
-
-  va_start (pArgPtr, kpFormat);
-
-  iRc = vsnprintf (pBuffer, iSizeOfBuffer, kpFormat, pArgPtr); //confirmed_safe_unsafe_usage
-  if (iRc < 0) {
-    pBuffer[iSizeOfBuffer - 1] = '\0';
-    iRc = iSizeOfBuffer;
-  }
-
-  va_end (pArgPtr);
-
-  return iRc;
-}
-
-char* WelsStrncpy (char* pDest, int32_t iSizeInBytes, const char* kpSrc) {
-  strncpy (pDest, kpSrc, iSizeInBytes); //confirmed_safe_unsafe_usage
-  pDest[iSizeInBytes - 1] = '\0';
-
-  return pDest;
-}
-
-int32_t WelsVsnprintf (char* pBuffer, int32_t iSizeOfBuffer, const char* kpFormat, va_list pArgPtr) {
-  int32_t iRc = vsnprintf (pBuffer, iSizeOfBuffer, kpFormat, pArgPtr); //confirmed_safe_unsafe_usage
-  if (iRc < 0) {
-    pBuffer[iSizeOfBuffer - 1] = '\0';
-    iRc = iSizeOfBuffer;
-  }
-  return iRc;
-}
-
-
-WelsFileHandle* WelsFopen (const char* kpFilename,  const char* kpMode) {
-  return fopen (kpFilename, kpMode);
-}
-
-int32_t WelsFclose (WelsFileHandle* pFp) {
-  return fclose (pFp);
-}
-
-int32_t WelsGetTimeOfDay (SWelsTime* pTp) {
-  _ftime (pTp);
-  return 0;
-}
-
-int32_t WelsStrftime (char* pBuffer, int32_t iSize, const char* kpFormat, const SWelsTime* kpTp) {
-  struct tm*   pTnow;
-  int32_t iRc;
-
-  pTnow = localtime (&kpTp->time);
-
-  iRc = strftime (pBuffer, iSize, kpFormat, pTnow);
-  if (iRc == 0)
-    pBuffer[0] = '\0';
-  return iRc;
-}
-
-
-#endif // _MSC_VER
-
-#else  //GCC
 
 int32_t WelsSnprintf (char* pBuffer,  int32_t iSizeOfBuffer, const char* kpFormat, ...) {
   va_list pArgPtr;
@@ -239,7 +104,6 @@ int32_t WelsStrftime (char* pBuffer, int32_t iSize, const char* kpFormat, const 
   return iRc;
 }
 
-#endif
 
 
 char* WelsStrcat (char* pDest, uint32_t uiSizeInBytes, const char* kpSrc) {

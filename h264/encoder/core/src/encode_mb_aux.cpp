@@ -449,12 +449,6 @@ int32_t WelsGetNoneZeroCount_c (int16_t* pLevel) {
   return (16 - iCnt);
 }
 
-#ifdef HAVE_NEON
-int32_t WelsHadamardQuant2x2Skip_neon (int16_t* pRes, int16_t iFF,  int16_t iMF) {
-  int16_t iThreshold = ((1 << 16) - 1) / iMF - iFF;
-  return WelsHadamardQuant2x2SkipKernel_neon (pRes, iThreshold);
-}
-#endif
 #ifdef HAVE_NEON_AARCH64
 int32_t WelsHadamardQuant2x2Skip_AArch64_neon (int16_t* pRes, int16_t iFF,  int16_t iMF) {
   int16_t iThreshold = ((1 << 16) - 1) / iMF - iFF;
@@ -541,28 +535,6 @@ void WelsInitEncodingFuncs (SWelsFuncPtrList* pFuncList, uint32_t  uiCpuFlag) {
 
 #endif//X86_ASM
 
-#if defined(HAVE_NEON)
-  if (uiCpuFlag & WELS_CPU_NEON) {
-    pFuncList->pfQuantizationHadamard2x2        = WelsHadamardQuant2x2_neon;
-    pFuncList->pfQuantizationHadamard2x2Skip    = WelsHadamardQuant2x2Skip_neon;
-    pFuncList->pfDctT4                          = WelsDctT4_neon;
-    pFuncList->pfCopy8x8Aligned                 = WelsCopy8x8_neon;
-    pFuncList->pfCopy8x16Aligned                = WelsCopy8x16_neon;
-
-    pFuncList->pfGetNoneZeroCount       = WelsGetNoneZeroCount_neon;
-    pFuncList->pfTransformHadamard4x4Dc = WelsHadamardT4Dc_neon;
-
-    pFuncList->pfQuantization4x4        = WelsQuant4x4_neon;
-    pFuncList->pfQuantizationDc4x4      = WelsQuant4x4Dc_neon;
-    pFuncList->pfQuantizationFour4x4    = WelsQuantFour4x4_neon;
-    pFuncList->pfQuantizationFour4x4Max = WelsQuantFour4x4Max_neon;
-
-    pFuncList->pfCopy16x16Aligned       = WelsCopy16x16_neon;
-    pFuncList->pfCopy16x16NotAligned    = WelsCopy16x16NotAligned_neon;
-    pFuncList->pfCopy16x8NotAligned     = WelsCopy16x8NotAligned_neon;
-    pFuncList->pfDctFourT4              = WelsDctFourT4_neon;
-  }
-#endif
 
 #if defined(HAVE_NEON_AARCH64)
   if (uiCpuFlag & WELS_CPU_NEON) {
@@ -587,57 +559,7 @@ void WelsInitEncodingFuncs (SWelsFuncPtrList* pFuncList, uint32_t  uiCpuFlag) {
   }
 #endif
 
-#if defined(HAVE_MMI)
-  if (uiCpuFlag & WELS_CPU_MMI) {
-    pFuncList->pfCopy8x8Aligned         = WelsCopy8x8_mmi;
-    pFuncList->pfCopy8x16Aligned        = WelsCopy8x16_mmi;
 
-    pFuncList->pfGetNoneZeroCount       = WelsGetNoneZeroCount_mmi;
-    pFuncList->pfTransformHadamard4x4Dc = WelsHadamardT4Dc_mmi;
 
-    pFuncList->pfQuantization4x4        = WelsQuant4x4_mmi;
-    pFuncList->pfQuantizationDc4x4      = WelsQuant4x4Dc_mmi;
-    pFuncList->pfQuantizationFour4x4    = WelsQuantFour4x4_mmi;
-    pFuncList->pfQuantizationFour4x4Max = WelsQuantFour4x4Max_mmi;
-
-    pFuncList->pfCopy16x16Aligned       = WelsCopy16x16_mmi;
-    pFuncList->pfCopy16x16NotAligned    = WelsCopy16x16NotAligned_mmi;
-    pFuncList->pfCopy16x8NotAligned     = WelsCopy16x8NotAligned_mmi;
-
-    pFuncList->pfScan4x4                = WelsScan4x4DcAc_mmi;
-    pFuncList->pfScan4x4Ac              = WelsScan4x4Ac_mmi;
-    pFuncList->pfCalculateSingleCtr4x4  = WelsCalculateSingleCtr4x4_mmi;
-
-    pFuncList->pfDctT4                  = WelsDctT4_mmi;
-    pFuncList->pfDctFourT4              = WelsDctFourT4_mmi;
-  }
-#endif//HAVE_MMI
-
-#if defined(HAVE_MSA)
-  if (uiCpuFlag & WELS_CPU_MSA) {
-    pFuncList->pfCopy8x8Aligned         = WelsCopy8x8_msa;
-    pFuncList->pfCopy8x16Aligned        = WelsCopy8x16_msa;
-
-    pFuncList->pfCopy16x16Aligned       =
-    pFuncList->pfCopy16x16NotAligned    = WelsCopy16x16_msa;
-    pFuncList->pfCopy16x8NotAligned     = WelsCopy16x8_msa;
-  }
-#endif
-
-#if defined(HAVE_LSX)
-  if (uiCpuFlag & WELS_CPU_LSX) {
-    pFuncList->pfCopy8x8Aligned         = WelsCopy8x8_lsx;
-    pFuncList->pfCopy16x16Aligned       = WelsCopy16x16_lsx;
-    pFuncList->pfCopy16x16NotAligned    = WelsCopy16x16NotAligned_lsx;
-    pFuncList->pfQuantizationFour4x4    = WelsQuantFour4x4_lsx;
-    pFuncList->pfQuantizationFour4x4Max = WelsQuantFour4x4Max_lsx;
-  }
-#endif
-#if defined(HAVE_LASX)
-  if (uiCpuFlag & WELS_CPU_LASX) {
-    pFuncList->pfDctT4                  = WelsDctT4_lasx;
-    pFuncList->pfDctFourT4              = WelsDctFourT4_lasx;
-}
-#endif
 }
 }

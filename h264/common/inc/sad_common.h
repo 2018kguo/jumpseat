@@ -75,21 +75,6 @@ void WelsSampleSadFour4x4_sse2 (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
 
 #endif//X86_ASM
 
-#if defined (HAVE_NEON)
-
-int32_t WelsSampleSad4x4_neon (uint8_t*, int32_t, uint8_t*, int32_t);
-int32_t WelsSampleSad16x16_neon (uint8_t*, int32_t, uint8_t*, int32_t);
-int32_t WelsSampleSad16x8_neon (uint8_t*, int32_t, uint8_t*, int32_t);
-int32_t WelsSampleSad8x16_neon (uint8_t*, int32_t, uint8_t*, int32_t);
-int32_t WelsSampleSad8x8_neon (uint8_t*, int32_t, uint8_t*, int32_t);
-
-void WelsSampleSadFour16x16_neon (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-void WelsSampleSadFour16x8_neon (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-void WelsSampleSadFour8x16_neon (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-void WelsSampleSadFour8x8_neon (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-void WelsSampleSadFour4x4_neon (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-
-#endif
 
 #if defined (HAVE_NEON_AARCH64)
 int32_t WelsSampleSad4x4_AArch64_neon (uint8_t*, int32_t, uint8_t*, int32_t);
@@ -105,32 +90,7 @@ void WelsSampleSadFour8x8_AArch64_neon (uint8_t*, int32_t, uint8_t*, int32_t, in
 void WelsSampleSadFour4x4_AArch64_neon (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
 #endif
 
-#if defined (HAVE_MMI)
-int32_t WelsSampleSad4x4_mmi (uint8_t*, int32_t, uint8_t*, int32_t);
-int32_t WelsSampleSad16x16_mmi (uint8_t*, int32_t, uint8_t*, int32_t);
-int32_t WelsSampleSad16x8_mmi (uint8_t*, int32_t, uint8_t*, int32_t);
-int32_t WelsSampleSad8x16_mmi (uint8_t*, int32_t, uint8_t*, int32_t);
-int32_t WelsSampleSad8x8_mmi (uint8_t*, int32_t, uint8_t*, int32_t);
 
-void WelsSampleSadFour16x16_mmi (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-void WelsSampleSadFour16x8_mmi (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-void WelsSampleSadFour8x16_mmi (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-void WelsSampleSadFour8x8_mmi (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-#endif//HAVE_MMI
-
-#if defined (HAVE_LASX)
-int32_t WelsSampleSad4x4_lasx (uint8_t*, int32_t, uint8_t*, int32_t);
-int32_t WelsSampleSad8x8_lasx (uint8_t*, int32_t, uint8_t*, int32_t);
-int32_t WelsSampleSad8x16_lasx (uint8_t*, int32_t, uint8_t*, int32_t);
-int32_t WelsSampleSad16x8_lasx (uint8_t*, int32_t, uint8_t*, int32_t);
-int32_t WelsSampleSad16x16_lasx (uint8_t*, int32_t, uint8_t*, int32_t);
-
-void WelsSampleSadFour4x4_lasx (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-void WelsSampleSadFour8x8_lasx (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-void WelsSampleSadFour8x16_lasx (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-void WelsSampleSadFour16x8_lasx (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-void WelsSampleSadFour16x16_lasx (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*);
-#endif
 
 #if defined(__cplusplus)
 }

@@ -40,10 +40,8 @@
 
 
 #include <assert.h>
-#if !defined(_WIN32)
 #include <semaphore.h>
 #include <unistd.h>
-#endif//!_WIN32
 #ifndef SEM_NAME_MAX
 // length of semaphore name should be system constrained at least on mac 10.7
 #define  SEM_NAME_MAX 32
@@ -277,12 +275,7 @@ int32_t RequestMtResource (sWelsEncCtx** ppCtx, SWelsSvcCodingParam* pCodingPara
                          "pThreadPEncCtx");
   WELS_VERIFY_RETURN_IF (1, (NULL == pSmt->pThreadPEncCtx))
 
-#ifdef _WIN32
-  // Dummy event namespace, the windows events don't actually use this
-  WelsSnprintf (pSmt->eventNamespace, sizeof (pSmt->eventNamespace), "%p", (void*) *ppCtx);
-#else
   WelsSnprintf (pSmt->eventNamespace, sizeof (pSmt->eventNamespace), "%p%x", (void*) *ppCtx, getpid());
-#endif//!_WIN32
 
 #ifdef MT_DEBUG
   // file handle for MT debug

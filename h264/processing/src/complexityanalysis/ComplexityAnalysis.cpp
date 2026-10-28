@@ -285,14 +285,6 @@ CComplexityAnalysisScreen::CComplexityAnalysisScreen (int32_t iCpuFlag) {
   }
 #endif
 
-#if defined (HAVE_NEON)
-  if (iCpuFlag & WELS_CPU_NEON) {
-    m_pSadFunc = WelsSampleSad16x16_neon;
-    m_pIntraFunc[0] = WelsI16x16LumaPredV_neon;
-    m_pIntraFunc[1] = WelsI16x16LumaPredH_neon;
-
-  }
-#endif
 
 #if defined (HAVE_NEON_AARCH64)
   if (iCpuFlag & WELS_CPU_NEON) {
@@ -302,11 +294,6 @@ CComplexityAnalysisScreen::CComplexityAnalysisScreen (int32_t iCpuFlag) {
   }
 #endif
 
-#if defined (HAVE_LASX)
-  if (iCpuFlag & WELS_CPU_LASX) {
-    m_pSadFunc = WelsSampleSad16x16_lasx;
-  }
-#endif
 
 }
 

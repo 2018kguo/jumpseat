@@ -63,9 +63,6 @@ extern const uint8_t   g_kuiTemporalIdListTable[MAX_TEMPORAL_LEVEL][MAX_GOP_SIZE
 * \return   2 based scaling factor
 */
 static inline uint32_t GetLogFactor (float base, float upper) {
-#if defined(_M_X64) && _MSC_VER == 1800
-  _set_FMA3_enable(0);
-#endif
   const double dLog2factor      = log10 (1.0 * upper / base) / log10 (2.0);
   const double dEpsilon         = 0.0001;
   const double dRound           = floor (dLog2factor + 0.5);
@@ -95,9 +92,6 @@ typedef struct TagDLayerParam {
   bool              bEncCurFrmAsIdrFlag;
   int32_t           iFrameNum;              // current frame number coding
   int32_t           iPOC;                   // frame iPOC
-#ifdef ENABLE_FRAME_DUMP
-  char          sRecFileName[MAX_FNAME_LEN];    // file to be constructed
-#endif//ENABLE_FRAME_DUMP
 } SSpatialLayerInternal;
 
 /*
@@ -263,9 +257,6 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
       pDlp->fInputFrameRate =
         pDlp->fOutputFrameRate = WELS_CLIP3 (sSpatialLayers[iIdxSpatial].fFrameRate, MIN_FRAME_RATE,
                                              MAX_FRAME_RATE);
-#ifdef ENABLE_FRAME_DUMP
-      pDlp->sRecFileName[0] = '\0'; // file to be constructed
-#endif//ENABLE_FRAME_DUMP
       pDlp->iActualWidth = sSpatialLayers[iIdxSpatial].iVideoWidth = iPicWidth;
       pDlp->iActualHeight = sSpatialLayers[iIdxSpatial].iVideoHeight = iPicHeight;
 
@@ -403,9 +394,6 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
       pSpatialLayer->fFrameRate =
         pDlp->fOutputFrameRate  = WELS_CLIP3 (fLayerFrameRate, MIN_FRAME_RATE, fParamMaxFrameRate);
 
-#ifdef ENABLE_FRAME_DUMP
-      pDlp->sRecFileName[0]     = '\0'; // file to be constructed
-#endif//ENABLE_FRAME_DUMP
       pSpatialLayer->iVideoWidth = WELS_CLIP3 (pCodingParam.sSpatialLayers[iIdxSpatial].iVideoWidth, 0,
                                    iPicWidth);  // frame width
       pSpatialLayer->iVideoHeight = WELS_CLIP3 (pCodingParam.sSpatialLayers[iIdxSpatial].iVideoHeight, 0,

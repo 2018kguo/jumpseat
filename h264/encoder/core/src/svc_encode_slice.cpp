@@ -173,41 +173,6 @@ void UpdateMbNeighbor (SDqLayer* pCurDq, SMB* pMb, const int32_t kiMbWidth, uint
 }
 
 /* count MB types if enabled FRAME_INFO_OUTPUT*/
-#if defined(MB_TYPES_CHECK)
-void WelsCountMbType (int32_t (*iMbCount)[18], const EWelsSliceType keSt, const SMB* kpMb) {
-  if (NULL == iMbCount)
-    return;
-
-  switch (kpMb->uiMbType) {
-  case MB_TYPE_INTRA4x4:
-    ++ iMbCount[keSt][Intra4x4];
-    break;
-  case MB_TYPE_INTRA16x16:
-    ++ iMbCount[keSt][Intra16x16];
-    break;
-  case MB_TYPE_SKIP:
-    ++ iMbCount[keSt][PSkip];
-    break;
-  case MB_TYPE_16x16:
-    ++ iMbCount[keSt][Inter16x16];
-    break;
-  case MB_TYPE_16x8:
-    ++ iMbCount[keSt][Inter16x8];
-    break;
-  case MB_TYPE_8x16:
-    ++ iMbCount[keSt][Inter8x16];
-    break;
-  case MB_TYPE_8x8:
-    ++ iMbCount[keSt][Inter8x8];
-    break;
-  case MB_TYPE_INTRA_BL:
-    ++ iMbCount[keSt][7];
-    break;
-  default:
-    break;
-  }
-}
-#endif//MB_TYPES_CHECK
 
 /*!
 * \brief    write reference picture list on reordering syntax in Slice header
@@ -566,9 +531,6 @@ TRY_REENCODING:
 
     pCurMb->uiSliceIdc = kiSliceIdx;
 
-#if defined(MB_TYPES_CHECK)
-    WelsCountMbType (pEncCtx->sPerInfo.iMbCount, I_SLICE, pCurMb);
-#endif//MB_TYPES_CHECK
 
     pEncCtx->pFuncList->pfMdBackgroundInfoUpdate (pCurLayer, pCurMb, pMbCache->bCollocatedPredFlag, I_SLICE);
     pEncCtx->pFuncList->pfRc.pfWelsRcMbInfoUpdate (pEncCtx, pCurMb, sMd.iCostLuma, pSlice);
@@ -645,9 +607,6 @@ TRY_REENCODING:
 
     pCurMb->uiSliceIdc = kiSliceIdx;
 
-#if defined(MB_TYPES_CHECK)
-    WelsCountMbType (pEncCtx->sPerInfo.iMbCount, I_SLICE, pCurMb);
-#endif//MB_TYPES_CHECK
 
     pEncCtx->pFuncList->pfRc.pfWelsRcMbInfoUpdate (pEncCtx, pCurMb, sMd.iCostLuma, pSlice);
 
@@ -1701,9 +1660,6 @@ void AddSliceBoundary (sWelsEncCtx* pEncCtx, SSlice* pCurSlice, SSliceCtx* pSlic
     pNextSlice = &pSliceBuffer[ iNextSliceIdc ];
   }
 
-#if _DEBUG
-  assert (NULL != pNextSlice);
-#endif
 
   //init next pSlice info
   pNextSlice->bSliceHeaderExtFlag =
@@ -1736,9 +1692,6 @@ bool DynSlcJudgeSliceBoundaryStepBack (void* pCtx, void* pSlice, SSliceCtx* pSli
     return false;
 
   iPosBitOffset = (pDss->iCurrentPos - pDss->iStartPos);
-#if _DEBUG
-  assert (iPosBitOffset >= 0);
-#endif
   uiLen = ((iPosBitOffset >> 3) + ((iPosBitOffset & 0x07) ? 1 : 0));
 
   if ((kbCurMbNotFirstMbOfCurSlice
@@ -1846,9 +1799,6 @@ TRY_REENCODING:
     pCurMb->uiSliceIdc = kiSliceIdx;
     OutputPMbWithoutConstructCsRsNoCopy (pEncCtx, pCurLayer, pSlice, pCurMb);
 
-#if defined(MB_TYPES_CHECK)
-    WelsCountMbType (pEncCtx->sPerInfo.iMbCount, P_SLICE, pCurMb);
-#endif//MB_TYPES_CHECK
 
     //step (8): update status and other parameters
     pEncCtx->pFuncList->pfRc.pfWelsRcMbInfoUpdate (pEncCtx, pCurMb, pMd->iCostLuma, pSlice);
@@ -1960,9 +1910,6 @@ TRY_REENCODING:
     pCurMb->uiSliceIdc = kiSliceIdx;
     OutputPMbWithoutConstructCsRsNoCopy (pEncCtx, pCurLayer, pSlice, pCurMb);
 
-#if defined(MB_TYPES_CHECK)
-    WelsCountMbType (pEncCtx->sPerInfo.iMbCount, P_SLICE, pCurMb);
-#endif//MB_TYPES_CHECK
 
     //step (8): update status and other parameters
     pEncCtx->pFuncList->pfRc.pfWelsRcMbInfoUpdate (pEncCtx, pCurMb, pMd->iCostLuma, pSlice);

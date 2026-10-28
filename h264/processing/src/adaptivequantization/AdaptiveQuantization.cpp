@@ -230,11 +230,6 @@ void CAdaptiveQuantization::WelsInitVarFunc (PVarFunc& pfVar,  int32_t iCpuFlag)
     pfVar = SampleVariance16x16_sse2;
   }
 #endif
-#ifdef HAVE_NEON
-  if (iCpuFlag & WELS_CPU_NEON) {
-    pfVar = SampleVariance16x16_neon;
-  }
-#endif
 #ifdef HAVE_NEON_AARCH64
   if (iCpuFlag & WELS_CPU_NEON) {
     pfVar = SampleVariance16x16_AArch64_neon;
