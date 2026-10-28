@@ -142,82 +142,6 @@ void CheckLevelSetting (SLogContext* pLogCtx, SWelsSvcCodingParam* pParam, int32
   } while (iLevelIdx >= 0);
 }
 
-int32_t SliceArgumentValidationFixedSliceMode (SLogContext* pLogCtx,
-    SSliceArgument* pSliceArgument, const RC_MODES  kiRCMode,
-    const int32_t kiPicWidth,       const int32_t kiPicHeight) {
-  int32_t iCpuCores            = 0;
-  int32_t iIdx                 = 0;
-  const int32_t iMbWidth       = (kiPicWidth + 15) >> 4;
-  const int32_t iMbHeight      = (kiPicHeight + 15) >> 4;
-  const int32_t iMbNumInFrame  = iMbWidth * iMbHeight;
-  bool  bSingleMode            = false;
-
-  pSliceArgument->uiSliceSizeConstraint = 0;
-
-  if (pSliceArgument->uiSliceNum == 0)
-    pSliceArgument->uiSliceNum = 1; // jumpseat: one thread, so one slice
-
-  if (pSliceArgument->uiSliceNum <= 1) {
-    WelsLog (pLogCtx, WELS_LOG_INFO,
-             "SliceArgumentValidationFixedSliceMode(), uiSliceNum(%d) you set for SM_FIXEDSLCNUM_SLICE, now turn to SM_SINGLE_SLICE type!",
-             pSliceArgument->uiSliceNum);
-    bSingleMode = true;
-  }
-
-  // considering the coding efficient and performance,
-  // iCountMbNum constraint by MIN_NUM_MB_PER_SLICE condition of multi-pSlice mode settting
-  if (iMbNumInFrame <= MIN_NUM_MB_PER_SLICE) {
-    WelsLog (pLogCtx, WELS_LOG_INFO,
-             "SliceArgumentValidationFixedSliceMode(), uiSliceNum(%d) you set for SM_FIXEDSLCNUM_SLICE, now turn to SM_SINGLE_SLICE type as CountMbNum less than MIN_NUM_MB_PER_SLICE!",
-             pSliceArgument->uiSliceNum);
-    bSingleMode = true;
-  }
-
-  if (bSingleMode) {
-    pSliceArgument->uiSliceMode = SM_SINGLE_SLICE;
-    pSliceArgument->uiSliceNum = 1;
-    for (iIdx = 0; iIdx < MAX_SLICES_NUM; iIdx++) {
-      pSliceArgument->uiSliceMbNum[iIdx] = 0;
-    }
-    return ENC_RETURN_SUCCESS;
-  }
-
-  if (pSliceArgument->uiSliceNum > MAX_SLICES_NUM) {
-    pSliceArgument->uiSliceNum = MAX_SLICES_NUM;
-    WelsLog (pLogCtx, WELS_LOG_WARNING,
-             "SliceArgumentValidationFixedSliceMode(), uiSliceNum exceed MAX_SLICES_NUM! So setting slice num eqaul to MAX_SLICES_NUM(%d)!",
-             pSliceArgument->uiSliceNum);
-  }
-
-  if (kiRCMode != RC_OFF_MODE) { // multiple slices verify with gom
-    //check uiSliceNum and set uiSliceMbNum with current uiSliceNum
-    if (!GomValidCheckSliceNum (iMbWidth, iMbHeight, &pSliceArgument->uiSliceNum)) {
-      WelsLog (pLogCtx, WELS_LOG_WARNING,
-               "SliceArgumentValidationFixedSliceMode(), unsupported setting with Resolution and uiSliceNum combination under RC on! So uiSliceNum is changed to %d!",
-               pSliceArgument->uiSliceNum);
-    }
-
-    if (pSliceArgument->uiSliceNum <= 1 ||
-        !GomValidCheckSliceMbNum (iMbWidth, iMbHeight, pSliceArgument)) {
-      WelsLog (pLogCtx, WELS_LOG_ERROR,
-               "SliceArgumentValidationFixedSliceMode(), unsupported setting with Resolution and uiSliceNum (%d) combination  under RC on! Consider setting single slice with this resolution!",
-               pSliceArgument->uiSliceNum);
-      return ENC_RETURN_UNSUPPORTED_PARA;
-    }
-  } else if (!CheckFixedSliceNumMultiSliceSetting (iMbNumInFrame, pSliceArgument)) {
-    //check uiSliceMbNum with current uiSliceNum
-    WelsLog (pLogCtx, WELS_LOG_ERROR,
-             "SliceArgumentValidationFixedSliceMode(), invalid uiSliceMbNum (%d) settings!,now turn to SM_SINGLE_SLICE type",
-             pSliceArgument->uiSliceMbNum[0]);
-    pSliceArgument->uiSliceMode = SM_SINGLE_SLICE;
-    pSliceArgument->uiSliceNum  = 1;
-    for (iIdx = 0; iIdx < MAX_SLICES_NUM; iIdx++) {
-      pSliceArgument->uiSliceMbNum[iIdx] = 0;
-    }
-  }
-
-  return ENC_RETURN_SUCCESS;
-}
 
 
 /*!
@@ -379,11 +303,6 @@ int32_t ParamValidationExt (SLogContext* pLogCtx, SWelsSvcCodingParam* pCodingPa
     SSpatialLayerConfig* pSpatialLayer = &pCodingParam->sSpatialLayers[i];
     int32_t kiPicWidth = pSpatialLayer->iVideoWidth;
     int32_t kiPicHeight = pSpatialLayer->iVideoHeight;
-    uint32_t iMbWidth           = 0;
-    uint32_t iMbHeight          = 0;
-    int32_t iMbNumInFrame       = 0;
-    uint32_t iMaxSliceNum       = MAX_SLICES_NUM;
-    int32_t  iReturn            = 0;
 
     if ((pCodingParam->iPicWidth > 0) && (pCodingParam->iPicHeight > 0)
         && (kiPicWidth == 0) && (kiPicHeight == 0)
@@ -425,112 +344,10 @@ int32_t ParamValidationExt (SLogContext* pLogCtx, SWelsSvcCodingParam* pCodingPa
       //only have one MB, set to single_slice
       pSpatialLayer->sSliceArgument.uiSliceMode = SM_SINGLE_SLICE;
     }
-    switch (pSpatialLayer->sSliceArgument.uiSliceMode) {
-    case SM_SINGLE_SLICE:
-      pSpatialLayer->sSliceArgument.uiSliceNum = 1;
-      pSpatialLayer->sSliceArgument.uiSliceSizeConstraint = 0;
-      for (iIdx = 0; iIdx < MAX_SLICES_NUM; iIdx++) {
-        pSpatialLayer->sSliceArgument.uiSliceMbNum[iIdx] = 0;
-      }
-      break;
-    case SM_FIXEDSLCNUM_SLICE: {
-      iReturn = SliceArgumentValidationFixedSliceMode (pLogCtx, &pSpatialLayer->sSliceArgument, pCodingParam->iRCMode,
-                kiPicWidth, kiPicHeight);
-      if (iReturn)
-        return ENC_RETURN_UNSUPPORTED_PARA;
-    }
-    break;
-    case SM_RASTER_SLICE: {
-      pSpatialLayer->sSliceArgument.uiSliceSizeConstraint = 0;
-
-      iMbWidth  = (kiPicWidth + 15) >> 4;
-      iMbHeight = (kiPicHeight + 15) >> 4;
-      iMbNumInFrame = iMbWidth * iMbHeight;
-      iMaxSliceNum = MAX_SLICES_NUM;
-      if (pSpatialLayer->sSliceArgument.uiSliceMbNum[0] == 0) {
-        if (iMbHeight > iMaxSliceNum) {
-          WelsLog (pLogCtx, WELS_LOG_ERROR, "ParamValidationExt(), invalid uiSliceNum (%d) settings more than MAX(%d)!",
-                   iMbHeight, MAX_SLICES_NUM);
-          return ENC_RETURN_UNSUPPORTED_PARA;
-        }
-        pSpatialLayer->sSliceArgument.uiSliceNum = iMbHeight;
-        for (uint32_t j = 0; j < iMbHeight; j++) {
-          pSpatialLayer->sSliceArgument.uiSliceMbNum[j] = iMbWidth;
-        }
-        if (!CheckRowMbMultiSliceSetting (iMbWidth,
-                                          &pSpatialLayer->sSliceArgument)) { // verify interleave mode settings
-          WelsLog (pLogCtx, WELS_LOG_ERROR, "ParamValidationExt(), invalid uiSliceMbNum (%d) settings!",
-                   pSpatialLayer->sSliceArgument.uiSliceMbNum[0]);
-          return ENC_RETURN_UNSUPPORTED_PARA;
-        }
-        break;
-      }
-
-      if (!CheckRasterMultiSliceSetting (iMbNumInFrame,
-                                         &pSpatialLayer->sSliceArgument)) { // verify interleave mode settings
-        WelsLog (pLogCtx, WELS_LOG_ERROR, "ParamValidationExt(), invalid uiSliceMbNum (%d) settings!",
-                 pSpatialLayer->sSliceArgument.uiSliceMbNum[0]);
-        return ENC_RETURN_UNSUPPORTED_PARA;
-      }
-      if (pSpatialLayer->sSliceArgument.uiSliceNum <= 0
-          || pSpatialLayer->sSliceArgument.uiSliceNum > iMaxSliceNum) { // verify interleave mode settings
-        WelsLog (pLogCtx, WELS_LOG_ERROR, "ParamValidationExt(), invalid uiSliceNum (%d) in SM_RASTER_SLICE settings!",
-                 pSpatialLayer->sSliceArgument.uiSliceNum);
-        return ENC_RETURN_UNSUPPORTED_PARA;
-      }
-      if (pSpatialLayer->sSliceArgument.uiSliceNum == 1) {
-        WelsLog (pLogCtx, WELS_LOG_WARNING,
-                 "ParamValidationExt(), pSlice setting for SM_RASTER_SLICE now turn to SM_SINGLE_SLICE!");
-        pSpatialLayer->sSliceArgument.uiSliceMode = SM_SINGLE_SLICE;
-        break;
-      }
-      if ((pCodingParam->iRCMode != RC_OFF_MODE) && pSpatialLayer->sSliceArgument.uiSliceNum > 1) {
-        WelsLog (pLogCtx, WELS_LOG_ERROR, "ParamValidationExt(), WARNING: GOM based RC do not support SM_RASTER_SLICE!");
-      }
-      // considering the coding efficient and performance, iCountMbNum constraint by MIN_NUM_MB_PER_SLICE condition of multi-pSlice mode settting
-      if (iMbNumInFrame <= MIN_NUM_MB_PER_SLICE) {
-        pSpatialLayer->sSliceArgument.uiSliceMode = SM_SINGLE_SLICE;
-        pSpatialLayer->sSliceArgument.uiSliceNum = 1;
-        break;
-      }
-    }
-    break;
-    case SM_SIZELIMITED_SLICE: {
-      iMbWidth  = (kiPicWidth + 15) >> 4;
-      iMbHeight = (kiPicHeight + 15) >> 4;
-      if (pSpatialLayer->sSliceArgument.uiSliceSizeConstraint <= MAX_MACROBLOCK_SIZE_IN_BYTE) {
-        WelsLog (pLogCtx, WELS_LOG_ERROR,
-                 "ParamValidationExt(), invalid iSliceSize (%d) settings!should be larger than  MAX_MACROBLOCK_SIZE_IN_BYTE(%d)",
-                 pSpatialLayer->sSliceArgument.uiSliceSizeConstraint, MAX_MACROBLOCK_SIZE_IN_BYTE);
-        return ENC_RETURN_UNSUPPORTED_PARA;
-      }
-
-      if (pCodingParam->uiMaxNalSize > 0) {
-        if (pCodingParam->uiMaxNalSize < (NAL_HEADER_ADD_0X30BYTES + MAX_MACROBLOCK_SIZE_IN_BYTE)) {
-          WelsLog (pLogCtx, WELS_LOG_ERROR,
-                   "ParamValidationExt(), invalid uiMaxNalSize (%d) settings! should be larger than (NAL_HEADER_ADD_0X30BYTES + MAX_MACROBLOCK_SIZE_IN_BYTE)(%d)",
-                   pCodingParam->uiMaxNalSize, (NAL_HEADER_ADD_0X30BYTES + MAX_MACROBLOCK_SIZE_IN_BYTE));
-          return ENC_RETURN_UNSUPPORTED_PARA;
-        }
-
-        if (pSpatialLayer->sSliceArgument.uiSliceSizeConstraint > (pCodingParam->uiMaxNalSize -
-            NAL_HEADER_ADD_0X30BYTES)) {
-          WelsLog (pLogCtx, WELS_LOG_WARNING,
-                   "ParamValidationExt(), slice mode = SM_SIZELIMITED_SLICE, uiSliceSizeConstraint = %d ,uiMaxNalsize = %d, will take uiMaxNalsize!",
-                   pSpatialLayer->sSliceArgument.uiSliceSizeConstraint, pCodingParam->uiMaxNalSize);
-          pSpatialLayer->sSliceArgument.uiSliceSizeConstraint =  pCodingParam->uiMaxNalSize - NAL_HEADER_ADD_0X30BYTES;
-        }
-      }
-      pSpatialLayer->sSliceArgument.uiSliceSizeConstraint -= NAL_HEADER_ADD_0X30BYTES;
-    }
-    break;
-    default: {
-      WelsLog (pLogCtx, WELS_LOG_ERROR, "ParamValidationExt(), invalid uiSliceMode (%d) settings!",
-               pCodingParam->sSpatialLayers[0].sSliceArgument.uiSliceMode);
-      return ENC_RETURN_UNSUPPORTED_PARA;
-
-    }
-    break;
+    pSpatialLayer->sSliceArgument.uiSliceNum = 1;
+    pSpatialLayer->sSliceArgument.uiSliceSizeConstraint = 0;
+    for (iIdx = 0; iIdx < MAX_SLICES_NUM; iIdx++) {
+      pSpatialLayer->sSliceArgument.uiSliceMbNum[iIdx] = 0;
     }
   }
   for (i = 0; i < pCodingParam->iSpatialLayerNum; ++ i) {
@@ -1395,8 +1212,6 @@ int32_t RequestMemorySvc (sWelsEncCtx** ppCtx, SExistingParasetList* pExistingPa
   const int32_t kiPpsSize = (*ppCtx)->pFuncList->pParametersetStrategy->GetNeededPpsNum() * PPS_BUFFER_SIZE;
   iNonVclLayersBsSizeCount = SSEI_BUFFER_SIZE + kiSpsSize + kiPpsSize;
 
-  bool    bDynamicSlice = false;
-  uint32_t uiMaxSliceNumEstimation = 0;
   int32_t iSliceBufferSize = 0;
   int32_t iMaxSliceBufferSize = 0;
   int32_t iTotalLength = 0;
@@ -1785,34 +1600,9 @@ int32_t InitSliceSettings (SLogContext* pLogCtx,     SWelsSvcCodingParam* pCodin
   do {
     SSpatialLayerConfig* pDlp           = &pCodingParam->sSpatialLayers[iSpatialIdx];
     SSliceArgument* pSliceArgument      = &pDlp->sSliceArgument;
-    int32_t iReturn                     = 0;
 
-    switch (pSliceArgument->uiSliceMode) {
-    case SM_SIZELIMITED_SLICE:
-      iMaxSliceCount = AVERSLICENUM_CONSTRAINT;
-      break; // go through for SM_SIZELIMITED_SLICE?
-    case SM_FIXEDSLCNUM_SLICE: {
-      iReturn = SliceArgumentValidationFixedSliceMode (pLogCtx, &pDlp->sSliceArgument, pCodingParam->iRCMode,
-                pDlp->iVideoWidth, pDlp->iVideoHeight);
-      if (iReturn)
-        return ENC_RETURN_UNSUPPORTED_PARA;
-
-      if (pSliceArgument->uiSliceNum > iMaxSliceCount) {
-        iMaxSliceCount = pSliceArgument->uiSliceNum;
-      }
-    }
-    break;
-    case SM_SINGLE_SLICE:
-      if (pSliceArgument->uiSliceNum > iMaxSliceCount)
-        iMaxSliceCount = pSliceArgument->uiSliceNum;
-      break;
-    case SM_RASTER_SLICE:
-      if (pSliceArgument->uiSliceNum > iMaxSliceCount)
-        iMaxSliceCount = pSliceArgument->uiSliceNum;
-      break;
-    default:
-      break;
-    }
+    if (pSliceArgument->uiSliceNum > iMaxSliceCount)
+      iMaxSliceCount = pSliceArgument->uiSliceNum;
 
     ++ iSpatialIdx;
   } while (iSpatialIdx < iSpatialNum);
@@ -2160,7 +1950,6 @@ void PreprocessSliceCoding (sWelsEncCtx* pCtx) {
   SDqLayer* pCurLayer           = pCtx->pCurDqLayer;
   //const bool kbBaseAvail      = pCurLayer->bBaseLayerAvailableFlag;
   SWelsFuncPtrList* pFuncList = pCtx->pFuncList;
-  SLogContext* pLogCtx = & (pCtx->sLogCtx);
   /* function pointers conditional assignment under sWelsEncCtx, layer_mb_enc_rec (in stack) is exclusive */
   if (P_SLICE == pCtx->eSliceType) {
     SetFastCodingFunc (pFuncList);
@@ -2229,8 +2018,6 @@ void PreprocessSliceCoding (sWelsEncCtx* pCtx) {
   pCurLayer->bSatdInMdFlag = ((pFuncList->sSampleDealingFuncs.pfMeCost == pFuncList->sSampleDealingFuncs.pfSampleSatd)
                               && (pFuncList->sSampleDealingFuncs.pfMdCost == pFuncList->sSampleDealingFuncs.pfSampleSatd));
 
-  const int32_t kiCurDid            = pCtx->uiDependencyId;
-  const int32_t kiCurTid            = pCtx->uiTemporalId;
 }
 
 /*!
@@ -2746,7 +2533,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
     iCurWidth   = pParam->iVideoWidth;
     iCurHeight  = pParam->iVideoHeight;
     /* coding each spatial layer, only one sQualityStat layer within spatial support */
-    int32_t iSliceCount = 1;
     if (iLayerNum >= MAX_LAYER_NUM_OF_FRAME) { // check available layer_bs_info writing as follows
       WelsLog (pLogCtx, WELS_LOG_ERROR, "WelsEncoderEncodeExt(), iLayerNum(%d) overflow(max:%d)!", iLayerNum,
                MAX_LAYER_NUM_OF_FRAME);

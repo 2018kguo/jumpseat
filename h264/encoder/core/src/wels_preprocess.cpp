@@ -313,7 +313,6 @@ int32_t CWelsPreProcess::SingleLayerPreprocess (sWelsEncCtx* pCtx, const SSource
   int32_t iTargetWidth              = 0;
   int32_t iTargetHeight             = 0;
   int32_t iTemporalId = 0;
-  int32_t iClosestDid =  iDependencyId;
   pDlayerParamInternal = &pSvcParam->sDependencyLayers[iDependencyId];
   pDlayerParam = &pSvcParam->sSpatialLayers[iDependencyId];
   iTargetWidth   = pDlayerParam->iVideoWidth;
@@ -455,8 +454,6 @@ void  FreeScaledPic (Scaled_Picture*  pScaledPicture, CMemoryAlign* pMemoryAlign
 }
 
 int32_t CWelsPreProcess::InitLastSpatialPictures (sWelsEncCtx* pCtx) {
-  SWelsSvcCodingParam* pParam   = pCtx->pSvcParam;
-  const int32_t kiDlayerCount   = pParam->iSpatialLayerNum;
   int32_t iDlayerIndex          = 0;
   for (; iDlayerIndex < MAX_DEPENDENCY_LAYER; iDlayerIndex++) {
     m_pLastSpatialPicture[iDlayerIndex][0] = m_pLastSpatialPicture[iDlayerIndex][1] = NULL;
@@ -561,18 +558,11 @@ void CWelsPreProcess::VaaCalculation (SVAAFrameInfo* pVaaInfo, SPicture* pCurPic
 
 void CWelsPreProcess::AnalyzePictureComplexity (sWelsEncCtx* pCtx, SPicture* pCurPicture, SPicture* pRefPicture,
     const int32_t kiDependencyId, const bool bCalculateBGD) {
-  SWelsSvcCodingParam* pSvcParam = pCtx->pSvcParam;
-  int32_t iComplexityAnalysisMode = 0;
-
   SVAAFrameInfoExt* pVaaExt = static_cast<SVAAFrameInfoExt*> (pCtx->pVaa);
   SComplexityAnalysisScreenParam* sComplexityAnalysisParam = &pVaaExt->sComplexityScreenParam;
   SWelsSvcRc* pWelsSvcRc = &pCtx->pWelsSvcRc[kiDependencyId];
 
-  if (pCtx->eSliceType == P_SLICE)
-    iComplexityAnalysisMode = GOM_SAD;
-  else if (pCtx->eSliceType == I_SLICE)
-    iComplexityAnalysisMode = GOM_VAR;
-  else
+  if (pCtx->eSliceType != P_SLICE && pCtx->eSliceType != I_SLICE)
     return;
 
   memset (pWelsSvcRc->pGomForegroundBlockNum, 0, pWelsSvcRc->iGomSize * sizeof (int32_t));

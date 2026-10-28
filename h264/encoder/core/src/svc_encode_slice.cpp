@@ -503,7 +503,6 @@ void FreeMbCache (SMbCache* pMbCache, CMemoryAlign* pMa) {
 int32_t InitSliceBoundaryInfo (SDqLayer* pCurLayer,
                                SSliceArgument* pSliceArgument,
                                const int32_t kiSliceNumInFrame) {
-  const int32_t* kpSlicesAssignList   = (int32_t*) & (pSliceArgument->uiSliceMbNum[0]);
   const int32_t kiMBWidth             = pCurLayer->iMbWidth;
   const int32_t kiMBHeight            = pCurLayer->iMbHeight;
   const int32_t kiCountNumMbInFrame   = kiMBWidth * kiMBHeight;
@@ -787,9 +786,6 @@ int32_t WelsCodeOneSlice (sWelsEncCtx* pEncCtx, SSlice* pCurSlice, const int32_t
   SWelsSvcRc* pWelsSvcRc           = &pEncCtx->pWelsSvcRc[pEncCtx->uiDependencyId];
   SNalUnitHeaderExt* pNalHeadExt   = &pCurLayer->sLayerInfo.sNalHeaderExt;
   SBitStringAux* pBs               = pCurSlice->pSliceBsa;
-  const int32_t kiDynamicSliceFlag =
-    (pEncCtx->pSvcParam->sSpatialLayers[pEncCtx->uiDependencyId].sSliceArgument.uiSliceMode
-     == SM_SIZELIMITED_SLICE);
   if (I_SLICE == pEncCtx->eSliceType) {
     pNalHeadExt->bIdrFlag = 1;
     pCurSlice->sScaleShift = 0;

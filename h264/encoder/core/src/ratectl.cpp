@@ -573,7 +573,6 @@ void RcInitGomParameters (sWelsEncCtx* pEncCtx) {
 }
 
 void RcCalculateMbQp (sWelsEncCtx* pEncCtx, SSlice* pSlice, SMB* pCurMb) {
-  SWelsSvcRc* pWelsSvcRc        = &pEncCtx->pWelsSvcRc[pEncCtx->uiDependencyId];
   SRCSlicing* pSOverRc          = &pSlice->sSlicingOverRc;
 
   int32_t iLumaQp               = pSOverRc->iCalculatedQpSlice;

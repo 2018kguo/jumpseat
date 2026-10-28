@@ -119,7 +119,6 @@ static void PrefetchNextBuffer (sWelsEncCtx* pCtx) {
  */
 bool WelsUpdateRefList (sWelsEncCtx* pCtx) {
   SRefList* pRefList                = pCtx->ppRefPicListExt[pCtx->uiDependencyId];
-  SLTRState* pLtr                   = &pCtx->pLtr[pCtx->uiDependencyId];
   SSpatialLayerInternal* pParamD    = &pCtx->pSvcParam->sDependencyLayers[pCtx->uiDependencyId];
 
   int32_t iRefIdx                   = 0;
@@ -193,7 +192,6 @@ void WelsMarkMMCORefInfo (sWelsEncCtx* pCtx, SLTRState* pLtr,
                           SSlice** ppSliceList, const int32_t kiCountSliceNum) {
   SSlice* pBaseSlice            = ppSliceList[0];
   SRefPicMarking* pRefPicMark   = &pBaseSlice->sSliceHeaderExt.sSliceHeader.sRefMarking;
-  int32_t iGoPFrameNumInterval  = ((pCtx->pSvcParam->uiGopSize >> 1) > 1) ? (pCtx->pSvcParam->uiGopSize >> 1) : (1);
 
   memset (pRefPicMark, 0, sizeof (SRefPicMarking));
 
@@ -215,11 +213,9 @@ void WelsMarkPic (sWelsEncCtx* pCtx) {
  */
 bool WelsBuildRefList (sWelsEncCtx* pCtx, const int32_t iPOC, int32_t iBestLtrRefIdx) {
   SRefList* pRefList            = pCtx->ppRefPicListExt[pCtx->uiDependencyId];
-  SLTRState* pLtr               = &pCtx->pLtr[pCtx->uiDependencyId];
   const int32_t kiNumRef        = pCtx->pSvcParam->iNumRefFrame;
   const uint8_t kuiTid          = pCtx->uiTemporalId;
   uint32_t i                    = 0;
-  SSpatialLayerInternal* pParamD    = &pCtx->pSvcParam->sDependencyLayers[pCtx->uiDependencyId];
   // to support any type of cur_dq->mgs_control
   //    [ 0:    using current layer to do ME/MC;
   //     -1:    using store base layer to do ME/MC;
@@ -270,7 +266,6 @@ void UpdateBlockStatic (sWelsEncCtx* pCtx) {
 void WelsUpdateSliceHeaderSyntax (sWelsEncCtx* pCtx,  const int32_t iAbsDiffPicNumMinus1,
                                   SSlice** ppSliceList, const int32_t uiFrameType) {
   const int32_t kiCountSliceNum = pCtx->pCurDqLayer->iMaxSliceNum;
-  SLTRState* pLtr               = &pCtx->pLtr[pCtx->uiDependencyId];
   int32_t iIdx = 0;
 
   assert (kiCountSliceNum > 0);

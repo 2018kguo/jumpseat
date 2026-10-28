@@ -87,8 +87,6 @@ int32_t WelsAdjustLevel (SSpatialLayerConfig* pSpatialLayer, const SLevelLimits*
 
 static int32_t WelsCheckNumRefSetting (SLogContext* pLogCtx, SWelsSvcCodingParam* pParam, bool bStrictCheck) {
   // validate LTR num
-  int32_t iCurrentSupportedLtrNum = (pParam->iUsageType == CAMERA_VIDEO_REAL_TIME) ? LONG_TERM_REF_NUM :
-                                    LONG_TERM_REF_NUM_SCREEN;
   pParam->iLTRRefNum = 0;
 
   //TODO: here is a fix needed here, the most reasonable value should be:
