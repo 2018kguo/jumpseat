@@ -250,129 +250,9 @@ void FillNeighborCacheInterWithoutBGD (SMbCache* pMbCache, SMB* pCurMb, int32_t 
           pMvComp->iRefIndexCache[23] = REF_NOT_AVAIL;
 }
 
-void FillNeighborCacheInterWithBGD (SMbCache* pMbCache, SMB* pCurMb, int32_t iMbWidth, int8_t* pVaaBgMbFlag) {
-  uint32_t uiNeighborAvail = pCurMb->uiNeighborAvail;
-  SMB* pLeftMb = pCurMb - 1 ;
-  SMB* pTopMb = pCurMb - iMbWidth;
-  SMB* pLeftTopMb = pCurMb - iMbWidth - 1 ;
-  SMB* iRightTopMb = pCurMb - iMbWidth + 1 ;
-  SMVComponentUnit* pMvComp = &pMbCache->sMvComponents;
-
-  if ((uiNeighborAvail & LEFT_MB_POS) && IS_SVC_INTER (pLeftMb->uiMbType)) {
-    pMvComp->sMotionVectorCache[ 6] = pLeftMb->sMv[ 3];
-    pMvComp->sMotionVectorCache[12] = pLeftMb->sMv[ 7];
-    pMvComp->sMotionVectorCache[18] = pLeftMb->sMv[11];
-    pMvComp->sMotionVectorCache[24] = pLeftMb->sMv[15];
-    pMvComp->iRefIndexCache[ 6] = pLeftMb->pRefIndex[1];
-    pMvComp->iRefIndexCache[12] = pLeftMb->pRefIndex[1];
-    pMvComp->iRefIndexCache[18] = pLeftMb->pRefIndex[3];
-    pMvComp->iRefIndexCache[24] = pLeftMb->pRefIndex[3];
-    pMbCache->iSadCost[3] = pLeftMb->pSadCost[0];
-
-    if (pLeftMb->uiMbType == MB_TYPE_SKIP && pVaaBgMbFlag[-1] == 0) {
-      pMbCache->bMbTypeSkip[3] = 1;
-      pMbCache->iSadCostSkip[3] = pMbCache->pEncSad[-1];
-    } else {
-      pMbCache->bMbTypeSkip[3] = 0;
-      pMbCache->iSadCostSkip[3] = 0;
-    }
-  } else { //avail or non-inter
-    ST32 (&pMvComp->sMotionVectorCache[ 6], 0);
-    ST32 (&pMvComp->sMotionVectorCache[12], 0);
-    ST32 (&pMvComp->sMotionVectorCache[18], 0);
-    ST32 (&pMvComp->sMotionVectorCache[24], 0);
-    pMvComp->iRefIndexCache[ 6] =
-      pMvComp->iRefIndexCache[12] =
-        pMvComp->iRefIndexCache[18] =
-          pMvComp->iRefIndexCache[24] = (uiNeighborAvail & LEFT_MB_POS) ? REF_NOT_IN_LIST : REF_NOT_AVAIL;
-    pMbCache->iSadCost[3] = 0;
-    pMbCache->bMbTypeSkip[3] = 0;
-    pMbCache->iSadCostSkip[3] = 0;
-  }
-
-  if ((uiNeighborAvail & TOP_MB_POS) && IS_SVC_INTER (pTopMb->uiMbType)) { //TOP MB
-    ST64 (&pMvComp->sMotionVectorCache[1], LD64 (&pTopMb->sMv[12]));
-    ST64 (&pMvComp->sMotionVectorCache[3], LD64 (&pTopMb->sMv[14]));
-    pMvComp->iRefIndexCache[1] = pTopMb->pRefIndex[2];
-    pMvComp->iRefIndexCache[2] = pTopMb->pRefIndex[2];
-    pMvComp->iRefIndexCache[3] = pTopMb->pRefIndex[3];
-    pMvComp->iRefIndexCache[4] = pTopMb->pRefIndex[3];
-    pMbCache->iSadCost[1] = pTopMb->pSadCost[0];
-    if (pTopMb->uiMbType == MB_TYPE_SKIP  && pVaaBgMbFlag[-iMbWidth] == 0) {
-      pMbCache->bMbTypeSkip[1] = 1;
-      pMbCache->iSadCostSkip[1] = pMbCache->pEncSad[-iMbWidth];
-    } else {
-      pMbCache->bMbTypeSkip[1] = 0;
-      pMbCache->iSadCostSkip[1] = 0;
-    }
-  } else { //unavail
-    ST64 (&pMvComp->sMotionVectorCache[1], 0);
-    ST64 (&pMvComp->sMotionVectorCache[3], 0);
-    pMvComp->iRefIndexCache[1] =
-      pMvComp->iRefIndexCache[2] =
-        pMvComp->iRefIndexCache[3] =
-          pMvComp->iRefIndexCache[4] = (uiNeighborAvail & TOP_MB_POS) ? REF_NOT_IN_LIST : REF_NOT_AVAIL;
-    pMbCache->iSadCost[1] = 0;
-    pMbCache->bMbTypeSkip[1] = 0;
-    pMbCache->iSadCostSkip[1] = 0;
-  }
-
-
-  if ((uiNeighborAvail & TOPLEFT_MB_POS) && IS_SVC_INTER (pLeftTopMb->uiMbType)) { //LEFT_TOP MB
-    pMvComp->sMotionVectorCache[0] = pLeftTopMb->sMv[15];
-    pMvComp->iRefIndexCache[0] = pLeftTopMb->pRefIndex[3];
-    pMbCache->iSadCost[0] = pLeftTopMb->pSadCost[0];
-
-    if (pLeftTopMb->uiMbType == MB_TYPE_SKIP  && pVaaBgMbFlag[-iMbWidth - 1] == 0) {
-      pMbCache->bMbTypeSkip[0] = 1;
-      pMbCache->iSadCostSkip[0] = pMbCache->pEncSad[-iMbWidth - 1];
-    } else {
-      pMbCache->bMbTypeSkip[0] = 0;
-      pMbCache->iSadCostSkip[0] = 0;
-    }
-  } else { //unavail
-    ST32 (&pMvComp->sMotionVectorCache[0], 0);
-    pMvComp->iRefIndexCache[0] = (uiNeighborAvail & TOPLEFT_MB_POS) ? REF_NOT_IN_LIST : REF_NOT_AVAIL;
-    pMbCache->iSadCost[0] = 0;
-    pMbCache->bMbTypeSkip[0] = 0;
-    pMbCache->iSadCostSkip[0] = 0;
-  }
-
-  if ((uiNeighborAvail & TOPRIGHT_MB_POS) && IS_SVC_INTER (iRightTopMb->uiMbType)) { //RIGHT_TOP MB
-    pMvComp->sMotionVectorCache[5] = iRightTopMb->sMv[12];
-    pMvComp->iRefIndexCache[5] = iRightTopMb->pRefIndex[2];
-    pMbCache->iSadCost[2] = iRightTopMb->pSadCost[0];
-
-    if (iRightTopMb->uiMbType == MB_TYPE_SKIP  && pVaaBgMbFlag[-iMbWidth + 1] == 0) {
-      pMbCache->bMbTypeSkip[2] = 1;
-      pMbCache->iSadCostSkip[2] = pMbCache->pEncSad[-iMbWidth + 1];
-    } else {
-      pMbCache->bMbTypeSkip[2] = 0;
-      pMbCache->iSadCostSkip[2] = 0;
-    }
-  } else { //unavail
-    ST32 (&pMvComp->sMotionVectorCache[5], 0);
-    pMvComp->iRefIndexCache[5] = (uiNeighborAvail & TOPRIGHT_MB_POS) ? REF_NOT_IN_LIST : REF_NOT_AVAIL;
-    pMbCache->iSadCost[2] = 0;
-    pMbCache->bMbTypeSkip[2] = 0;
-    pMbCache->iSadCostSkip[2] = 0;
-  }
-
-  //right-top 4*4 pBlock unavailable
-  ST32 (&pMvComp->sMotionVectorCache[ 9], 0);
-  ST32 (&pMvComp->sMotionVectorCache[21], 0);
-  ST32 (&pMvComp->sMotionVectorCache[11], 0);
-  ST32 (&pMvComp->sMotionVectorCache[17], 0);
-  ST32 (&pMvComp->sMotionVectorCache[23], 0);
-  pMvComp->iRefIndexCache[ 9] =
-    pMvComp->iRefIndexCache[11] =
-      pMvComp->iRefIndexCache[17] =
-        pMvComp->iRefIndexCache[21] =
-          pMvComp->iRefIndexCache[23] = REF_NOT_AVAIL;
-}
 
 void InitFillNeighborCacheInterFunc (SWelsFuncPtrList* pFuncList, const int32_t kiFlag) {
-  pFuncList->pfFillInterNeighborCache = kiFlag ? FillNeighborCacheInterWithBGD : FillNeighborCacheInterWithoutBGD;
+  pFuncList->pfFillInterNeighborCache = FillNeighborCacheInterWithoutBGD; // jumpseat: no background detection
 }
 
 void UpdateMbMv_c (SMVUnitXY* pMvBuffer, const SMVUnitXY ksMv) {
@@ -607,12 +487,9 @@ void MeRefineFracPixel (sWelsEncCtx* pEncCtx, uint8_t* pMemPredInterMb, SWelsME*
 
   // jumpseat: screen content at low complexity stays integer-pel, as x264
   // ultrafast does (animation: 8% of the CPU for 3.5% of the bits).
-  if (pEncCtx->pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME
-      && pEncCtx->pSvcParam->iComplexityMode == LOW_COMPLEXITY) {
-    pMe->uiSatdCost = iBestCost;
-    pMeRefine->pfCopyBlockByMode (pMemPredInterMb, MB_WIDTH_LUMA, pRef, kiStrideRef);
-    return;
-  }
+  pMe->uiSatdCost = iBestCost;
+  pMeRefine->pfCopyBlockByMode (pMemPredInterMb, MB_WIDTH_LUMA, pRef, kiStrideRef);
+  return;
   iBestHalfPix = REFINE_ME_NO_BEST_HALF_PIXEL;
 
   pFunc->sMcFuncs.pfLumaHalfpelVer (pRef - kiStrideRef, kiStrideRef, pMeRefine->pHalfPixV, ME_REFINE_BUF_STRIDE, iWidth,

@@ -532,7 +532,7 @@ TRY_REENCODING:
     pCurMb->uiSliceIdc = kiSliceIdx;
 
 
-    pEncCtx->pFuncList->pfMdBackgroundInfoUpdate (pCurLayer, pCurMb, pMbCache->bCollocatedPredFlag, I_SLICE);
+    WelsMdUpdateRefMbQp (pCurLayer, pCurMb, pMbCache->bCollocatedPredFlag, I_SLICE);
     pEncCtx->pFuncList->pfRc.pfWelsRcMbInfoUpdate (pEncCtx, pCurMb, sMd.iCostLuma, pSlice);
 
     ++iNumMbCoded;
@@ -781,34 +781,8 @@ int32_t InitSliceBoundaryInfo (SDqLayer* pCurLayer,
   int32_t iMbNumInSlice               = 0;
 
   for (; iSliceIdx < kiSliceNumInFrame; iSliceIdx++) {
-    if (SM_SINGLE_SLICE == pSliceArgument->uiSliceMode) {
-      iFirstMBInSlice = 0;
-      iMbNumInSlice   = kiCountNumMbInFrame;
-
-    } else if ((SM_RASTER_SLICE == pSliceArgument->uiSliceMode) && (0 == pSliceArgument->uiSliceMbNum[0])) {
-      iFirstMBInSlice = iSliceIdx * kiMBWidth;
-      iMbNumInSlice   = kiMBWidth;
-    } else if (SM_RASTER_SLICE  == pSliceArgument->uiSliceMode ||
-               SM_FIXEDSLCNUM_SLICE == pSliceArgument->uiSliceMode) {
-      int32_t iMbIdx  = 0;
-      for (int i = 0; i < iSliceIdx; i++) {
-        iMbIdx += kpSlicesAssignList[i];
-      }
-
-      if (iMbIdx >= kiCountNumMbInFrame) {
-        return ENC_RETURN_UNEXPECTED;
-      }
-
-      iFirstMBInSlice = iMbIdx;
-      iMbNumInSlice   = kpSlicesAssignList[iSliceIdx];
-
-    } else if (SM_SIZELIMITED_SLICE == pSliceArgument->uiSliceMode) {
-      iFirstMBInSlice  = 0;
-      iMbNumInSlice    = kiCountNumMbInFrame;
-
-    } else { // any else uiSliceMode?
-      assert (0);
-    }
+    iFirstMBInSlice = 0;
+    iMbNumInSlice   = kiCountNumMbInFrame;
 
     pCurLayer->pCountMbNumInSlice[iSliceIdx] = iMbNumInSlice;
     pCurLayer->pFirstMbIdxOfSlice[iSliceIdx] = iFirstMBInSlice;
@@ -1746,7 +1720,7 @@ TRY_REENCODING:
     //step (4): save from the MD process from future use
     WelsMdInterSaveSadAndRefMbType ((pCurLayer->pDecPic->uiRefMbType), pMbCache, pCurMb, pMd);
 
-    pEncCtx->pFuncList->pfMdBackgroundInfoUpdate (pCurLayer, pCurMb, pMbCache->bCollocatedPredFlag,
+    WelsMdUpdateRefMbQp (pCurLayer, pCurMb, pMbCache->bCollocatedPredFlag,
         pEncCtx->pRefPic->iPictureType);
 
     //step (5): update cache
@@ -1844,7 +1818,7 @@ TRY_REENCODING:
     //step (4): save from the MD process from future use
     WelsMdInterSaveSadAndRefMbType ((pCurLayer->pDecPic->uiRefMbType), pMbCache, pCurMb, pMd);
 
-    pEncCtx->pFuncList->pfMdBackgroundInfoUpdate (pCurLayer, pCurMb, pMbCache->bCollocatedPredFlag,
+    WelsMdUpdateRefMbQp (pCurLayer, pCurMb, pMbCache->bCollocatedPredFlag,
         pEncCtx->pRefPic->iPictureType);
 
     //step (5): update cache

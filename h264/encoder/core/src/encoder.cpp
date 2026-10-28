@@ -138,13 +138,8 @@ int32_t InitPic (const void* kpSrc, const int32_t kiColorspace, const int32_t ki
 
 
 void WelsInitBGDFunc (SWelsFuncPtrList* pFuncList, const bool kbEnableBackgroundDetection) {
-  if (kbEnableBackgroundDetection) {
-    pFuncList->pfInterMdBackgroundDecision = WelsMdInterJudgeBGDPskip;
-    pFuncList->pfMdBackgroundInfoUpdate = WelsMdUpdateBGDInfo;
-  } else {
-    pFuncList->pfInterMdBackgroundDecision = WelsMdInterJudgeBGDPskipFalse;
-    pFuncList->pfMdBackgroundInfoUpdate = WelsMdUpdateBGDInfoNULL;
-  }
+  // jumpseat: no background detection (screen content)
+  pFuncList->pfInterMdBackgroundDecision = WelsMdInterJudgeBGDPskipFalse;
 }
 
 /*!
@@ -324,70 +319,39 @@ EVideoFrameType DecideFrameType (sWelsEncCtx* pEncCtx, const int8_t kiSpatialNum
   SSpatialLayerInternal* pParamInternal = &pEncCtx->pSvcParam->sDependencyLayers[kiDidx];
   EVideoFrameType iFrameType = videoFrameTypeInvalid;
   bool bSceneChangeFlag = false;
-  if (pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME) {
-    if ((!pSvcParam->bEnableSceneChangeDetect) || pEncCtx->pVaa->bIdrPeriodFlag ||
-        (kiSpatialNum < pSvcParam->iSpatialLayerNum)) {
-      bSceneChangeFlag = false;
-    } else {
-      bSceneChangeFlag = pEncCtx->pVaa->bSceneChangeFlag;
+  if ((!pSvcParam->bEnableSceneChangeDetect) || pEncCtx->pVaa->bIdrPeriodFlag ||
+      (kiSpatialNum < pSvcParam->iSpatialLayerNum)) {
+    bSceneChangeFlag = false;
+  } else {
+    bSceneChangeFlag = pEncCtx->pVaa->bSceneChangeFlag;
+  }
+  if (pEncCtx->pVaa->bIdrPeriodFlag || pParamInternal->bEncCurFrmAsIdrFlag || (!pSvcParam->bEnableLongTermReference
+      && bSceneChangeFlag && !bSkipFrameFlag)) {
+    iFrameType = videoFrameTypeIDR;
+  } else if (pSvcParam->bEnableLongTermReference && (bSceneChangeFlag
+             || pEncCtx->pVaa->eSceneChangeIdc == LARGE_CHANGED_SCENE)) {
+    int iActualLtrcount = 0;
+    SPicture** pLongTermRefList = pEncCtx->ppRefPicListExt[0]->pLongRefList;
+    for (int i = 0; i < pSvcParam->iLTRRefNum; ++i) {
+      if (NULL != pLongTermRefList[i] && pLongTermRefList[i]->bUsedAsRef && pLongTermRefList[i]->bIsLongRef
+          && pLongTermRefList[i]->bIsSceneLTR) {
+        ++iActualLtrcount;
+      }
     }
-    if (pEncCtx->pVaa->bIdrPeriodFlag || pParamInternal->bEncCurFrmAsIdrFlag || (!pSvcParam->bEnableLongTermReference
-        && bSceneChangeFlag && !bSkipFrameFlag)) {
+    if (iActualLtrcount == pSvcParam->iLTRRefNum && bSceneChangeFlag) {
       iFrameType = videoFrameTypeIDR;
-    } else if (pSvcParam->bEnableLongTermReference && (bSceneChangeFlag
-               || pEncCtx->pVaa->eSceneChangeIdc == LARGE_CHANGED_SCENE)) {
-      int iActualLtrcount = 0;
-      SPicture** pLongTermRefList = pEncCtx->ppRefPicListExt[0]->pLongRefList;
-      for (int i = 0; i < pSvcParam->iLTRRefNum; ++i) {
-        if (NULL != pLongTermRefList[i] && pLongTermRefList[i]->bUsedAsRef && pLongTermRefList[i]->bIsLongRef
-            && pLongTermRefList[i]->bIsSceneLTR) {
-          ++iActualLtrcount;
-        }
-      }
-      if (iActualLtrcount == pSvcParam->iLTRRefNum && bSceneChangeFlag) {
-        iFrameType = videoFrameTypeIDR;
-      } else {
-        iFrameType = videoFrameTypeP;
-        pEncCtx->bCurFrameMarkedAsSceneLtr = true;
-      }
     } else {
       iFrameType = videoFrameTypeP;
+      pEncCtx->bCurFrameMarkedAsSceneLtr = true;
     }
-    if (videoFrameTypeP == iFrameType && bSkipFrameFlag) {
-      iFrameType = videoFrameTypeSkip;
-    } else if (videoFrameTypeIDR == iFrameType) {
-      pParamInternal->iCodingIndex = 0;
-      pEncCtx->bCurFrameMarkedAsSceneLtr   = true;
-    }
-
   } else {
-    // perform scene change detection
-    if ((!pSvcParam->bEnableSceneChangeDetect) || pEncCtx->pVaa->bIdrPeriodFlag ||
-        (kiSpatialNum < pSvcParam->iSpatialLayerNum)
-        || (pParamInternal->iFrameIndex < (VGOP_SIZE << 1))) { // avoid too frequent I frame coding, rc control
-      bSceneChangeFlag = false;
-    } else {
-      bSceneChangeFlag = pEncCtx->pVaa->bSceneChangeFlag;
-    }
-
-    //scene_changed_flag: RC enable && iSpatialNum == pSvcParam->iSpatialLayerNum
-    //bIdrPeriodFlag: RC disable || iSpatialNum != pSvcParam->iSpatialLayerNum
-    //pEncCtx->bEncCurFrmAsIdrFlag: 1. first frame should be IDR; 2. idr pause; 3. idr request
-    iFrameType = (pEncCtx->pVaa->bIdrPeriodFlag || bSceneChangeFlag
-                  || pParamInternal->bEncCurFrmAsIdrFlag) ? videoFrameTypeIDR : videoFrameTypeP;
-    if ( videoFrameTypeIDR == iFrameType ) {
-      WelsLog (& (pEncCtx->sLogCtx), WELS_LOG_DEBUG,
-               "encoding videoFrameTypeIDR due to ( bIdrPeriodFlag %d, bSceneChangeFlag %d, bEncCurFrmAsIdrFlag %d )",
-               pEncCtx->pVaa->bIdrPeriodFlag,
-               bSceneChangeFlag,
-               pParamInternal->bEncCurFrmAsIdrFlag);
-    }
-
-    if (videoFrameTypeP == iFrameType && bSkipFrameFlag) {  // for frame skip, 1/5/2010
-      iFrameType = videoFrameTypeSkip;
-    } else if (videoFrameTypeIDR == iFrameType) {
-      pParamInternal->iCodingIndex = 0;
-    }
+    iFrameType = videoFrameTypeP;
+  }
+  if (videoFrameTypeP == iFrameType && bSkipFrameFlag) {
+    iFrameType = videoFrameTypeSkip;
+  } else if (videoFrameTypeIDR == iFrameType) {
+    pParamInternal->iCodingIndex = 0;
+    pEncCtx->bCurFrameMarkedAsSceneLtr   = true;
   }
   return iFrameType;
 }

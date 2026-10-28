@@ -89,17 +89,7 @@ inline  void   WelsUpdateSpatialIdxMap (sWelsEncCtx* pEncCtx, const int32_t iPos
 CWelsPreProcess* CWelsPreProcess::CreatePreProcess (sWelsEncCtx* pEncCtx) {
 
   CWelsPreProcess* pPreProcess = NULL;
-  switch (pEncCtx->pSvcParam->iUsageType) {
-  case SCREEN_CONTENT_REAL_TIME:
-    pPreProcess = WELS_NEW_OP (CWelsPreProcessScreen (pEncCtx),
-                               CWelsPreProcessScreen);
-    break;
-  default:
-    pPreProcess = WELS_NEW_OP (CWelsPreProcessVideo (pEncCtx),
-                               CWelsPreProcessVideo);
-    break;
-
-  }
+  pPreProcess = WELS_NEW_OP (CWelsPreProcessScreen (pEncCtx), CWelsPreProcessScreen);
   WELS_VERIFY_RETURN_IF (NULL, NULL == pPreProcess)
   return pPreProcess;
 }
@@ -186,10 +176,7 @@ int32_t CWelsPreProcess::AllocSpatialPictures (sWelsEncCtx* pCtx, SWelsSvcCoding
       ++ i;
     } while (i < kuiRefNumInTemporal);
 
-    if (pParam->iUsageType == SCREEN_CONTENT_REAL_TIME)
-      m_uiSpatialLayersInTemporal[iDlayerIndex] = 1;
-    else
-      m_uiSpatialLayersInTemporal[iDlayerIndex] = kuiLayerInTemporal;
+    m_uiSpatialLayersInTemporal[iDlayerIndex] = 1;
 
     ++ iDlayerIndex;
   } while (iDlayerIndex < kiDlayerCount);
@@ -264,7 +251,6 @@ SPicture* CWelsPreProcess::GetBestRefPic (const int32_t kiDidx, const int32_t iR
 
 int32_t CWelsPreProcess::AnalyzeSpatialPic (sWelsEncCtx* pCtx, const int32_t kiDidx) {
   SWelsSvcCodingParam* pSvcParam = pCtx->pSvcParam;
-  bool bNeededMbAq = (pSvcParam->bEnableAdaptiveQuant && (pCtx->eSliceType == P_SLICE));
   bool bCalculateBGD = (pCtx->eSliceType == P_SLICE && pSvcParam->bEnableBackgroundDetection);
   SSpatialLayerInternal* pParamInternal = &pSvcParam->sDependencyLayers[kiDidx];
   int32_t iCurTemporalIdx  = m_uiSpatialLayersInTemporal[kiDidx] - 1;
@@ -277,33 +263,11 @@ int32_t CWelsPreProcess::AnalyzeSpatialPic (sWelsEncCtx* pCtx, const int32_t kiD
   SPicture* pCurPic = m_pSpatialPic[kiDidx][iCurTemporalIdx];
   bool bCalculateVar = (pSvcParam->iRCMode >= RC_BITRATE_MODE && pCtx->eSliceType == I_SLICE);
 
-  if (pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME) {
-    SPicture* pRefPic = GetBestRefPic (pSvcParam->iUsageType, pCtx->bCurFrameMarkedAsSceneLtr, pCtx->eSliceType, kiDidx,
-                                       iRefTemporalIdx);
+  SPicture* pRefPic = GetBestRefPic (pSvcParam->iUsageType, pCtx->bCurFrameMarkedAsSceneLtr, pCtx->eSliceType, kiDidx,
+                                     iRefTemporalIdx);
 
-    VaaCalculation (pCtx->pVaa, pCurPic, pRefPic, false, bCalculateVar, bCalculateBGD);
+  VaaCalculation (pCtx->pVaa, pCurPic, pRefPic, false, bCalculateVar, bCalculateBGD);
 
-    if (pSvcParam->bEnableBackgroundDetection) {
-      BackgroundDetection (pCtx->pVaa, pCurPic, pRefPic, bCalculateBGD && pRefPic->iPictureType != I_SLICE);
-    }
-    if (bNeededMbAq) {
-      AdaptiveQuantCalculation (pCtx->pVaa, pCurPic, pRefPic);
-    }
-  } else {
-    SPicture* pRefPic = GetBestRefPic (kiDidx, iRefTemporalIdx);
-    SPicture* pLastPic = m_pLastSpatialPicture[kiDidx][0];
-    bool bCalculateSQDiff = ((pLastPic->pData[0] == pRefPic->pData[0]) && bNeededMbAq);
-
-    VaaCalculation (pCtx->pVaa, pCurPic, pRefPic, bCalculateSQDiff, bCalculateVar, bCalculateBGD);
-
-    if (pSvcParam->bEnableBackgroundDetection) {
-      BackgroundDetection (pCtx->pVaa, pCurPic, pRefPic, bCalculateBGD && pRefPic->iPictureType != I_SLICE);
-    }
-
-    if (bNeededMbAq) {
-      AdaptiveQuantCalculation (pCtx->pVaa, m_pLastSpatialPicture[kiDidx][1], m_pLastSpatialPicture[kiDidx][0]);
-    }
-  }
   return 0;
 }
 
@@ -313,8 +277,7 @@ int32_t CWelsPreProcess::GetCurPicPosition (const int32_t kiDidx) {
 
 int32_t CWelsPreProcess::UpdateSpatialPictures (sWelsEncCtx* pCtx, SWelsSvcCodingParam* pParam,
     const int8_t iCurTid, const int32_t kiDidx) {
-  if (pCtx->pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME)
-    return 0;
+  return 0;
 
   WelsExchangeSpatialPictures (&m_pLastSpatialPicture[kiDidx][1], &m_pLastSpatialPicture[kiDidx][0]);
 
@@ -399,20 +362,9 @@ int32_t CWelsPreProcess::SingleLayerPreprocess (sWelsEncCtx* pCtx, const SSource
                      false);
 
   if (pSvcParam->bEnableSceneChangeDetect && !pCtx->pVaa->bIdrPeriodFlag) {
-    if (pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME) {
-      pCtx->pVaa->eSceneChangeIdc = (pDlayerParamInternal->bEncCurFrmAsIdrFlag ? LARGE_CHANGED_SCENE :
-                                     DetectSceneChange (pDstPic));
-      pCtx->pVaa->bSceneChangeFlag = (LARGE_CHANGED_SCENE == pCtx->pVaa->eSceneChangeIdc);
-    } else {
-      if ((!pDlayerParamInternal->bEncCurFrmAsIdrFlag)
-          && ! (pDlayerParamInternal->iCodingIndex & (pSvcParam->uiGopSize - 1))) {
-        SPicture* pRefPic = pCtx->pLtr[iDependencyId].bReceivedT0LostFlag ?
-                            m_pSpatialPic[iDependencyId][m_uiSpatialLayersInTemporal[iDependencyId] +
-                                pCtx->pVaa->uiValidLongTermPicIdx] : m_pLastSpatialPicture[iDependencyId][0];
-        //pCtx->pVaa->eSceneChangeIdc = DetectSceneChange (pDstPic, pRefPic);
-        pCtx->pVaa->bSceneChangeFlag = GetSceneChangeFlag (DetectSceneChange (pDstPic, pRefPic));
-      }
-    }
+    pCtx->pVaa->eSceneChangeIdc = (pDlayerParamInternal->bEncCurFrmAsIdrFlag ? LARGE_CHANGED_SCENE :
+                                   DetectSceneChange (pDstPic));
+    pCtx->pVaa->bSceneChangeFlag = (LARGE_CHANGED_SCENE == pCtx->pVaa->eSceneChangeIdc);
   }
 
   for (int32_t i = 0; i < pSvcParam->iSpatialLayerNum; i++) {
@@ -440,37 +392,6 @@ int32_t CWelsPreProcess::SingleLayerPreprocess (sWelsEncCtx* pCtx, const SSource
   // pSrc is
   //    -- padded input pic, if downsample should be applied to generate highest layer, [if] block above
   //    -- highest layer, if no downsampling, [else] block above
-  if (pSvcParam->iSpatialLayerNum > 1) {
-    while (iDependencyId >= 0) {
-      pDlayerParamInternal = &pSvcParam->sDependencyLayers[iDependencyId];
-      pDlayerParam = &pSvcParam->sSpatialLayers[iDependencyId];
-      SPicture* pSrcPic  = m_pLastSpatialPicture[iClosestDid][1]; // large
-      iTargetWidth  = pDlayerParam->iVideoWidth;
-      iTargetHeight = pDlayerParam->iVideoHeight;
-      iTemporalId = pDlayerParamInternal->uiCodingIdx2TemporalId[pDlayerParamInternal->iCodingIndex &
-                    (pSvcParam->uiGopSize - 1)];
-
-      // down sampling performed
-      int32_t iSrcWidth                 = pScaledPicture->iScaledWidth[iClosestDid];
-      int32_t iSrcHeight                = pScaledPicture->iScaledHeight[iClosestDid];
-      pDstPic = GetCurrentOrigFrame (iDependencyId); // small
-      iShrinkWidth = pScaledPicture->iScaledWidth[iDependencyId];
-      iShrinkHeight = pScaledPicture->iScaledHeight[iDependencyId];
-      DownsamplePadding (pSrcPic, pDstPic, iSrcWidth, iSrcHeight, iShrinkWidth, iShrinkHeight, iTargetWidth, iTargetHeight,
-                         true);
-
-      if ((iTemporalId != INVALID_TEMPORAL_ID)) {
-        WelsUpdateSpatialIdxMap (pCtx, iActualSpatialNum, pDstPic, iDependencyId);
-        iActualSpatialNum--;
-      }
-
-      m_pLastSpatialPicture[iDependencyId][1] = pDstPic;
-
-      iClosestDid = iDependencyId;
-      -- iDependencyId;
-
-    }
-  }
   return iSpatialNum;
 
 }
@@ -547,19 +468,8 @@ int32_t CWelsPreProcess::InitLastSpatialPictures (sWelsEncCtx* pCtx) {
   SWelsSvcCodingParam* pParam   = pCtx->pSvcParam;
   const int32_t kiDlayerCount   = pParam->iSpatialLayerNum;
   int32_t iDlayerIndex          = 0;
-  if (pParam->iUsageType == SCREEN_CONTENT_REAL_TIME) {
-    for (; iDlayerIndex < MAX_DEPENDENCY_LAYER; iDlayerIndex++) {
-      m_pLastSpatialPicture[iDlayerIndex][0] = m_pLastSpatialPicture[iDlayerIndex][1] = NULL;
-    }
-  } else {
-    for (; iDlayerIndex < kiDlayerCount; iDlayerIndex++) {
-      const int32_t kiLayerInTemporal = m_uiSpatialLayersInTemporal[iDlayerIndex];
-      m_pLastSpatialPicture[iDlayerIndex][0] = m_pSpatialPic[iDlayerIndex][kiLayerInTemporal - 2];
-      m_pLastSpatialPicture[iDlayerIndex][1] = NULL;
-    }
-    for (; iDlayerIndex < MAX_DEPENDENCY_LAYER; iDlayerIndex++) {
-      m_pLastSpatialPicture[iDlayerIndex][0] = m_pLastSpatialPicture[iDlayerIndex][1] = NULL;
-    }
+  for (; iDlayerIndex < MAX_DEPENDENCY_LAYER; iDlayerIndex++) {
+    m_pLastSpatialPicture[iDlayerIndex][0] = m_pLastSpatialPicture[iDlayerIndex][1] = NULL;
   }
   return 0;
 }
@@ -589,38 +499,7 @@ void CWelsPreProcess::BilateralDenoising (SPicture* pSrc, const int32_t kiWidth,
   m_pInterfaceVp->Process (iMethodIdx, &sSrcPixMap, NULL);
 }
 
-ESceneChangeIdc CWelsPreProcessVideo::DetectSceneChange (SPicture* pCurPicture, SPicture* pRefPicture) {
-  int32_t iMethodIdx = METHOD_SCENE_CHANGE_DETECTION_VIDEO;
-  SSceneChangeResult sSceneChangeDetectResult = { SIMILAR_SCENE };
-  SPixMap sSrcPixMap;
-  SPixMap sRefPixMap;
-  memset (&sSrcPixMap, 0, sizeof (sSrcPixMap));
-  memset (&sRefPixMap, 0, sizeof (sRefPixMap));
-  sSrcPixMap.pPixel[0] = pCurPicture->pData[0];
-  sSrcPixMap.iSizeInBits = g_kiPixMapSizeInBits;
-  sSrcPixMap.iStride[0] = pCurPicture->iLineSize[0];
-  sSrcPixMap.sRect.iRectWidth = pCurPicture->iWidthInPixel;
-  sSrcPixMap.sRect.iRectHeight = pCurPicture->iHeightInPixel;
-  sSrcPixMap.eFormat = VIDEO_FORMAT_I420;
 
-  sRefPixMap.pPixel[0] = pRefPicture->pData[0];
-  sRefPixMap.iSizeInBits = g_kiPixMapSizeInBits;
-  sRefPixMap.iStride[0] = pRefPicture->iLineSize[0];
-  sRefPixMap.sRect.iRectWidth = pRefPicture->iWidthInPixel;
-  sRefPixMap.sRect.iRectHeight = pRefPicture->iHeightInPixel;
-  sRefPixMap.eFormat = VIDEO_FORMAT_I420;
-
-  int32_t iRet = m_pInterfaceVp->Process (iMethodIdx, &sSrcPixMap, &sRefPixMap);
-  if (iRet == 0) {
-    m_pInterfaceVp->Get (iMethodIdx, (void*)&sSceneChangeDetectResult);
-    //bSceneChangeFlag = (sSceneChangeDetectResult.eSceneChangeIdc == LARGE_CHANGED_SCENE) ? true : false;
-  }
-  return sSceneChangeDetectResult.eSceneChangeIdc;
-}
-
-SPicture* CWelsPreProcessVideo::GetCurrentOrigFrame (int32_t iDIdx) {
-  return m_pSpatialPic[iDIdx][GetCurPicPosition (iDIdx)];
-}
 
 int32_t CWelsPreProcess::DownsamplePadding (SPicture* pSrc, SPicture* pDstPic,  int32_t iSrcWidth, int32_t iSrcHeight,
     int32_t iShrinkWidth, int32_t iShrinkHeight, int32_t iTargetWidth, int32_t iTargetHeight, bool bForceCopy) {
@@ -710,93 +589,7 @@ void CWelsPreProcess::VaaCalculation (SVAAFrameInfo* pVaaInfo, SPicture* pCurPic
   }
 }
 
-void CWelsPreProcess::BackgroundDetection (SVAAFrameInfo* pVaaInfo, SPicture* pCurPicture, SPicture* pRefPicture,
-    bool bDetectFlag) {
-  if (bDetectFlag) {
-    pVaaInfo->iPicWidth     = pCurPicture->iWidthInPixel;
-    pVaaInfo->iPicHeight    = pCurPicture->iHeightInPixel;
 
-    pVaaInfo->iPicStride    = pCurPicture->iLineSize[0];
-    pVaaInfo->iPicStrideUV  = pCurPicture->iLineSize[1];
-    pVaaInfo->pCurY         = pCurPicture->pData[0];
-    pVaaInfo->pRefY         = pRefPicture->pData[0];
-    pVaaInfo->pCurU         = pCurPicture->pData[1];
-    pVaaInfo->pRefU         = pRefPicture->pData[1];
-    pVaaInfo->pCurV         = pCurPicture->pData[2];
-    pVaaInfo->pRefV         = pRefPicture->pData[2];
-
-    int32_t iMethodIdx = METHOD_BACKGROUND_DETECTION;
-    SPixMap sSrcPixMap;
-    SPixMap sRefPixMap;
-    memset (&sSrcPixMap, 0, sizeof (sSrcPixMap));
-    memset (&sRefPixMap, 0, sizeof (sRefPixMap));
-    SBGDInterface BGDParam = {0};
-
-    sSrcPixMap.pPixel[0] = pCurPicture->pData[0];
-    sSrcPixMap.pPixel[1] = pCurPicture->pData[1];
-    sSrcPixMap.pPixel[2] = pCurPicture->pData[2];
-    sSrcPixMap.iSizeInBits = g_kiPixMapSizeInBits;
-    sSrcPixMap.iStride[0] = pCurPicture->iLineSize[0];
-    sSrcPixMap.iStride[1] = pCurPicture->iLineSize[1];
-    sSrcPixMap.iStride[2] = pCurPicture->iLineSize[2];
-    sSrcPixMap.sRect.iRectWidth = pCurPicture->iWidthInPixel;
-    sSrcPixMap.sRect.iRectHeight = pCurPicture->iHeightInPixel;
-    sSrcPixMap.eFormat = VIDEO_FORMAT_I420;
-
-    sRefPixMap.pPixel[0] = pRefPicture->pData[0];
-    sRefPixMap.pPixel[1] = pRefPicture->pData[1];
-    sRefPixMap.pPixel[2] = pRefPicture->pData[2];
-    sRefPixMap.iSizeInBits = g_kiPixMapSizeInBits;
-    sRefPixMap.iStride[0] = pRefPicture->iLineSize[0];
-    sRefPixMap.iStride[1] = pRefPicture->iLineSize[1];
-    sRefPixMap.iStride[2] = pRefPicture->iLineSize[2];
-    sRefPixMap.sRect.iRectWidth = pRefPicture->iWidthInPixel;
-    sRefPixMap.sRect.iRectHeight = pRefPicture->iHeightInPixel;
-    sRefPixMap.eFormat = VIDEO_FORMAT_I420;
-
-    BGDParam.pBackgroundMbFlag = pVaaInfo->pVaaBackgroundMbFlag;
-    BGDParam.pCalcRes = & (pVaaInfo->sVaaCalcInfo);
-    m_pInterfaceVp->Set (iMethodIdx, (void*)&BGDParam);
-    m_pInterfaceVp->Process (iMethodIdx, &sSrcPixMap, &sRefPixMap);
-  } else {
-    int32_t iPicWidthInMb  = (pCurPicture->iWidthInPixel  + 15) >> 4;
-    int32_t iPicHeightInMb = (pCurPicture->iHeightInPixel + 15) >> 4;
-    memset (pVaaInfo->pVaaBackgroundMbFlag, 0, iPicWidthInMb * iPicHeightInMb);
-  }
-}
-
-void CWelsPreProcess::AdaptiveQuantCalculation (SVAAFrameInfo* pVaaInfo, SPicture* pCurPicture, SPicture* pRefPicture) {
-  pVaaInfo->sAdaptiveQuantParam.pCalcResult = & (pVaaInfo->sVaaCalcInfo);
-  pVaaInfo->sAdaptiveQuantParam.iAverMotionTextureIndexToDeltaQp = 0;
-
-  {
-    int32_t iMethodIdx = METHOD_ADAPTIVE_QUANT;
-    SPixMap pSrc;
-    SPixMap pRef;
-    memset (&pSrc, 0, sizeof (pSrc));
-    memset (&pRef, 0, sizeof (pRef));
-    int32_t iRet = 0;
-
-    pSrc.pPixel[0] = pCurPicture->pData[0];
-    pSrc.iSizeInBits = g_kiPixMapSizeInBits;
-    pSrc.iStride[0] = pCurPicture->iLineSize[0];
-    pSrc.sRect.iRectWidth = pCurPicture->iWidthInPixel;
-    pSrc.sRect.iRectHeight = pCurPicture->iHeightInPixel;
-    pSrc.eFormat = VIDEO_FORMAT_I420;
-
-    pRef.pPixel[0] = pRefPicture->pData[0];
-    pRef.iSizeInBits = g_kiPixMapSizeInBits;
-    pRef.iStride[0] = pRefPicture->iLineSize[0];
-    pRef.sRect.iRectWidth = pRefPicture->iWidthInPixel;
-    pRef.sRect.iRectHeight = pRefPicture->iHeightInPixel;
-    pRef.eFormat = VIDEO_FORMAT_I420;
-
-    iRet = m_pInterfaceVp->Set (iMethodIdx, (void*) & (pVaaInfo->sAdaptiveQuantParam));
-    iRet = m_pInterfaceVp->Process (iMethodIdx, &pSrc, &pRef);
-    if (iRet == 0)
-      m_pInterfaceVp->Get (iMethodIdx, (void*) & (pVaaInfo->sAdaptiveQuantParam));
-  }
-}
 
 void CWelsPreProcess::SetRefMbType (sWelsEncCtx* pCtx, uint32_t** pRefMbTypeArray, int32_t iRefPicType) {
   const uint8_t uiTid       = pCtx->uiTemporalId;
@@ -805,21 +598,11 @@ void CWelsPreProcess::SetRefMbType (sWelsEncCtx* pCtx, uint32_t** pRefMbTypeArra
   SLTRState* pLtr           = &pCtx->pLtr[uiDid];
   uint8_t i = 0;
 
-  if (pCtx->pSvcParam->bEnableLongTermReference && pLtr->bReceivedT0LostFlag && uiTid == 0) {
-    for (i = 0; i < pRefPicLlist->uiLongRefCount; i++) {
-      SPicture* pRef = pRefPicLlist->pLongRefList[i];
-      if (pRef != NULL && pRef->uiRecieveConfirmed == 1/*RECIEVE_SUCCESS*/) {
-        *pRefMbTypeArray = pRef->uiRefMbType;
-        break;
-      }
-    }
-  } else {
-    for (i = 0; i < pRefPicLlist->uiShortRefCount; i++) {
-      SPicture* pRef = pRefPicLlist->pShortRefList[i];
-      if (pRef != NULL && pRef->bUsedAsRef && pRef->iFramePoc >= 0 && pRef->uiTemporalId <= uiTid) {
-        *pRefMbTypeArray = pRef->uiRefMbType;
-        break;
-      }
+  for (i = 0; i < pRefPicLlist->uiShortRefCount; i++) {
+    SPicture* pRef = pRefPicLlist->pShortRefList[i];
+    if (pRef != NULL && pRef->bUsedAsRef && pRef->iFramePoc >= 0 && pRef->uiTemporalId <= uiTid) {
+      *pRefMbTypeArray = pRef->uiRefMbType;
+      break;
     }
   }
 }
@@ -830,121 +613,56 @@ void CWelsPreProcess::AnalyzePictureComplexity (sWelsEncCtx* pCtx, SPicture* pCu
   SWelsSvcCodingParam* pSvcParam = pCtx->pSvcParam;
   int32_t iComplexityAnalysisMode = 0;
 
-  if (pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME) {
-    SVAAFrameInfoExt* pVaaExt = static_cast<SVAAFrameInfoExt*> (pCtx->pVaa);
-    SComplexityAnalysisScreenParam* sComplexityAnalysisParam = &pVaaExt->sComplexityScreenParam;
-    SWelsSvcRc* pWelsSvcRc = &pCtx->pWelsSvcRc[kiDependencyId];
+  SVAAFrameInfoExt* pVaaExt = static_cast<SVAAFrameInfoExt*> (pCtx->pVaa);
+  SComplexityAnalysisScreenParam* sComplexityAnalysisParam = &pVaaExt->sComplexityScreenParam;
+  SWelsSvcRc* pWelsSvcRc = &pCtx->pWelsSvcRc[kiDependencyId];
 
-    if (pCtx->eSliceType == P_SLICE)
-      iComplexityAnalysisMode = GOM_SAD;
-    else if (pCtx->eSliceType == I_SLICE)
-      iComplexityAnalysisMode = GOM_VAR;
-    else
-      return;
+  if (pCtx->eSliceType == P_SLICE)
+    iComplexityAnalysisMode = GOM_SAD;
+  else if (pCtx->eSliceType == I_SLICE)
+    iComplexityAnalysisMode = GOM_VAR;
+  else
+    return;
 
-    memset (pWelsSvcRc->pGomForegroundBlockNum, 0, pWelsSvcRc->iGomSize * sizeof (int32_t));
-    memset (pWelsSvcRc->pCurrentFrameGomSad, 0, pWelsSvcRc->iGomSize * sizeof (int32_t));
+  memset (pWelsSvcRc->pGomForegroundBlockNum, 0, pWelsSvcRc->iGomSize * sizeof (int32_t));
+  memset (pWelsSvcRc->pCurrentFrameGomSad, 0, pWelsSvcRc->iGomSize * sizeof (int32_t));
 
-    sComplexityAnalysisParam->iFrameComplexity = 0;
-    sComplexityAnalysisParam->pGomComplexity = pWelsSvcRc->pCurrentFrameGomSad;
-    sComplexityAnalysisParam->iGomNumInFrame = pWelsSvcRc->iGomSize;
-    sComplexityAnalysisParam->iIdrFlag = (pCtx->eSliceType == I_SLICE);
-    sComplexityAnalysisParam->iMbRowInGom = GOM_H_SCC;
-    sComplexityAnalysisParam->sScrollResult.bScrollDetectFlag = false;
-    sComplexityAnalysisParam->sScrollResult.iScrollMvX = 0;
-    sComplexityAnalysisParam->sScrollResult.iScrollMvY = 0;
+  sComplexityAnalysisParam->iFrameComplexity = 0;
+  sComplexityAnalysisParam->pGomComplexity = pWelsSvcRc->pCurrentFrameGomSad;
+  sComplexityAnalysisParam->iGomNumInFrame = pWelsSvcRc->iGomSize;
+  sComplexityAnalysisParam->iIdrFlag = (pCtx->eSliceType == I_SLICE);
+  sComplexityAnalysisParam->iMbRowInGom = GOM_H_SCC;
+  sComplexityAnalysisParam->sScrollResult.bScrollDetectFlag = false;
+  sComplexityAnalysisParam->sScrollResult.iScrollMvX = 0;
+  sComplexityAnalysisParam->sScrollResult.iScrollMvY = 0;
 
-    const int32_t iMethodIdx = METHOD_COMPLEXITY_ANALYSIS_SCREEN;
-    SPixMap sSrcPixMap;
-    SPixMap sRefPixMap;
-    memset (&sSrcPixMap, 0, sizeof (SPixMap));
-    memset (&sRefPixMap, 0, sizeof (SPixMap));
-    int32_t iRet = 0;
+  const int32_t iMethodIdx = METHOD_COMPLEXITY_ANALYSIS_SCREEN;
+  SPixMap sSrcPixMap;
+  SPixMap sRefPixMap;
+  memset (&sSrcPixMap, 0, sizeof (SPixMap));
+  memset (&sRefPixMap, 0, sizeof (SPixMap));
+  int32_t iRet = 0;
 
-    sSrcPixMap.pPixel[0] = pCurPicture->pData[0];
-    sSrcPixMap.iSizeInBits = g_kiPixMapSizeInBits;
-    sSrcPixMap.iStride[0] = pCurPicture->iLineSize[0];
-    sSrcPixMap.sRect.iRectWidth = pCurPicture->iWidthInPixel;
-    sSrcPixMap.sRect.iRectHeight = pCurPicture->iHeightInPixel;
-    sSrcPixMap.eFormat = VIDEO_FORMAT_I420;
+  sSrcPixMap.pPixel[0] = pCurPicture->pData[0];
+  sSrcPixMap.iSizeInBits = g_kiPixMapSizeInBits;
+  sSrcPixMap.iStride[0] = pCurPicture->iLineSize[0];
+  sSrcPixMap.sRect.iRectWidth = pCurPicture->iWidthInPixel;
+  sSrcPixMap.sRect.iRectHeight = pCurPicture->iHeightInPixel;
+  sSrcPixMap.eFormat = VIDEO_FORMAT_I420;
 
-    if (pRefPicture != NULL) {
-      sRefPixMap.pPixel[0] = pRefPicture->pData[0];
-      sRefPixMap.iSizeInBits = g_kiPixMapSizeInBits;
-      sRefPixMap.iStride[0] = pRefPicture->iLineSize[0];
-      sRefPixMap.sRect.iRectWidth = pRefPicture->iWidthInPixel;
-      sRefPixMap.sRect.iRectHeight = pRefPicture->iHeightInPixel;
-      sRefPixMap.eFormat = VIDEO_FORMAT_I420;
-    }
-
-    iRet = m_pInterfaceVp->Set (iMethodIdx, (void*)sComplexityAnalysisParam);
-    iRet = m_pInterfaceVp->Process (iMethodIdx, &sSrcPixMap, &sRefPixMap);
-    if (iRet == 0)
-      m_pInterfaceVp->Get (iMethodIdx, (void*)sComplexityAnalysisParam);
-
-  } else {
-    SVAAFrameInfo* pVaaInfo = pCtx->pVaa;
-    SComplexityAnalysisParam* sComplexityAnalysisParam = & (pVaaInfo->sComplexityAnalysisParam);
-    SWelsSvcRc* SWelsSvcRc = &pCtx->pWelsSvcRc[kiDependencyId];
-
-    if (pSvcParam->iRCMode == RC_QUALITY_MODE && pCtx->eSliceType == P_SLICE) {
-      iComplexityAnalysisMode = FRAME_SAD;
-    } else if (((pSvcParam->iRCMode == RC_BITRATE_MODE) || (pSvcParam->iRCMode == RC_TIMESTAMP_MODE))
-               && pCtx->eSliceType == P_SLICE) {
-      iComplexityAnalysisMode = GOM_SAD;
-    } else if (((pSvcParam->iRCMode == RC_BITRATE_MODE) || (pSvcParam->iRCMode == RC_TIMESTAMP_MODE))
-               && pCtx->eSliceType == I_SLICE) {
-      iComplexityAnalysisMode = GOM_VAR;
-    } else {
-      return;
-    }
-
-    sComplexityAnalysisParam->iComplexityAnalysisMode = iComplexityAnalysisMode;
-    sComplexityAnalysisParam->pCalcResult = & (pVaaInfo->sVaaCalcInfo);
-    sComplexityAnalysisParam->pBackgroundMbFlag = pVaaInfo->pVaaBackgroundMbFlag;
-    if (pRefPicture)
-      SetRefMbType (pCtx, & (sComplexityAnalysisParam->uiRefMbType), pRefPicture->iPictureType);
-    sComplexityAnalysisParam->iCalcBgd = bCalculateBGD;
-    sComplexityAnalysisParam->iFrameComplexity = 0;
-
-    memset (SWelsSvcRc->pGomForegroundBlockNum, 0, SWelsSvcRc->iGomSize * sizeof (int32_t));
-    if (iComplexityAnalysisMode != FRAME_SAD)
-      memset (SWelsSvcRc->pCurrentFrameGomSad, 0, SWelsSvcRc->iGomSize * sizeof (int32_t));
-
-    sComplexityAnalysisParam->pGomComplexity = SWelsSvcRc->pCurrentFrameGomSad;
-    sComplexityAnalysisParam->pGomForegroundBlockNum = SWelsSvcRc->pGomForegroundBlockNum;
-    sComplexityAnalysisParam->iMbNumInGom = SWelsSvcRc->iNumberMbGom;
-
-    {
-      int32_t iMethodIdx = METHOD_COMPLEXITY_ANALYSIS;
-      SPixMap sSrcPixMap;
-      SPixMap sRefPixMap;
-      memset (&sSrcPixMap, 0, sizeof (SPixMap));
-      memset (&sRefPixMap, 0, sizeof (SPixMap));
-      int32_t iRet = 0;
-
-      sSrcPixMap.pPixel[0] = pCurPicture->pData[0];
-      sSrcPixMap.iSizeInBits = g_kiPixMapSizeInBits;
-      sSrcPixMap.iStride[0] = pCurPicture->iLineSize[0];
-      sSrcPixMap.sRect.iRectWidth = pCurPicture->iWidthInPixel;
-      sSrcPixMap.sRect.iRectHeight = pCurPicture->iHeightInPixel;
-      sSrcPixMap.eFormat = VIDEO_FORMAT_I420;
-
-      if (pRefPicture) {
-        sRefPixMap.pPixel[0] = pRefPicture->pData[0];
-        sRefPixMap.iSizeInBits = g_kiPixMapSizeInBits;
-        sRefPixMap.iStride[0] = pRefPicture->iLineSize[0];
-        sRefPixMap.sRect.iRectWidth = pRefPicture->iWidthInPixel;
-        sRefPixMap.sRect.iRectHeight = pRefPicture->iHeightInPixel;
-      }
-      sRefPixMap.eFormat = VIDEO_FORMAT_I420;
-
-      iRet = m_pInterfaceVp->Set (iMethodIdx, (void*)sComplexityAnalysisParam);
-      iRet = m_pInterfaceVp->Process (iMethodIdx, &sSrcPixMap, &sRefPixMap);
-      if (iRet == 0)
-        m_pInterfaceVp->Get (iMethodIdx, (void*)sComplexityAnalysisParam);
-    }
+  if (pRefPicture != NULL) {
+    sRefPixMap.pPixel[0] = pRefPicture->pData[0];
+    sRefPixMap.iSizeInBits = g_kiPixMapSizeInBits;
+    sRefPixMap.iStride[0] = pRefPicture->iLineSize[0];
+    sRefPixMap.sRect.iRectWidth = pRefPicture->iWidthInPixel;
+    sRefPixMap.sRect.iRectHeight = pRefPicture->iHeightInPixel;
+    sRefPixMap.eFormat = VIDEO_FORMAT_I420;
   }
+
+  iRet = m_pInterfaceVp->Set (iMethodIdx, (void*)sComplexityAnalysisParam);
+  iRet = m_pInterfaceVp->Process (iMethodIdx, &sSrcPixMap, &sRefPixMap);
+  if (iRet == 0)
+    m_pInterfaceVp->Get (iMethodIdx, (void*)sComplexityAnalysisParam);
 }
 
 
@@ -1135,14 +853,8 @@ ESceneChangeIdc CWelsPreProcessScreen::DetectSceneChange (SPicture* pCurPicture,
     return LARGE_CHANGED_SCENE;
   }
   const int32_t iClosestLtrFrameNum = pCtx->pLtr[iTargetDid].iLastLtrIdx[iCurTid];
-  if (pSvcParam->bEnableLongTermReference) {
-    GetAvailableRefListLosslessScreenRefSelection (pRefPicList, iCurTid, iClosestLtrFrameNum, &sAvailableRefParam[0],
-        iAvailableRefNum,
-        iAvailableSceneRefNum);
-  } else {
-    GetAvailableRefList (pRefPicList, iCurTid, iClosestLtrFrameNum, &sAvailableRefParam[0], iAvailableRefNum,
-                         iAvailableSceneRefNum);
-  }
+  GetAvailableRefList (pRefPicList, iCurTid, iClosestLtrFrameNum, &sAvailableRefParam[0], iAvailableRefNum,
+                       iAvailableSceneRefNum);
   //after this build, pAvailableRefList[idx].iSrcListIdx is the idx of the ref in h->spatial_pic
   if (0 == iAvailableRefNum) {
     WelsLog (pLogCtx, WELS_LOG_ERROR, "SceneChangeDetect() iAvailableRefNum=0 but not I.");

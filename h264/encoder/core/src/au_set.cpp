@@ -89,13 +89,7 @@ static int32_t WelsCheckNumRefSetting (SLogContext* pLogCtx, SWelsSvcCodingParam
   // validate LTR num
   int32_t iCurrentSupportedLtrNum = (pParam->iUsageType == CAMERA_VIDEO_REAL_TIME) ? LONG_TERM_REF_NUM :
                                     LONG_TERM_REF_NUM_SCREEN;
-  if ((pParam->bEnableLongTermReference) && (iCurrentSupportedLtrNum != pParam->iLTRRefNum)) {
-    WelsLog (pLogCtx, WELS_LOG_WARNING, "iLTRRefNum(%d) does not equal to currently supported %d, will be reset",
-             pParam->iLTRRefNum, iCurrentSupportedLtrNum);
-    pParam->iLTRRefNum = iCurrentSupportedLtrNum;
-  } else if (!pParam->bEnableLongTermReference) {
-    pParam->iLTRRefNum = 0;
-  }
+  pParam->iLTRRefNum = 0;
 
   //TODO: here is a fix needed here, the most reasonable value should be:
   //        iCurrentStrNum = WELS_MAX (1, WELS_LOG2 (pParam->uiGopSize));

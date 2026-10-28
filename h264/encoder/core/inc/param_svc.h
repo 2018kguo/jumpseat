@@ -342,9 +342,6 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
     bPsnrY = pCodingParam.bPsnrY;
     bPsnrU = pCodingParam.bPsnrU;
     bPsnrV = pCodingParam.bPsnrV;
-    if (iUsageType == SCREEN_CONTENT_REAL_TIME && !bIsLosslessLink && bEnableLongTermReference) {
-      bEnableLongTermReference = false;
-    }
 
     /* For ssei information */
     bEnableSSEI         = pCodingParam.bEnableSSEI;

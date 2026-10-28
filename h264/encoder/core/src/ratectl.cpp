@@ -416,10 +416,8 @@ void RcCalculateIdrQp (sWelsEncCtx* pEncCtx) {
   int32_t iQpRangeArray[5][2] = {{40,28}, {37, 25}, {36, 24}, {35, 23}, {34, 22}};
   int64_t iFrameComplexity = pEncCtx->pVaa->sComplexityAnalysisParam.iFrameComplexity;
   const bool fix_rc_overshoot = pEncCtx->pSvcParam->bFixRCOverShoot;
-  if (pEncCtx->pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME) {
-    SVAAFrameInfoExt* pVaa = static_cast<SVAAFrameInfoExt*> (pEncCtx->pVaa);
-    iFrameComplexity = pVaa->sComplexityScreenParam.iFrameComplexity;
-  }
+  SVAAFrameInfoExt* pVaa = static_cast<SVAAFrameInfoExt*> (pEncCtx->pVaa);
+  iFrameComplexity = pVaa->sComplexityScreenParam.iFrameComplexity;
   SWelsSvcRc* pWelsSvcRc                = &pEncCtx->pWelsSvcRc[pEncCtx->uiDependencyId];
   SSpatialLayerConfig* pDLayerParam     = &pEncCtx->pSvcParam->sSpatialLayers[pEncCtx->uiDependencyId];
   SSpatialLayerInternal* pDLayerParamInternal       = &pEncCtx->pSvcParam->sDependencyLayers[pEncCtx->uiDependencyId];
@@ -487,10 +485,8 @@ void RcCalculatePictureQp (sWelsEncCtx* pEncCtx) {
   int32_t iLumaQp = 0;
   int32_t iDeltaQpTemporal = 0;
   int64_t iFrameComplexity = pEncCtx->pVaa->sComplexityAnalysisParam.iFrameComplexity;
-  if (pEncCtx->pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME) {
-    SVAAFrameInfoExt* pVaa = static_cast<SVAAFrameInfoExt*> (pEncCtx->pVaa);
-    iFrameComplexity = pVaa->sComplexityScreenParam.iFrameComplexity;
-  }
+  SVAAFrameInfoExt* pVaa = static_cast<SVAAFrameInfoExt*> (pEncCtx->pVaa);
+  iFrameComplexity = pVaa->sComplexityScreenParam.iFrameComplexity;
   if (0 == pTOverRc->iPFrameNum) {
     iLumaQp = pWelsSvcRc->iInitialQp;
   } else if (pWelsSvcRc->iCurrentBitsLevel == BITS_EXCEEDED) {
@@ -534,12 +530,6 @@ void RcCalculatePictureQp (sWelsEncCtx* pEncCtx) {
 
   iLumaQp = WELS_CLIP3 (iLumaQp, pWelsSvcRc->iMinFrameQp, pWelsSvcRc->iMaxFrameQp);
 
-  if (pEncCtx->pSvcParam->bEnableAdaptiveQuant) {
-
-    iLumaQp =  WELS_DIV_ROUND (iLumaQp * INT_MULTIPLY - pEncCtx->pVaa->sAdaptiveQuantParam.iAverMotionTextureIndexToDeltaQp,
-                               INT_MULTIPLY);
-    iLumaQp = WELS_CLIP3 (iLumaQp, pWelsSvcRc->iMinFrameQp, pWelsSvcRc->iMaxFrameQp);
-  }
   pWelsSvcRc->iQStep = RcConvertQp2QStep (iLumaQp);
   pWelsSvcRc->iLastCalculatedQScale = iLumaQp;
   pEncCtx->iGlobalQp = iLumaQp;
@@ -683,11 +673,6 @@ void RcCalculateMbQp (sWelsEncCtx* pEncCtx, SSlice* pSlice, SMB* pCurMb) {
   int32_t iLumaQp               = pSOverRc->iCalculatedQpSlice;
   SDqLayer* pCurLayer           = pEncCtx->pCurDqLayer;
   const uint8_t kuiChromaQpIndexOffset = pCurLayer->sLayerInfo.pPpsP->uiChromaQpIndexOffset;
-  if (pEncCtx->pSvcParam->bEnableAdaptiveQuant) {
-    iLumaQp   = (int8_t)WELS_CLIP3 (iLumaQp +
-                                    pEncCtx->pVaa->sAdaptiveQuantParam.pMotionTextureIndexToDeltaQp[pCurMb->iMbXY], pWelsSvcRc->iMinFrameQp,
-                                    pWelsSvcRc->iMaxFrameQp);
-  }
   pCurMb->uiChromaQp    = g_kuiChromaQpTable[CLIP3_QP_0_51 (iLumaQp + kuiChromaQpIndexOffset)];
   pCurMb->uiLumaQp      = iLumaQp;
 }
@@ -881,9 +866,11 @@ bool WelsRcCheckFrameStatus (sWelsEncCtx* pEncCtx, long long uiTimeStamp, int32_
   SSpatialPicIndex* pSpatialIndexMap = &pEncCtx->sSpatialIndexMap[0];
 
   //simul_cast AVC control
-  if (pEncCtx->pSvcParam->bSimulcastAVC) {
+  //SVC control
+  for (int32_t i = 0; i < iSpatialNum; i++) {
+    int32_t iDidIdx = (pSpatialIndexMap + i)->iDid;
     //check target_br skip and update info
-    int32_t iDidIdx = iCurDid;
+
     if (pEncCtx->pFuncList->pfRc.pfWelsRcPicDelayJudge) {
       pEncCtx->pFuncList->pfRc.pfWelsRcPicDelayJudge (pEncCtx, uiTimeStamp, iDidIdx);
     }
@@ -896,50 +883,22 @@ bool WelsRcCheckFrameStatus (sWelsEncCtx* pEncCtx, long long uiTimeStamp, int32_
         pEncCtx->pFuncList->pfRc.pfWelsCheckSkipBasedMaxbr (pEncCtx, uiTimeStamp, iDidIdx);
         if (true == pEncCtx->pWelsSvcRc[iDidIdx].bSkipFlag) {
           bSkipMustFlag = true;
-
         }
       }
     }
     if (bSkipMustFlag) {
+      break;
+    }
+  }
+
+  if (bSkipMustFlag) {
+    for (int32_t i = 0; i < iSpatialNum; i++) {
+      int32_t iDidIdx = (pSpatialIndexMap + i)->iDid;
       pEncCtx->pWelsSvcRc[iDidIdx].uiLastTimeStamp = uiTimeStamp;
       pEncCtx->pWelsSvcRc[iDidIdx].bSkipFlag = false;
       pEncCtx->pWelsSvcRc[iDidIdx].iContinualSkipFrames++;
-      return true;
     }
-  } else { //SVC control
-    for (int32_t i = 0; i < iSpatialNum; i++) {
-      int32_t iDidIdx = (pSpatialIndexMap + i)->iDid;
-      //check target_br skip and update info
-
-      if (pEncCtx->pFuncList->pfRc.pfWelsRcPicDelayJudge) {
-        pEncCtx->pFuncList->pfRc.pfWelsRcPicDelayJudge (pEncCtx, uiTimeStamp, iDidIdx);
-      }
-      if (true == pEncCtx->pWelsSvcRc[iDidIdx].bSkipFlag) {
-        bSkipMustFlag = true;
-      }
-      //check max_br skip
-      if (pEncCtx->pFuncList->pfRc.pfWelsCheckSkipBasedMaxbr) {
-        if ((!bSkipMustFlag) && (pEncCtx->pSvcParam->sSpatialLayers[iDidIdx].iMaxSpatialBitrate != UNSPECIFIED_BIT_RATE)) {
-          pEncCtx->pFuncList->pfRc.pfWelsCheckSkipBasedMaxbr (pEncCtx, uiTimeStamp, iDidIdx);
-          if (true == pEncCtx->pWelsSvcRc[iDidIdx].bSkipFlag) {
-            bSkipMustFlag = true;
-          }
-        }
-      }
-      if (bSkipMustFlag) {
-        break;
-      }
-    }
-
-    if (bSkipMustFlag) {
-      for (int32_t i = 0; i < iSpatialNum; i++) {
-        int32_t iDidIdx = (pSpatialIndexMap + i)->iDid;
-        pEncCtx->pWelsSvcRc[iDidIdx].uiLastTimeStamp = uiTimeStamp;
-        pEncCtx->pWelsSvcRc[iDidIdx].bSkipFlag = false;
-        pEncCtx->pWelsSvcRc[iDidIdx].iContinualSkipFrames++;
-      }
-      return true;
-    }
+    return true;
   }
   return false;
 }
@@ -1100,10 +1059,8 @@ void RcUpdateIntraComplexity (sWelsEncCtx* pEncCtx) {
   int32_t iQStep = RcConvertQp2QStep (pWelsSvcRc->iAverageFrameQp);
   int64_t iIntraCmplx = iQStep * static_cast<int64_t> (pWelsSvcRc->iFrameDqBits);
   int64_t iFrameComplexity = pEncCtx->pVaa->sComplexityAnalysisParam.iFrameComplexity;
-  if (pEncCtx->pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME) {
-    SVAAFrameInfoExt* pVaa = static_cast<SVAAFrameInfoExt*> (pEncCtx->pVaa);
-    iFrameComplexity = pVaa->sComplexityScreenParam.iFrameComplexity;
-  }
+  SVAAFrameInfoExt* pVaa = static_cast<SVAAFrameInfoExt*> (pEncCtx->pVaa);
+  iFrameComplexity = pVaa->sComplexityScreenParam.iFrameComplexity;
   if (pWelsSvcRc->iIdrNum == 0) {
     pWelsSvcRc->iIntraComplexity = iIntraCmplx;
     pWelsSvcRc->iIntraComplxMean = iFrameComplexity;
@@ -1135,10 +1092,8 @@ void RcUpdateFrameComplexity (sWelsEncCtx* pEncCtx) {
   SRCTemporal* pTOverRc         = &pWelsSvcRc->pTemporalOverRc[kiTl];
 
   int64_t iFrameComplexity = pEncCtx->pVaa->sComplexityAnalysisParam.iFrameComplexity;
-  if (pEncCtx->pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME) {
-    SVAAFrameInfoExt* pVaa = static_cast<SVAAFrameInfoExt*> (pEncCtx->pVaa);
-    iFrameComplexity = pVaa->sComplexityScreenParam.iFrameComplexity;
-  }
+  SVAAFrameInfoExt* pVaa = static_cast<SVAAFrameInfoExt*> (pEncCtx->pVaa);
+  iFrameComplexity = pVaa->sComplexityScreenParam.iFrameComplexity;
   int32_t iQStep = RcConvertQp2QStep (pWelsSvcRc->iAverageFrameQp);
   int32_t iAlpha = WELS_DIV_ROUND (INT_MULTIPLY, (1 + pTOverRc->iPFrameNum));
   if (iAlpha < SMOOTH_FACTOR_MIN_VALUE)
@@ -1236,8 +1191,7 @@ void  WelsRcPictureInitGom (sWelsEncCtx* pEncCtx, long long uiTimeStamp) {
     RcCalculateIdrQp (pEncCtx);
   } else {
     RcCalculatePictureQp (pEncCtx);
-    if (pEncCtx->pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME)
-      RcRaiseQpForMotion (pEncCtx);
+    RcRaiseQpForMotion (pEncCtx);
   }
   RcInitSliceInformation (pEncCtx);
   RcInitGomParameters (pEncCtx);
@@ -1314,13 +1268,7 @@ void  WelsRcPictureInitDisable (sWelsEncCtx* pEncCtx, long long uiTimeStamp) {
 
   pEncCtx->iGlobalQp = RcCalculateCascadingQp (pEncCtx, kiQp);
 
-  if (pEncCtx->pSvcParam->bEnableAdaptiveQuant && (pEncCtx->eSliceType == P_SLICE)) {
-    pEncCtx->iGlobalQp = WELS_CLIP3 ((pEncCtx->iGlobalQp * INT_MULTIPLY -
-                                      pEncCtx->pVaa->sAdaptiveQuantParam.iAverMotionTextureIndexToDeltaQp) / INT_MULTIPLY, pWelsSvcRc->iMinQp,
-                                     pWelsSvcRc->iMaxQp);
-  } else {
-    pEncCtx->iGlobalQp = WELS_CLIP3 (pEncCtx->iGlobalQp, 0, 51);
-  }
+  pEncCtx->iGlobalQp = WELS_CLIP3 (pEncCtx->iGlobalQp, 0, 51);
 
   pWelsSvcRc->iAverageFrameQp = pEncCtx->iGlobalQp;
 }
@@ -1336,12 +1284,7 @@ void  WelsRcMbInitDisable (sWelsEncCtx* pEncCtx, SMB* pCurMb, SSlice* pSlice) {
   const uint8_t kuiChromaQpIndexOffset = pCurLayer->sLayerInfo.pPpsP->uiChromaQpIndexOffset;
 
 
-  if (pEncCtx->pSvcParam->bEnableAdaptiveQuant && (pEncCtx->eSliceType == P_SLICE)) {
-    iLumaQp   = (int8_t)WELS_CLIP3 (iLumaQp +
-                                    pEncCtx->pVaa->sAdaptiveQuantParam.pMotionTextureIndexToDeltaQp[pCurMb->iMbXY], pWelsSvcRc->iMinQp, pWelsSvcRc->iMaxQp);
-  } else {
-    iLumaQp = WELS_CLIP3 (iLumaQp, 0, 51);
-  }
+  iLumaQp = WELS_CLIP3 (iLumaQp, 0, 51);
   pCurMb->uiChromaQp = g_kuiChromaQpTable[CLIP3_QP_0_51 (iLumaQp + kuiChromaQpIndexOffset)];
   pCurMb->uiLumaQp = iLumaQp;
 }

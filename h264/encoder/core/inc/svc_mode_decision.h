@@ -65,18 +65,11 @@ void WelsMdInterMbEnhancelayer (sWelsEncCtx* pEnc, SWelsMD* pMd, SSlice* pSlice,
 SMB* GetRefMb (SDqLayer* pCurLayer, SMB* pCurMb);
 void SetMvBaseEnhancelayer (SWelsMD* pMd, SMB* pCurMb, const SMB* kpRefMb);
 
-//////////////
-// MD from background detection
-//////////////
-bool WelsMdInterJudgeBGDPskip (sWelsEncCtx* pEnc, SWelsMD* pMd, SSlice* pSlice, SMB* pCurMb, SMbCache* pMbCache,
-                               bool* bKeepSkip);
 bool WelsMdInterJudgeBGDPskipFalse (sWelsEncCtx* pEnc, SWelsMD* pMd, SSlice* pSlice, SMB* pCurMb, SMbCache* pMbCache,
                                     bool* bKeepSkip);
 
-void WelsMdUpdateBGDInfo (SDqLayer* pCurLayer,  SMB* pCurMb, const bool kbCollocatedPredFlag,
-                               const int32_t kiRefPictureType);
-void WelsMdUpdateBGDInfoNULL (SDqLayer* pCurLayer,  SMB* pCurMb, const bool kbCollocatedPredFlag,
-                                   const int32_t kiRefPictureType);
+void WelsMdUpdateRefMbQp (SDqLayer* pCurLayer,  SMB* pCurMb, const bool kbCollocatedPredFlag,
+                          const int32_t kiRefPictureType);
 
 //////////////
 // MD for screen contents

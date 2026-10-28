@@ -130,8 +130,7 @@ PCopyFunc pfCopyBlockByMode;
 
 void FillNeighborCacheIntra (SMbCache* pMbCache, SMB* pCurMb, int32_t iMbWidth/*, bool constrained_intra_pred_flag*/);
 void FillNeighborCacheInterWithoutBGD (SMbCache* pMbCache, SMB* pCurMb, int32_t iMbWidth,
-                                       int8_t* pVaaBgMbFlag); //BGD spatial func
-void FillNeighborCacheInterWithBGD (SMbCache* pMbCache, SMB* pCurMb, int32_t iMbWidth, int8_t* pVaaBgMbFlag);
+                                       int8_t* pVaaBgMbFlag);
 void InitFillNeighborCacheInterFunc (SWelsFuncPtrList* pFuncList, const int32_t kiFlag);
 
 void MvdCostInit (uint16_t* pMvdCostInter, const int32_t kiMvdSz);

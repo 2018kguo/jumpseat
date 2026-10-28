@@ -212,47 +212,6 @@ bool CheckChromaCost (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMbCache* pMbCache
   return (!bChromaCostCannotSkip && !bChromaTooLarge);
 }
 
-//01/17/2013. USE the NEW BGD Pskip with COLOR CHECK for screen content and camera because of color artifact seen in test
-bool WelsMdInterJudgeBGDPskip (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SSlice* pSlice, SMB* pCurMb, SMbCache* pMbCache,
-                               bool* bKeepSkip) {
-  SDqLayer* pCurDqLayer = pEncCtx->pCurDqLayer;
-
-  const int32_t kiRefMbQp = pCurDqLayer->pRefPic->pRefMbQp[pCurMb->iMbXY];
-  const int32_t kiCurMbQp = pCurMb->uiLumaQp;// unsigned -> signed
-  int8_t* pVaaBgMbFlag    = pEncCtx->pVaa->pVaaBackgroundMbFlag + pCurMb->iMbXY;
-
-  const int32_t kiMbWidth = pCurDqLayer->iMbWidth;
-
-  *bKeepSkip = (*bKeepSkip) &&
-               ((!pVaaBgMbFlag[-1]) &&
-                (!pVaaBgMbFlag[-kiMbWidth]) &&
-                (!pVaaBgMbFlag[-kiMbWidth + 1]));
-
-  if (
-    *pVaaBgMbFlag
-    && !IS_INTRA (pMbCache->uiRefMbType)
-    && (kiRefMbQp - kiCurMbQp <= DELTA_QP_BGD_THD || kiRefMbQp <= 26)
-  ) {
-    //01/16/13
-    //the current BGD method uses luma SAD in first step judging of Background blocks
-    //and uses chroma edges to confirm the Background blocks
-    //HOWEVER, there is such case in SCC,
-    //that the luma of two collocated blocks (block in reference frame and in current frame) is very similar
-    //but the chroma are very different, at the same time the chroma are plain and without edge
-    //IN SUCH A CASE,
-    //it will be not proper to just use Pskip
-    //TODO: consider reusing this result of ChromaCheck when SCDSkip needs this as well
-
-    if (CheckChromaCost (pEncCtx, pWelsMd, pMbCache, pCurMb->iMbXY)) {
-      SMVUnitXY sVaaPredSkipMv = { 0 };
-      PredSkipMv (pMbCache, &sVaaPredSkipMv);
-      WelsMdBackgroundMbEnc (pEncCtx, pWelsMd, pCurMb, pMbCache, pSlice, (LD32 (&sVaaPredSkipMv) == 0));
-      return true;
-    }
-  }
-
-  return false;
-}
 
 bool WelsMdInterJudgeBGDPskipFalse (sWelsEncCtx* pCtx, SWelsMD* pMd, SSlice* pSlice, SMB* pCurMb, SMbCache* pMbCache,
                                     bool* bKeepSkip) {
@@ -261,29 +220,16 @@ bool WelsMdInterJudgeBGDPskipFalse (sWelsEncCtx* pCtx, SWelsMD* pMd, SSlice* pSl
 
 
 
-//////
-//  update BGD related info
-//////
-void WelsMdUpdateBGDInfo (SDqLayer* pCurLayer,  SMB* pCurMb, const bool bCollocatedPredFlag,
+
+// The QP each macroblock was last coded at, which the screen skip decision reads.
+void WelsMdUpdateRefMbQp (SDqLayer* pCurLayer, SMB* pCurMb, const bool bCollocatedPredFlag,
                           const int32_t iRefPictureType) {
-  uint8_t* pTargetRefMbQpList = (pCurLayer->pDecPic->pRefMbQp);
+  uint8_t* pTargetRefMbQpList = pCurLayer->pDecPic->pRefMbQp;
   const int32_t kiMbXY = pCurMb->iMbXY;
-
-  if (pCurMb->uiCbp || I_SLICE == iRefPictureType || 0 == bCollocatedPredFlag) {
+  if (pCurMb->uiCbp || I_SLICE == iRefPictureType || 0 == bCollocatedPredFlag)
     pTargetRefMbQpList[kiMbXY] = pCurMb->uiLumaQp;
-  } else { //unchange, do not need to evaluation?
-    uint8_t* pRefPicRefMbQpList = (pCurLayer->pRefPic->pRefMbQp);
-    pTargetRefMbQpList[kiMbXY] = pRefPicRefMbQpList[kiMbXY];
-  }
-
-  if (pCurMb->uiMbType == MB_TYPE_BACKGROUND) {
-    pCurMb->uiMbType = MB_TYPE_SKIP;
-  }
-}
-
-void WelsMdUpdateBGDInfoNULL (SDqLayer* pCurLayer, SMB* pCurMb, const bool bCollocatedPredFlag,
-                              const int32_t iRefPictureType) {
-  WelsMdUpdateBGDInfo (pCurLayer, pCurMb, bCollocatedPredFlag, iRefPictureType);
+  else
+    pTargetRefMbQpList[kiMbXY] = pCurLayer->pRefPic->pRefMbQp[kiMbXY];
 }
 
 

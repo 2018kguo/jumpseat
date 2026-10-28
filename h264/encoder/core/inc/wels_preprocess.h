@@ -170,8 +170,6 @@ class CWelsPreProcess {
 
   void    VaaCalculation (SVAAFrameInfo* pVaaInfo, SPicture* pCurPicture, SPicture* pRefPicture, bool bCalculateSQDiff,
                           bool bCalculateVar, bool bCalculateBGD);
-  void    BackgroundDetection (SVAAFrameInfo* pVaaInfo, SPicture* pCurPicture, SPicture* pRefPicture, bool bDetectFlag);
-  void    AdaptiveQuantCalculation (SVAAFrameInfo* pVaaInfo, SPicture* pCurPicture, SPicture* pRefPicture);
   void    Padding (uint8_t* pSrcY, uint8_t* pSrcU, uint8_t* pSrcV, int32_t iStrideY, int32_t iStrideUV,
                    int32_t iActualWidth, int32_t iPaddingWidth, int32_t iActualHeight, int32_t iPaddingHeight);
   void    SetRefMbType (sWelsEncCtx* pCtx, uint32_t** pRefMbTypeArray, int32_t iRefPicType);
@@ -209,17 +207,6 @@ class CWelsPreProcess {
   int32_t           m_iAvaliableRefInSpatialPicList;
 
 };
-
-class CWelsPreProcessVideo : public CWelsPreProcess {
- public:
-  CWelsPreProcessVideo (sWelsEncCtx* pEncCtx) : CWelsPreProcess (pEncCtx) {};
-
-  virtual SPicture* GetCurrentOrigFrame (int32_t iDIdx);
-
-  virtual ESceneChangeIdc  DetectSceneChange (SPicture* pCurPicture, SPicture* pRefPicture = NULL);
-};
-
-
 
 class CWelsPreProcessScreen : public CWelsPreProcess {
  public:

@@ -391,15 +391,6 @@ bool WelsUpdateRefList (sWelsEncCtx* pCtx) {
 
   if (keSliceType == P_SLICE) {
     if (pCtx->uiTemporalId == 0) {
-      if (pCtx->pSvcParam->bEnableLongTermReference) {
-        LTRMarkProcess (pCtx);
-        DeleteInvalidLTR (pCtx);
-        HandleLTRMarkFeedback (pCtx);
-
-        pLtr->bReceivedT0LostFlag = false; // reset to false due to the recovery is finished
-        pLtr->bLTRMarkingFlag = false;
-        ++pLtr->uiLtrMarkInterval;
-      }
 
       for (i = pRefList->uiShortRefCount - 1; i > 0; i--) {
         pRefList->pShortRefList[i]->SetUnref();
@@ -412,17 +403,6 @@ bool WelsUpdateRefList (sWelsEncCtx* pCtx) {
       }
     }
   } else { // in case IDR currently coding
-    if (pCtx->pSvcParam->bEnableLongTermReference) {
-      LTRMarkProcess (pCtx);
-
-      pLtr->iCurLtrIdx = (pLtr->iCurLtrIdx + 1) % LONG_TERM_REF_NUM;
-      pLtr->iLTRMarkSuccessNum = 1; //IDR default suceess
-      pLtr->bLTRMarkEnable =  true;
-      pLtr->uiLtrMarkInterval = 0;
-
-      pCtx->pVaa->uiValidLongTermPicIdx = 0;
-      pCtx->pVaa->uiMarkLongTermPicIdx = 0;
-    }
   }
   pCtx->pReferenceStrategy->EndofUpdateRefList();
   return true;
@@ -469,22 +449,6 @@ void WelsMarkMMCORefInfo (sWelsEncCtx* pCtx, SLTRState* pLtr,
 
   memset (pRefPicMark, 0, sizeof (SRefPicMarking));
 
-  if (pCtx->pSvcParam->bEnableLongTermReference && pLtr->bLTRMarkingFlag) {
-    if (pLtr->iLTRMarkMode == LTR_DIRECT_MARK) {
-      pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount].iMaxLongTermFrameIdx = LONG_TERM_REF_NUM - 1;
-      pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount++].iMmcoType = MMCO_SET_MAX_LONG;
-
-      pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount].iDiffOfPicNum = iGoPFrameNumInterval;
-      pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount++].iMmcoType = MMCO_SHORT2UNUSED;
-
-      pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount].iLongTermFrameIdx = pLtr->iCurLtrIdx;
-      pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount++].iMmcoType = MMCO_LONG;
-    } else if (pLtr->iLTRMarkMode == LTR_DELAY_MARK) {
-      pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount].iDiffOfPicNum = iGoPFrameNumInterval;
-      pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount].iLongTermFrameIdx = pLtr->iCurLtrIdx;
-      pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount++].iMmcoType = MMCO_SHORT2LONG;
-    }
-  }
 
   WelsMarkMMCORefInfoWithBase (ppSliceList, pBaseSlice, kiCountSliceNum);
 }
@@ -493,67 +457,15 @@ void WelsMarkPic (sWelsEncCtx* pCtx) {
   SLTRState* pLtr               = &pCtx->pLtr[pCtx->uiDependencyId];
   const int32_t kiCountSliceNum = pCtx->pCurDqLayer->iMaxSliceNum;
 
-  if (pCtx->pSvcParam->bEnableLongTermReference && pLtr->bLTRMarkEnable && pCtx->uiTemporalId == 0) {
-    if (!pLtr->bReceivedT0LostFlag && pLtr->uiLtrMarkInterval > pCtx->pSvcParam->iLtrMarkPeriod
-        && CheckCurMarkFrameNumUsed (pCtx)) {
-      pLtr->bLTRMarkingFlag = true;
-      pLtr->bLTRMarkEnable = false;
-      pLtr->uiLtrMarkInterval = 0;
-      for (int32_t i = 0 ; i < MAX_TEMPORAL_LAYER_NUM; ++i) {
-        if (pCtx->uiTemporalId < i || pCtx->uiTemporalId == 0) {
-          pLtr->iLastLtrIdx[i] = pLtr->iCurLtrIdx;
-        }
-      }
-    } else {
-      pLtr->bLTRMarkingFlag = false;
-    }
-  }
 
   WelsMarkMMCORefInfo (pCtx, pLtr, pCtx->pCurDqLayer->ppSliceInLayer, kiCountSliceNum);
 }
 
 int32_t FilterLTRRecoveryRequest (sWelsEncCtx* pCtx, SLTRRecoverRequest* pLTRRecoverRequest) {
   //if disable LTR, force IDR
-  if (!pCtx->pSvcParam->bEnableLongTermReference) {
-    for (int32_t iDid = 0; iDid < pCtx->pSvcParam->iSpatialLayerNum; iDid++) {
-      SSpatialLayerInternal* pParamInternal = &pCtx->pSvcParam->sDependencyLayers[iDid];
-      pParamInternal->bEncCurFrmAsIdrFlag = true;
-    }
-  } else {
-    SLTRRecoverRequest* pRequest = pLTRRecoverRequest;
-    int32_t iLayerId = pLTRRecoverRequest->iLayerId;
-    if ((iLayerId < 0) || (iLayerId >= pCtx->pSvcParam->iSpatialLayerNum))
-      return false;
-
-    SLTRState* pLtr = &pCtx->pLtr[iLayerId];
-    int32_t iMaxFrameNumPlus1 = (1 << pCtx->pSps->uiLog2MaxFrameNum);
-    SSpatialLayerInternal* pParamInternal    = &pCtx->pSvcParam->sDependencyLayers[iLayerId];
-    if (pRequest->uiFeedbackType == LTR_RECOVERY_REQUEST &&  pRequest->uiIDRPicId == pParamInternal->uiIdrPicId) {
-      if (pRequest->iLastCorrectFrameNum == -1) {
-        pParamInternal->bEncCurFrmAsIdrFlag = true;
-        return true;
-      } else if (pRequest->iCurrentFrameNum == -1) {
-        pLtr->bReceivedT0LostFlag = true;
-        return true;
-      } else if ((CompareFrameNum (pLtr->iLastRecoverFrameNum , pRequest->iLastCorrectFrameNum,
-                                   iMaxFrameNumPlus1) & (FRAME_NUM_EQUAL | FRAME_NUM_SMALLER)) // t0 lost
-                 || ((CompareFrameNum (pLtr->iLastRecoverFrameNum , pRequest->iCurrentFrameNum,
-                                       iMaxFrameNumPlus1) & (FRAME_NUM_EQUAL | FRAME_NUM_SMALLER)) &&
-                     CompareFrameNum (pLtr->iLastRecoverFrameNum , pRequest->iLastCorrectFrameNum,
-                                      iMaxFrameNumPlus1) == FRAME_NUM_BIGGER)) { // recovery failed
-
-        pLtr->bReceivedT0LostFlag = true;
-        pLtr->iLastCorFrameNumDec = pRequest->iLastCorrectFrameNum;
-        pLtr->iCurFrameNumInDec = pRequest->iCurrentFrameNum;
-        WelsLog (& (pCtx->sLogCtx), WELS_LOG_INFO,
-                 "Receive valid LTR recovery pRequest,feedback_type = %d ,uiIdrPicId = %d , current_frame_num = %d , last correct frame num = %d"
-                 , pRequest->uiFeedbackType, pRequest->uiIDRPicId, pRequest->iCurrentFrameNum, pRequest->iLastCorrectFrameNum);
-      }
-
-      WelsLog (& (pCtx->sLogCtx), WELS_LOG_INFO,
-               "Receive LTR recovery pRequest,feedback_type = %d ,uiIdrPicId = %d , current_frame_num = %d , last correct frame num = %d"
-               , pRequest->uiFeedbackType, pRequest->uiIDRPicId, pRequest->iCurrentFrameNum, pRequest->iLastCorrectFrameNum);
-    }
+  for (int32_t iDid = 0; iDid < pCtx->pSvcParam->iSpatialLayerNum; iDid++) {
+    SSpatialLayerInternal* pParamInternal = &pCtx->pSvcParam->sDependencyLayers[iDid];
+    pParamInternal->bEncCurFrmAsIdrFlag = true;
   }
 
   return true;
@@ -565,25 +477,6 @@ void FilterLTRMarkingFeedback (sWelsEncCtx* pCtx, SLTRMarkingFeedback* pLTRMarki
   }
   SLTRState* pLtr = &pCtx->pLtr[iLayerId];
   assert (pLTRMarkingFeedback);
-  if (pCtx->pSvcParam->bEnableLongTermReference) {
-    SSpatialLayerInternal* pParamInternal    = &pCtx->pSvcParam->sDependencyLayers[iLayerId];
-    if (pLTRMarkingFeedback->uiIDRPicId == pParamInternal->uiIdrPicId
-        && (pLTRMarkingFeedback->uiFeedbackType == LTR_MARKING_SUCCESS
-            || pLTRMarkingFeedback->uiFeedbackType == LTR_MARKING_FAILED)) { // avoid error pData
-      pLtr->uiLtrMarkState = pLTRMarkingFeedback->uiFeedbackType;
-      pLtr->iLtrMarkFbFrameNum =  pLTRMarkingFeedback->iLTRFrameNum ;
-      WelsLog (& (pCtx->sLogCtx), WELS_LOG_INFO,
-               "Receive valid LTR marking feedback, feedback_type = %d , uiIdrPicId = %d , LTR_frame_num = %d , cur_idr_pic_id = %d",
-               pLTRMarkingFeedback->uiFeedbackType, pLTRMarkingFeedback->uiIDRPicId, pLTRMarkingFeedback->iLTRFrameNum ,
-               pParamInternal->uiIdrPicId);
-
-    } else {
-      WelsLog (& (pCtx->sLogCtx), WELS_LOG_INFO,
-               "Receive LTR marking feedback, feedback_type = %d , uiIdrPicId = %d , LTR_frame_num = %d , cur_idr_pic_id = %d",
-               pLTRMarkingFeedback->uiFeedbackType, pLTRMarkingFeedback->uiIDRPicId, pLTRMarkingFeedback->iLTRFrameNum ,
-               pParamInternal->uiIdrPicId);
-    }
-  }
 }
 
 /*
@@ -605,28 +498,14 @@ bool WelsBuildRefList (sWelsEncCtx* pCtx, const int32_t iPOC, int32_t iBestLtrRe
 
   pCtx->iNumRef0 = 0;
   if (pCtx->eSliceType != I_SLICE) {
-    if (pCtx->pSvcParam->bEnableLongTermReference && pLtr->bReceivedT0LostFlag && pCtx->uiTemporalId == 0) {
-      for (i = 0; i < pRefList->uiLongRefCount; i++) {
-        if (pRefList->pLongRefList[i]->uiRecieveConfirmed == RECIEVE_SUCCESS) {
-          pCtx->pCurDqLayer->pRefOri[pCtx->iNumRef0] = pRefList->pLongRefList[i];
-          pCtx->pRefList0[pCtx->iNumRef0++] = pRefList->pLongRefList[i];
-          pLtr->iLastRecoverFrameNum = pParamD->iFrameNum;
-          WelsLog (& (pCtx->sLogCtx), WELS_LOG_INFO,
-                   "pRef is int32_t !iLastRecoverFrameNum = %d, pRef iFrameNum = %d,LTR number = %d,",
-                   pLtr->iLastRecoverFrameNum, pCtx->pRefList0[0]->iFrameNum, pRefList->uiLongRefCount);
-          break;
-        }
-      }
-    } else {
-      for (i = 0; i < pRefList->uiShortRefCount; ++ i) {
-        SPicture* pRef = pRefList->pShortRefList[i];
-        if (pRef != NULL && pRef->bUsedAsRef && pRef->iFramePoc >= 0 && pRef->uiTemporalId <= kuiTid) {
-          pCtx->pCurDqLayer->pRefOri[pCtx->iNumRef0] = pRef;
-          pCtx->pRefList0[pCtx->iNumRef0++] = pRef;
-          WelsLog (& (pCtx->sLogCtx), WELS_LOG_DETAIL,
-                   "WelsBuildRefList pCtx->uiTemporalId = %d,pRef->iFrameNum = %d,pRef->uiTemporalId = %d",
-                   pCtx->uiTemporalId, pRef->iFrameNum, pRef->uiTemporalId);
-        }
+    for (i = 0; i < pRefList->uiShortRefCount; ++ i) {
+      SPicture* pRef = pRefList->pShortRefList[i];
+      if (pRef != NULL && pRef->bUsedAsRef && pRef->iFramePoc >= 0 && pRef->uiTemporalId <= kuiTid) {
+        pCtx->pCurDqLayer->pRefOri[pCtx->iNumRef0] = pRef;
+        pCtx->pRefList0[pCtx->iNumRef0++] = pRef;
+        WelsLog (& (pCtx->sLogCtx), WELS_LOG_DETAIL,
+                 "WelsBuildRefList pCtx->uiTemporalId = %d,pRef->iFrameNum = %d,pRef->uiTemporalId = %d",
+                 pCtx->uiTemporalId, pRef->iFrameNum, pRef->uiTemporalId);
       }
     }
   } else { // safe for IDR
@@ -674,18 +553,9 @@ void WelsUpdateSliceHeaderSyntax (sWelsEncCtx* pCtx,  const int32_t iAbsDiffPicN
     /*syntax for num_ref_idx_l0_active_minus1*/
     pSliceHdr->uiRefCount = pCtx->iNumRef0;
     if (pCtx->iNumRef0 > 0) {
-      if ((!pCtx->pRefList0[0]->bIsLongRef) || (!pCtx->pSvcParam->bEnableLongTermReference)) {
-        pRefReorder->SReorderingSyntax[0].uiReorderingOfPicNumsIdc = 0;
-        pRefReorder->SReorderingSyntax[0].uiAbsDiffPicNumMinus1 = iAbsDiffPicNumMinus1;
-        pRefReorder->SReorderingSyntax[1].uiReorderingOfPicNumsIdc = 3;
-      } else {
-        int32_t iRefIdx = 0;
-        for (iRefIdx = 0; iRefIdx < pCtx->iNumRef0; iRefIdx++) {
-          pRefReorder->SReorderingSyntax[iRefIdx].uiReorderingOfPicNumsIdc = 2;
-          pRefReorder->SReorderingSyntax[iRefIdx].iLongTermPicNum = pCtx->pRefList0[iRefIdx]->iLongTermPicNum;
-        }
-        pRefReorder->SReorderingSyntax[iRefIdx].uiReorderingOfPicNumsIdc = 3;
-      }
+      pRefReorder->SReorderingSyntax[0].uiReorderingOfPicNumsIdc = 0;
+      pRefReorder->SReorderingSyntax[0].uiAbsDiffPicNumMinus1 = iAbsDiffPicNumMinus1;
+      pRefReorder->SReorderingSyntax[1].uiReorderingOfPicNumsIdc = 3;
     }
 
     /*syntax for dec_ref_pic_marking()*/
@@ -693,11 +563,7 @@ void WelsUpdateSliceHeaderSyntax (sWelsEncCtx* pCtx,  const int32_t iAbsDiffPicN
       pRefPicMark->bNoOutputOfPriorPicsFlag = false;
       pRefPicMark->bLongTermRefFlag = pCtx->pSvcParam->bEnableLongTermReference;
     } else {
-      if (pCtx->pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME)
-        pRefPicMark->bAdaptiveRefPicMarkingModeFlag = pCtx->pSvcParam->bEnableLongTermReference;
-      else
-        pRefPicMark->bAdaptiveRefPicMarkingModeFlag = (pCtx->pSvcParam->bEnableLongTermReference
-            && pLtr->bLTRMarkingFlag) ? (true) : (false);
+      pRefPicMark->bAdaptiveRefPicMarkingModeFlag = pCtx->pSvcParam->bEnableLongTermReference;
     }
   }
 }
@@ -893,13 +759,6 @@ void WelsMarkMMCORefInfoScreen (sWelsEncCtx* pCtx, SLTRState* pLtr,
   const int32_t iMaxLtrIdx = pCtx->pSvcParam->iNumRefFrame - STR_ROOM - 1;
 
   memset (pRefPicMark, 0, sizeof (SRefPicMarking));
-  if (pCtx->pSvcParam->bEnableLongTermReference) {
-    pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount].iMaxLongTermFrameIdx = iMaxLtrIdx;
-    pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount++].iMmcoType = MMCO_SET_MAX_LONG;
-
-    pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount].iLongTermFrameIdx = pLtr->iCurLtrIdx;
-    pRefPicMark->SMmcoRef[pRefPicMark->uiMmcoCount++].iMmcoType = MMCO_LONG;
-  }
 
   WelsMarkMMCORefInfoWithBase (ppSliceList, pBaseSlice, kiCountSliceNum);
 }
@@ -909,8 +768,6 @@ void WelsMarkPicScreen (sWelsEncCtx* pCtx) {
   int32_t iMaxTid          = WELS_LOG2 (pCtx->pSvcParam->uiGopSize);
   int32_t iMaxActualLtrIdx = -1;
   SSpatialLayerInternal* pParamD    = &pCtx->pSvcParam->sDependencyLayers[pCtx->uiDependencyId];
-  if (pCtx->pSvcParam->bEnableLongTermReference)
-    iMaxActualLtrIdx = pCtx->pSvcParam->iNumRefFrame - STR_ROOM - 1 -  WELS_MAX (iMaxTid , 1);
 
   SRefList* pRefList =  pCtx->ppRefPicListExt[pCtx->uiDependencyId];
   SPicture** ppLongRefList = pRefList->pLongRefList;
@@ -919,62 +776,7 @@ void WelsMarkPicScreen (sWelsEncCtx* pCtx) {
   const int32_t iLongRefNum = iNumRef - STR_ROOM;
   const bool bIsRefListNotFull = pRefList->uiLongRefCount < iLongRefNum;
 
-  if (!pCtx->pSvcParam->bEnableLongTermReference) {
-    pLtr->iCurLtrIdx = pCtx->uiTemporalId;
-  } else {
-    if (iMaxActualLtrIdx != -1 && pCtx->uiTemporalId == 0 && pCtx->bCurFrameMarkedAsSceneLtr) {
-      //Scene LTR
-      pLtr->bLTRMarkingFlag = true;
-      pLtr->uiLtrMarkInterval = 0;
-      pLtr->iCurLtrIdx  = pLtr->iSceneLtrIdx % (iMaxActualLtrIdx + 1);
-      pLtr->iSceneLtrIdx++;
-    } else {
-      pLtr->bLTRMarkingFlag = false;
-      //for other LTR
-      if (bIsRefListNotFull) {
-        for (int32_t i = 0; i < iLongRefNum; ++i) {
-          if (pRefList->pLongRefList[i] == NULL) {
-            pLtr->iCurLtrIdx = i   ;
-            break;
-          }
-        }
-      } else {
-        int32_t iRefNum_t[MAX_TEMPORAL_LAYER_NUM] = {0};
-        for (i = 0 ; i < pRefList->uiLongRefCount ; ++i) {
-          if (ppLongRefList[i]->bUsedAsRef && ppLongRefList[i]->bIsLongRef && (!ppLongRefList[i]->bIsSceneLTR)) {
-            ++iRefNum_t[ ppLongRefList[i]->uiTemporalId ];
-          }
-        }
-
-        int32_t iMaxMultiRefTid = (iMaxTid) ? (iMaxTid - 1) : (0) ;
-        for (i = 0; i < MAX_TEMPORAL_LAYER_NUM ; ++i) {
-          if (iRefNum_t[i] > 1) {
-            iMaxMultiRefTid = i;
-          }
-        }
-        int32_t iLongestDeltaFrameNum = -1;
-        int32_t iMaxFrameNum = (1 << pCtx->pSps->uiLog2MaxFrameNum);
-
-        for (i = 0 ; i < pRefList->uiLongRefCount ; ++i) {
-          if (ppLongRefList[i]->bUsedAsRef && ppLongRefList[i]->bIsLongRef && (!ppLongRefList[i]->bIsSceneLTR)
-              && iMaxMultiRefTid == ppLongRefList[i]->uiTemporalId) {
-            if (!IsValidFrameNum (ppLongRefList[i]->iFrameNum)) {  // pLtr->iCurLtrIdx must have a value
-              WelsLog (& (pCtx->sLogCtx), WELS_LOG_ERROR, "WelsMarkPicScreen, Invalid Frame Number");
-              return;
-            }
-            int32_t iDeltaFrameNum = (pParamD->iFrameNum >= ppLongRefList[i]->iFrameNum)
-                                     ? (pParamD->iFrameNum - ppLongRefList[i]->iFrameNum)
-                                     : (pParamD->iFrameNum + iMaxFrameNum - ppLongRefList[i]->iFrameNum);
-
-            if (iDeltaFrameNum > iLongestDeltaFrameNum) {
-              pLtr->iCurLtrIdx = ppLongRefList[i]->iLongTermPicNum;
-              iLongestDeltaFrameNum = iDeltaFrameNum;
-            }
-          }
-        }
-      }
-    }
-  }
+  pLtr->iCurLtrIdx = pCtx->uiTemporalId;
 
   for (i = 0 ; i < MAX_TEMPORAL_LAYER_NUM; ++i) {
     if ((pCtx->uiTemporalId <  i) || (pCtx->uiTemporalId == 0)) {

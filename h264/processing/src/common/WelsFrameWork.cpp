@@ -34,8 +34,6 @@
 #include "../scrolldetection/ScrollDetection.h"
 #include "../scenechangedetection/SceneChangeDetection.h"
 #include "../vaacalc/vaacalculation.h"
-#include "../backgrounddetection/BackgroundDetection.h"
-#include "../adaptivequantization/AdaptiveQuantization.h"
 #include "../complexityanalysis/ComplexityAnalysis.h"
 #include "util.h"
 
@@ -249,21 +247,11 @@ IStrategy* CVpFrameWork::CreateStrategy (EMethods m_eMethod, int32_t iCpuFlag) {
   case METHOD_SCROLL_DETECTION:
     pStrategy = WelsDynamicCast (IStrategy*, new CScrollDetection (iCpuFlag));
     break;
-  case METHOD_SCENE_CHANGE_DETECTION_VIDEO:
   case METHOD_SCENE_CHANGE_DETECTION_SCREEN:
     pStrategy = BuildSceneChangeDetection (m_eMethod, iCpuFlag);
     break;
   case METHOD_VAA_STATISTICS:
     pStrategy = WelsDynamicCast (IStrategy*, new CVAACalculation (iCpuFlag));
-    break;
-  case METHOD_BACKGROUND_DETECTION:
-    pStrategy = WelsDynamicCast (IStrategy*, new CBackgroundDetection (iCpuFlag));
-    break;
-  case METHOD_ADAPTIVE_QUANT:
-    pStrategy = WelsDynamicCast (IStrategy*, new CAdaptiveQuantization (iCpuFlag));
-    break;
-  case METHOD_COMPLEXITY_ANALYSIS:
-    pStrategy = WelsDynamicCast (IStrategy*, new CComplexityAnalysis (iCpuFlag));
     break;
   case METHOD_COMPLEXITY_ANALYSIS_SCREEN:
     pStrategy = WelsDynamicCast (IStrategy*, new CComplexityAnalysisScreen (iCpuFlag));
