@@ -57,17 +57,11 @@ typedef struct TagLevelLimits {
 
 #define CpbBrNalFactor 1200  //baseline,main,and extended profiles.
 extern const SLevelLimits g_ksLevelLimits[LEVEL_NUMBER];
-extern const uint32_t g_kuiLevelMaps[LEVEL_NUMBER];
 extern const uint8_t g_kuiMbCountScan4Idx[24];
 extern const uint8_t g_kuiCache30ScanIdx[16];
 extern const uint8_t g_kuiCache48CountScan4Idx[24];
 
-extern const uint8_t g_kuiMatrixV[6][8][8];
-
-extern const uint8_t g_kuiDequantScaling4x4Default[2][16];
-extern const uint8_t g_kuiDequantScaling8x8Default[2][64];
 extern const ALIGNED_DECLARE (uint16_t, g_kuiDequantCoeff[52][8], 16);
-extern const ALIGNED_DECLARE (uint16_t, g_kuiDequantCoeff8x8[52][64], 16);
 extern const uint8_t g_kuiChromaQpTable[52];
 
 extern const uint32_t g_kuiGolombUELength[256];
@@ -133,7 +127,6 @@ enum EVclType {
 /*
  *  vcl type map for given NAL unit type and corresponding H264 type (0: AVC; 1: SVC).
  */
-extern const EVclType g_keTypeMap[32][2];
 
 /* Base SSlice Types
  * Invalid in case of eSliceType exceeds 9,
