@@ -5,7 +5,7 @@
 //
 // A frame is captured only when XDamage reports a change, so an idle screen
 // costs nothing; frames go through MIT-SHM, libyuv and OpenH264 (or libx264
-// with -tags x264) in process. See PROTOCOL.md for the wire format.
+// with -tags x264) in process. See docs/reference.md for the wire format.
 package main
 
 import (

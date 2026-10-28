@@ -140,7 +140,7 @@ type encoder struct {
 	converted time.Duration
 }
 
-// The encoder's defaults (h264/, BENCHMARKS.md): screen mode at low
+// The encoder's defaults (h264/, bench/README.md): screen mode at low
 // complexity, deblocking off, quality-mode rate control with a QP floor of
 // 17 takes fewer bits and less CPU than x264 ultrafast on desktop content.
 const (

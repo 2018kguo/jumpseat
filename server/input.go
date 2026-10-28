@@ -68,6 +68,9 @@ func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, di
 		switch in.T {
 		case "k":
 			k.press(in.Key, in.Down)
+			if in.Down {
+				traceKey()
+			}
 		case "m":
 			if inScreen(in.X, in.Y) {
 				xtest.FakeInput(k.conn, xproto.MotionNotify, 0, 0, k.root, in.X, in.Y, 0)

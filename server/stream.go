@@ -142,6 +142,7 @@ func serve(ws *websocket.Conn, display string) {
 			var ready chan struct{}
 			switch event.(type) {
 			case damage.NotifyEvent:
+				traceDamage()
 				ready = damaged
 			case xfixes.SelectionNotifyEvent:
 				ready = copied
@@ -191,6 +192,7 @@ func serve(ws *websocket.Conn, display string) {
 		ts := f.now()
 		f.sent(ts, len(au))
 		err = v.frame(au, key, ts)
+		traceFrame(last, grabbed, encoded, time.Now(), len(au))
 		stages.add(grabbed.Sub(last), enc.converted, encoded.Sub(grabbed)-enc.converted, time.Since(encoded), len(au))
 		return err
 	}
@@ -409,7 +411,7 @@ func (s *stageTimes) flush() {
 	*s = stageTimes{since: time.Now()}
 }
 
-// fpsCap is maxFPS unless JUMPSEAT_MAX_FPS overrides it (BENCHMARKS.md).
+// fpsCap is maxFPS unless JUMPSEAT_MAX_FPS overrides it (bench/README.md).
 func fpsCap() int {
 	if value, err := strconv.Atoi(os.Getenv("JUMPSEAT_MAX_FPS")); err == nil && value > 0 {
 		return value

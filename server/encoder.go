@@ -31,7 +31,7 @@ static x264_t *open_encoder(int w, int h, int fps, int crf, char *params, x264_p
 	// only when the screen changes: with variable-rate input x264 holds each
 	// frame until the next arrives, to learn its duration, so the last frame
 	// of every change sat in the encoder until something else moved (idle
-	// key-to-screen p50 71 -> 30 ms, p90 107 -> 48 ms; see BENCHMARKS.md).
+	// key-to-screen p50 71 -> 30 ms, p90 107 -> 48 ms; see bench/README.md).
 	p.i_timebase_num = 1; p.i_timebase_den = 1000;
 	p.rc.i_rc_method = X264_RC_CRF; p.rc.f_rf_constant = crf;
 	// One keyframe per connection: the stream is TCP, nothing is lost.
@@ -84,7 +84,7 @@ import (
 )
 
 // encoder is libx264 behind libyuv's SIMD BGRX->I420 conversion, in
-// process: no ffmpeg, and no 4 MB frame copied down a pipe (BENCHMARKS.md).
+// process: no ffmpeg, and no 4 MB frame copied down a pipe (bench/README.md).
 type encoder struct {
 	x   *C.x264_t
 	pic C.x264_picture_t

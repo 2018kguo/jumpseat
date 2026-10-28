@@ -1,0 +1,41 @@
+name: test
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends nasm libyuv-dev libx264-dev
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: server/go.mod
+          cache-dependency-path: server/go.sum
+      - uses: oven-sh/setup-bun@v2
+      - run: make -C h264 -j4
+      - run: cd client && bun run build:demo
+      - name: server, default (h264) build
+        working-directory: server
+        run: go vet ./... && go test -race ./... && go build -o /dev/null .
+      - name: server, x264 build compiles
+        working-directory: server
+        run: go vet -tags x264 ./... && go build -tags x264 -o /dev/null .
+
+  e2e:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - run: docker build -f docker/Dockerfile -t jumpseat .
+      - run: docker run -d --name jumpseat-test -p 18080:8080 -e JUMPSEAT_TOKEN=secret jumpseat
+      - name: wait for the demo
+        run: for i in $(seq 60); do curl -sf "localhost:18080/?token=secret" >/dev/null && exit 0; sleep 1; done; exit 1
+      - working-directory: e2e
+        run: bun install && bun run test
+      - if: failure()
+        run: docker logs jumpseat-test | tail -50

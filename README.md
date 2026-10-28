@@ -14,19 +14,22 @@ person is driving, so the two never fight over the mouse.
 - **Built for agent + human.** Live captions of what the agent is doing,
   "Your turn: Sign in to LinkedIn", Take over / Done, continue, an input
   lease so agent clicks wait while you type.
-- **Cheap.** 0 CPU idle, ~0.3 cores at 60 fps, ~1 Mbit/s scrolling text,
-  and it backs off on slow links instead of piling up lag.
+- **Cheap.** 0 CPU idle, ~0.3 cores at 60 fps, 0.66 Mbit/s scrolling
+  text, and it backs off on slow links instead of piling up lag.
 - **Small.** A websocket, H.264, WebCodecs. The browser client has no
-  dependencies.
+  dependencies; the encoder is BSD and linked in.
 
 | | jumpseat | KasmVNC |
 |---|---|---|
 | fps | 60 | 24 |
-| bandwidth, scrolling | 1.3 Mbit/s | 14.8 |
+| bandwidth, scrolling | 0.66 Mbit/s | 14.8 |
 | key → pixel | ~35 ms | 48–73 ms |
 | on a 1 Mbit/s link, while scrolling | ~0.2 s | 1–2 s |
 
-More in [BENCHMARKS.md](BENCHMARKS.md).
+Its encoder, OpenH264's changed for desktop content, also beats x264
+ultrafast: half the bits scrolling, fewer typing and animating, at the same
+key → pixel and fewer instructions a frame. Details and method in
+[bench/](bench/README.md).
 
 ## Try it
 
@@ -36,8 +39,7 @@ docker run --rm -p 8080:8080 -e JUMPSEAT_TOKEN=secret jumpseat
 open "http://localhost:8080/?token=secret"
 ```
 
-From source on Linux (needs libyuv, and nasm on x86-64):
-`make -C h264 -j8 && cd server && go build`.
+Building from source is in [docs/development.md](docs/development.md).
 
 A desktop with Chromium appears. Make the "agent" talk:
 
@@ -77,7 +79,9 @@ view.setControlling(true); // Take over: the user's input reaches the desktop
 - Before clicking, check `GET /agent/lease`: while `"driving"` is true the
   user is at the keyboard.
 
-The wire format is in [PROTOCOL.md](PROTOCOL.md).
+Flags, routes, the wire format and the client API are in
+[docs/reference.md](docs/reference.md); deploying it safely is in
+[docs/operating.md](docs/operating.md).
 
 ## How it works
 
@@ -95,4 +99,8 @@ show.
 Early. X11 only, one 1280×800 screen, each viewer its own encoder. Not yet:
 audio, Wayland, per-window streaming, a shared encoder for many viewers.
 
-MIT licensed; see [LICENSE](LICENSE) for the encoder libraries.
+## License
+
+MIT for jumpseat; the encoder in `h264/` is BSD 2-clause (OpenH264). The
+optional `-tags x264` build links libx264, which is GPL. See
+[LICENSE](LICENSE).

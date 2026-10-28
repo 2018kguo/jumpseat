@@ -1,7 +1,7 @@
 /**
  * The browser end of jumpseat: H.264 frames decoded with
  * WebCodecs onto a canvas, and the user's input sent back while they have
- * taken over. The wire format is in PROTOCOL.md.
+ * taken over. The wire format is in docs/reference.md.
  */
 
 export const DESKTOP_WIDTH = 1280;
@@ -83,7 +83,7 @@ type StreamText =
 const STATUS_KINDS = new Set(["idle", "acting", "waiting", "handoff"]);
 
 /**
- * The server's text messages (see PROTOCOL.md): the agent's pointer, the
+ * The server's text messages (see docs/reference.md): the agent's pointer, the
  * VM's clipboard, the agent's status, the cursor image. Anything else is
  * ignored, so a newer server never breaks an older client.
  */
