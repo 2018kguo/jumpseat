@@ -1189,7 +1189,10 @@ int32_t RcCalculateCascadingQp (struct TagWelsEncCtx* pEncCtx, int32_t iQp) {
 #define MOTION_SAD_KNEE 64
 static void RcRaiseQpForMotion (sWelsEncCtx* pEncCtx) {
   SWelsSvcRc* pWelsSvcRc = &pEncCtx->pWelsSvcRc[pEncCtx->uiDependencyId];
-  const int32_t kiSad = static_cast<SVAAFrameInfoExt*> (pEncCtx->pVaa)->iMovingSadPerMb;
+  // Taken once: a frame whose scene change detection did not run gets none.
+  SVAAFrameInfoExt* pVaaExt = static_cast<SVAAFrameInfoExt*> (pEncCtx->pVaa);
+  const int32_t kiSad = pVaaExt->iMovingSadPerMb;
+  pVaaExt->iMovingSadPerMb = 0;
   if (kiSad <= MOTION_SAD_KNEE)
     return;
   const int32_t kiFloor = WELS_MIN (pEncCtx->pSvcParam->iMinQp + (int32_t) (2.4 * log2 ((double)kiSad / MOTION_SAD_KNEE) + 0.5),
