@@ -63,15 +63,15 @@ static oh264 *open_encoder(int w, int h, int fps, oh_opts o) {
 	return e;
 }
 
-// set_max_kbps puts the link's bitrate on the rate control (0: none).
+// set_max_kbps puts the link's bitrate on the rate control as its target
+// (0: none). Not ENCODER_OPTION_MAX_BITRATE: for all layers it only sets a
+// value the encoder reads at init, and it refuses 0.
 static void set_max_kbps(oh264 *e, int kbps) {
 	SBitrateInfo rate;
 	memset(&rate, 0, sizeof rate);
 	rate.iLayer = SPATIAL_LAYER_ALL;
 	rate.iBitrate = kbps > 0 ? kbps * 1000 : 50000000;
 	(*e->enc)->SetOption(e->enc, ENCODER_OPTION_BITRATE, &rate);
-	rate.iBitrate = kbps > 0 ? kbps * 1000 : UNSPECIFIED_BIT_RATE;
-	(*e->enc)->SetOption(e->enc, ENCODER_OPTION_MAX_BITRATE, &rate);
 }
 
 // encode_frame writes the frame's NAL units (each with its start code) to

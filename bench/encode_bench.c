@@ -115,7 +115,6 @@ int main(int argc, char **argv) {
     rate.iLayer = SPATIAL_LAYER_ALL;
     rate.iBitrate = kbps * 1000;
     (*enc)->SetOption(enc, ENCODER_OPTION_BITRATE, &rate);
-    (*enc)->SetOption(enc, ENCODER_OPTION_MAX_BITRATE, &rate);
   }
 
   if (decode_side_open() < 0) { fprintf(stderr, "decoder open failed\n"); return 1; }
