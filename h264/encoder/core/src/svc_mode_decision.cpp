@@ -224,7 +224,7 @@ void SvcMdSCDMbEnc (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCach
     pDstCr   = pMbCache->pMemPredChroma + 64;
   }
   //MC
-  pFunc->sMcFuncs.pMcLumaFunc (pRefLuma + iOffsetY, iLineSizeY, pDstLuma, 16, 0, 0, 16, 16);
+  pFunc->pfCopy16x16NotAligned (pDstLuma, 16, pRefLuma + iOffsetY, iLineSizeY);
   pFunc->sMcFuncs.pMcChromaFunc (pRefCb + iOffsetUV, iLineSizeUV, pDstCb, 8, sMvp.iMvX, sMvp.iMvY, 8, 8);
   pFunc->sMcFuncs.pMcChromaFunc (pRefCr + iOffsetUV, iLineSizeUV, pDstCr, 8, sMvp.iMvX, sMvp.iMvY, 8, 8);
 

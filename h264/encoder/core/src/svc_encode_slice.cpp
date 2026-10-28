@@ -770,41 +770,12 @@ void InitSliceHeadWithBase (SSlice* pSlice, SSlice* pBaseSlice) {
 }
 
 
-static inline int32_t InitSliceRC (SSlice* pSlice, const int32_t kiGlobalQp) {
-
-  if (NULL == pSlice || kiGlobalQp < 0)
-    return ENC_RETURN_INVALIDINPUT;
-
-  pSlice->sSlicingOverRc.iComplexityIndexSlice = 0;
-  pSlice->sSlicingOverRc.iCalculatedQpSlice    = kiGlobalQp;
-  pSlice->sSlicingOverRc.iTotalQpSlice         = 0;
-  pSlice->sSlicingOverRc.iTotalMbSlice         = 0;
-  pSlice->sSlicingOverRc.iTargetBitsSlice      = 0;
-  pSlice->sSlicingOverRc.iFrameBitsSlice       = 0;
-  pSlice->sSlicingOverRc.iGomBitsSlice         = 0;
-
-  return ENC_RETURN_SUCCESS;
-}
 
 
 
 
 
 
-static inline int32_t CheckAllSliceBuffer (SDqLayer* pCurLayer, const int32_t kiCodedSliceNum) {
-  int32_t iSliceIdx = 0;
-  for (; iSliceIdx < kiCodedSliceNum ; iSliceIdx ++) {
-    if (NULL == pCurLayer->ppSliceInLayer[iSliceIdx]) {
-      return ENC_RETURN_UNEXPECTED;
-    }
-
-    if (iSliceIdx != pCurLayer->ppSliceInLayer[iSliceIdx]->iSliceIdx) {
-      return ENC_RETURN_UNEXPECTED;
-    }
-  }
-
-  return ENC_RETURN_SUCCESS;
-}
 
 
 

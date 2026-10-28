@@ -1124,7 +1124,8 @@ bool WelsMdPSkipEnc (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCac
 
   //luma
   pRefLuma += sQpelMvp.iMvY * iLineSizeY + sQpelMvp.iMvX;
-  pFunc->sMcFuncs.pMcLumaFunc (pRefLuma, iLineSizeY, pDstLuma, 16, sMvp.iMvX, sMvp.iMvY, 16, 16);
+  // jumpseat: motion vectors are integer-pel (MeRefineFracPixel), so luma motion compensation is a copy
+  pFunc->pfCopy16x16NotAligned (pDstLuma, 16, pRefLuma, iLineSizeY);
   iSadCostLuma    = pFunc->sSampleDealingFuncs.pfSampleSad[BLOCK_16x16] (pMbCache->SPicData.pEncMb[0],
                     pCurLayer->iEncStride[0], pDstLuma, 16);
 

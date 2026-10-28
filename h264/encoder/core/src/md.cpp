@@ -389,268 +389,27 @@ void InitMeRefinePointer (SMeRefinePointer* pMeRefine, SMbCache* pMbCache, int32
   pMeRefine->pQuarPixBest = &pMbCache->pBufferInterPredMe[1280] + iStride;
   pMeRefine->pQuarPixTmp  = &pMbCache->pBufferInterPredMe[1920] + iStride;
 }
-typedef struct TagQuarParams {
-  int32_t iBestCost;
-  int32_t iBestHalfPix;
-  int32_t iStrideA;
-  int32_t iStrideB;
-  uint8_t* pRef;
-  uint8_t* pSrcB[4];
-  uint8_t* pSrcA[4];
-  int32_t iLms[4];
-  int32_t iBestQuarPix;
-} SQuarRefineParams;
 
-#define SWITCH_BEST_TMP_BUF(prev_best, curr_best){\
-  pParams->iBestCost = iCurCost;\
-  pTmp = prev_best;\
-  prev_best = curr_best;\
-  curr_best = pTmp;\
-}
-#define CALC_COST(me_buf, lm) ( pFunc->sSampleDealingFuncs.pfMeCost[kuiPixel](pEncMb, iStrideEnc, me_buf, ME_REFINE_BUF_STRIDE) + lm )
 
-inline void MeRefineQuarPixel (SWelsFuncPtrList* pFunc, SWelsME* pMe, SMeRefinePointer* pMeRefine,
-                               const int32_t kiWidth, const int32_t kiHeight, SQuarRefineParams* pParams, int32_t iStrideEnc) {
-  PWelsSampleAveragingFunc pSampleAvg   = pFunc->sMcFuncs.pfSampleAveraging;
-  int32_t iCurCost;
-  uint8_t* pEncMb                       = pMe->pEncMb;
-  uint8_t* pTmp                         = NULL;
-  const uint8_t kuiPixel                = pMe->uiBlockSize;
-
-  pSampleAvg (pMeRefine->pQuarPixTmp, ME_REFINE_BUF_STRIDE, pParams->pSrcA[0], ME_REFINE_BUF_STRIDE,
-              pParams->pSrcB[0], pParams->iStrideA, kiWidth, kiHeight);
-
-  iCurCost = CALC_COST (pMeRefine->pQuarPixTmp, pParams->iLms[0]);
-  if (iCurCost < pParams->iBestCost) {
-    pParams->iBestQuarPix = ME_QUAR_PIXEL_TOP;
-    SWITCH_BEST_TMP_BUF (pMeRefine->pQuarPixBest, pMeRefine->pQuarPixTmp);
-  }
-  //=========================(0, 1)=======================//
-  pSampleAvg (pMeRefine->pQuarPixTmp, ME_REFINE_BUF_STRIDE, pParams->pSrcA[1],
-              ME_REFINE_BUF_STRIDE, pParams->pSrcB[1], pParams->iStrideA, kiWidth, kiHeight);
-  iCurCost = CALC_COST (pMeRefine->pQuarPixTmp, pParams->iLms[1]);
-  if (iCurCost < pParams->iBestCost) {
-    pParams->iBestQuarPix = ME_QUAR_PIXEL_BOTTOM;
-    SWITCH_BEST_TMP_BUF (pMeRefine->pQuarPixBest, pMeRefine->pQuarPixTmp);
-  }
-  //==========================(-1, 0)=========================//
-  pSampleAvg (pMeRefine->pQuarPixTmp, ME_REFINE_BUF_STRIDE, pParams->pSrcA[2],
-              ME_REFINE_BUF_STRIDE, pParams->pSrcB[2], pParams->iStrideB, kiWidth, kiHeight);
-  iCurCost = CALC_COST (pMeRefine->pQuarPixTmp, pParams->iLms[2]);
-  if (iCurCost < pParams->iBestCost) {
-    pParams->iBestQuarPix = ME_QUAR_PIXEL_LEFT;
-    SWITCH_BEST_TMP_BUF (pMeRefine->pQuarPixBest, pMeRefine->pQuarPixTmp);
-  }
-  //==========================(1, 0)=========================//
-  pSampleAvg (pMeRefine->pQuarPixTmp, ME_REFINE_BUF_STRIDE, pParams->pSrcA[3],
-              ME_REFINE_BUF_STRIDE, pParams->pSrcB[3], pParams->iStrideB,  kiWidth, kiHeight);
-
-  iCurCost = CALC_COST (pMeRefine->pQuarPixTmp, pParams->iLms[3]);
-  if (iCurCost < pParams->iBestCost) {
-    pParams->iBestQuarPix = ME_QUAR_PIXEL_RIGHT;
-    SWITCH_BEST_TMP_BUF (pMeRefine->pQuarPixBest, pMeRefine->pQuarPixTmp);
-  }
-}
-
+// jumpseat: screen content at low complexity stays integer-pel, as x264
+// ultrafast does (animation: 8% of the CPU for 3.5% of the bits): this keeps
+// the integer-pel vector, its cost and its prediction.
 void MeRefineFracPixel (sWelsEncCtx* pEncCtx, uint8_t* pMemPredInterMb, SWelsME* pMe,
                         SMeRefinePointer* pMeRefine, int32_t iWidth, int32_t iHeight) {
   SWelsFuncPtrList* pFunc = pEncCtx->pFuncList;
-  int16_t iMvx = pMe->sMv.iMvX;
-  int16_t iMvy = pMe->sMv.iMvY;
-
-  int16_t iHalfMvx = iMvx;
-  int16_t iHalfMvy = iMvy;
+  const int16_t iMvx = pMe->sMv.iMvX;
+  const int16_t iMvy = pMe->sMv.iMvY;
   const int32_t kiStrideEnc = pEncCtx->pCurDqLayer->iEncStride[0];
   const int32_t kiStrideRef = pEncCtx->pCurDqLayer->pRefPic->iLineSize[0];
-
-  uint8_t* pEncData = pMe->pEncMb;
-  uint8_t* pRef = pMe->pRefMb;//091010
-
-  int32_t iBestQuarPix = ME_NO_BEST_QUAR_PIXEL;
-
-  SQuarRefineParams sParams;
-  static const int32_t iMvQuarAddX[10] = {0, 0, -1, 1, 0, 0, 0, -1, 1, 0};
-  const int32_t* pMvQuarAddY = iMvQuarAddX + 3;
-  uint8_t* pBestPredInter = pRef;
-  int32_t iInterBlk4Stride = ME_REFINE_BUF_STRIDE;
-
-  int32_t iBestCost;
-  int32_t iCurCost;
-  int32_t iBestHalfPix;
+  uint8_t* pRef = pMe->pRefMb;
 
   if (pEncCtx->pCurDqLayer->bSatdInMdFlag) {
-    iBestCost = pMe->uSadPredISatd.uiSatd + COST_MVD (pMe->pMvdCost, iMvx - pMe->sMvp.iMvX, iMvy - pMe->sMvp.iMvY);
+    pMe->uiSatdCost = pMe->uSadPredISatd.uiSatd + COST_MVD (pMe->pMvdCost, iMvx - pMe->sMvp.iMvX, iMvy - pMe->sMvp.iMvY);
   } else {
-    iBestCost = pFunc->sSampleDealingFuncs.pfMeCost[pMe->uiBlockSize] (pEncData, kiStrideEnc, pRef, kiStrideRef) +
-                COST_MVD (pMe->pMvdCost, iMvx - pMe->sMvp.iMvX, iMvy - pMe->sMvp.iMvY);
+    pMe->uiSatdCost = pFunc->sSampleDealingFuncs.pfMeCost[pMe->uiBlockSize] (pMe->pEncMb, kiStrideEnc, pRef, kiStrideRef) +
+                      COST_MVD (pMe->pMvdCost, iMvx - pMe->sMvp.iMvX, iMvy - pMe->sMvp.iMvY);
   }
-
-  // jumpseat: screen content at low complexity stays integer-pel, as x264
-  // ultrafast does (animation: 8% of the CPU for 3.5% of the bits).
-  pMe->uiSatdCost = iBestCost;
   pMeRefine->pfCopyBlockByMode (pMemPredInterMb, MB_WIDTH_LUMA, pRef, kiStrideRef);
-  return;
-  iBestHalfPix = REFINE_ME_NO_BEST_HALF_PIXEL;
-
-  pFunc->sMcFuncs.pfLumaHalfpelVer (pRef - kiStrideRef, kiStrideRef, pMeRefine->pHalfPixV, ME_REFINE_BUF_STRIDE, iWidth,
-                                    iHeight + 1);
-
-  //step 1: get [iWidth][iHeight+1] half pixel from vertical filter
-  //===========================(0, -2)==============================//
-  iCurCost = pFunc->sSampleDealingFuncs.pfMeCost[pMe->uiBlockSize] (pEncData, kiStrideEnc, pMeRefine->pHalfPixV,
-             ME_REFINE_BUF_STRIDE) +
-             COST_MVD (pMe->pMvdCost, iMvx - pMe->sMvp.iMvX, iMvy - 2 - pMe->sMvp.iMvY);
-  if (iCurCost < iBestCost) {
-    iBestCost = iCurCost;
-    iBestHalfPix = REFINE_ME_HALF_PIXEL_TOP;
-    pBestPredInter = pMeRefine->pHalfPixV;
-  }
-  //===========================(0, 2)==============================//
-  iCurCost = pFunc->sSampleDealingFuncs.pfMeCost[pMe->uiBlockSize] (pEncData, kiStrideEnc,
-             pMeRefine->pHalfPixV + ME_REFINE_BUF_STRIDE, ME_REFINE_BUF_STRIDE) +
-             COST_MVD (pMe->pMvdCost, iMvx - pMe->sMvp.iMvX, iMvy + 2 - pMe->sMvp.iMvY);
-  if (iCurCost < iBestCost) {
-    iBestCost = iCurCost;
-    iBestHalfPix = REFINE_ME_HALF_PIXEL_BOTTOM;
-    pBestPredInter = pMeRefine->pHalfPixV + ME_REFINE_BUF_STRIDE;
-  }
-  pFunc->sMcFuncs.pfLumaHalfpelHor (pRef - 1, kiStrideRef, pMeRefine->pHalfPixH, ME_REFINE_BUF_STRIDE, iWidth + 1,
-                                    iHeight);
-  //step 2: get [iWidth][iHeight+1] half pixel from horizon filter
-
-  //===========================(-2, 0)==============================//
-  iCurCost = pFunc->sSampleDealingFuncs.pfMeCost[pMe->uiBlockSize] (pEncData, kiStrideEnc, pMeRefine->pHalfPixH,
-             ME_REFINE_BUF_STRIDE) +
-             COST_MVD (pMe->pMvdCost, iMvx - 2 - pMe->sMvp.iMvX, iMvy - pMe->sMvp.iMvY);
-  if (iCurCost < iBestCost) {
-    iBestCost = iCurCost;
-    iBestHalfPix = REFINE_ME_HALF_PIXEL_LEFT;
-    pBestPredInter = pMeRefine->pHalfPixH;
-  }
-  //===========================(2, 0)===============================//
-  iCurCost = pFunc->sSampleDealingFuncs.pfMeCost[pMe->uiBlockSize] (pEncData, kiStrideEnc, pMeRefine->pHalfPixH + 1,
-             ME_REFINE_BUF_STRIDE) +
-             COST_MVD (pMe->pMvdCost, iMvx + 2 - pMe->sMvp.iMvX, iMvy - pMe->sMvp.iMvY);
-  if (iCurCost < iBestCost) {
-    iBestCost = iCurCost;
-    iBestHalfPix = REFINE_ME_HALF_PIXEL_RIGHT;
-    pBestPredInter = pMeRefine->pHalfPixH + 1;
-  }
-
-  sParams.iBestCost = iBestCost;
-  sParams.iBestHalfPix = iBestHalfPix;
-  sParams.pRef = pRef;
-  sParams.iBestQuarPix = ME_NO_BEST_QUAR_PIXEL;
-
-  //step 5: if no best half-pixel prediction, try quarter pixel prediction
-  //        if yes, must get [X+1][X+1] half-pixel from (2, 2) horizontal and vertical filter
-  if (REFINE_ME_NO_BEST_HALF_PIXEL == iBestHalfPix) {
-    sParams.iStrideA = kiStrideRef;
-    sParams.iStrideB = kiStrideRef;
-    sParams.pSrcA[0] = pMeRefine->pHalfPixV;
-    sParams.pSrcA[1] = pMeRefine->pHalfPixV + ME_REFINE_BUF_STRIDE;
-    sParams.pSrcA[2] = pMeRefine->pHalfPixH;
-    sParams.pSrcA[3] = pMeRefine->pHalfPixH + 1;
-
-    sParams.pSrcB[0] = sParams.pSrcB[1] = sParams.pSrcB[2] = sParams.pSrcB[3] = pRef;
-
-    sParams.iLms[0] = COST_MVD (pMe->pMvdCost, iHalfMvx - pMe->sMvp.iMvX, iHalfMvy - 1 - pMe->sMvp.iMvY);
-    sParams.iLms[1] = COST_MVD (pMe->pMvdCost, iHalfMvx - pMe->sMvp.iMvX, iHalfMvy + 1 - pMe->sMvp.iMvY);
-    sParams.iLms[2] = COST_MVD (pMe->pMvdCost, iHalfMvx - 1 - pMe->sMvp.iMvX, iHalfMvy - pMe->sMvp.iMvY);
-    sParams.iLms[3] = COST_MVD (pMe->pMvdCost, iHalfMvx + 1 - pMe->sMvp.iMvX, iHalfMvy - pMe->sMvp.iMvY);
-  } else { //must get [X+1][X+1] half-pixel from (2, 2) horizontal and vertical filter
-    switch (iBestHalfPix) {
-    case REFINE_ME_HALF_PIXEL_LEFT: {
-      pMeRefine->pHalfPixHV = pMeRefine->pHalfPixV;//reuse pBuffer, here only h&hv
-      pFunc->sMcFuncs.pfLumaHalfpelCen (pRef - 1 - kiStrideRef, kiStrideRef, pMeRefine->pHalfPixHV, ME_REFINE_BUF_STRIDE,
-                                        iWidth + 1, iHeight + 1);
-
-      iHalfMvx -= 2;
-      sParams.iStrideA = ME_REFINE_BUF_STRIDE;
-      sParams.iStrideB = kiStrideRef;
-      sParams.pSrcA[0] = pMeRefine->pHalfPixH;
-      sParams.pSrcA[3] = sParams.pSrcA[2] = sParams.pSrcA[1] = sParams.pSrcA[0];
-      sParams.pSrcB[0] = pMeRefine->pHalfPixHV;
-      sParams.pSrcB[1] = pMeRefine->pHalfPixHV + ME_REFINE_BUF_STRIDE;
-      sParams.pSrcB[2] = pRef - 1;
-      sParams.pSrcB[3] = pRef;
-
-    }
-    break;
-    case REFINE_ME_HALF_PIXEL_RIGHT: {
-      pMeRefine->pHalfPixHV = pMeRefine->pHalfPixV;//reuse pBuffer, here only h&hv
-      pFunc->sMcFuncs.pfLumaHalfpelCen (pRef - 1 - kiStrideRef, kiStrideRef, pMeRefine->pHalfPixHV, ME_REFINE_BUF_STRIDE,
-                                        iWidth + 1, iHeight + 1);
-      iHalfMvx += 2;
-      sParams.iStrideA = ME_REFINE_BUF_STRIDE;
-      sParams.iStrideB = kiStrideRef;
-      sParams.pSrcA[0] = pMeRefine->pHalfPixH + 1;
-      sParams.pSrcA[3] = sParams.pSrcA[2] = sParams.pSrcA[1] = sParams.pSrcA[0];
-      sParams.pSrcB[0] = pMeRefine->pHalfPixHV + 1;
-      sParams.pSrcB[1] = pMeRefine->pHalfPixHV + 1 + ME_REFINE_BUF_STRIDE;
-      sParams.pSrcB[2] = pRef;
-      sParams.pSrcB[3] = pRef + 1;
-    }
-    break;
-    case REFINE_ME_HALF_PIXEL_TOP: {
-      pMeRefine->pHalfPixHV = pMeRefine->pHalfPixH;//reuse pBuffer, here only v&hv
-      pFunc->sMcFuncs.pfLumaHalfpelCen (pRef - 1 - kiStrideRef, kiStrideRef, pMeRefine->pHalfPixHV, ME_REFINE_BUF_STRIDE,
-                                        iWidth + 1, iHeight + 1);
-
-      iHalfMvy -= 2;
-      sParams.iStrideA = kiStrideRef;
-      sParams.iStrideB = ME_REFINE_BUF_STRIDE;
-      sParams.pSrcA[0] = pMeRefine->pHalfPixV;
-      sParams.pSrcA[3] = sParams.pSrcA[2] = sParams.pSrcA[1] = sParams.pSrcA[0];
-      sParams.pSrcB[0] = pRef - kiStrideRef;
-      sParams.pSrcB[1] = pRef;
-      sParams.pSrcB[2] = pMeRefine->pHalfPixHV;
-      sParams.pSrcB[3] = pMeRefine->pHalfPixHV + 1;
-    }
-    break;
-    case REFINE_ME_HALF_PIXEL_BOTTOM: {
-      pMeRefine->pHalfPixHV = pMeRefine->pHalfPixH;//reuse pBuffer, here only v&hv
-      pFunc->sMcFuncs.pfLumaHalfpelCen (pRef - 1 - kiStrideRef, kiStrideRef, pMeRefine->pHalfPixHV, ME_REFINE_BUF_STRIDE,
-                                        iWidth + 1, iHeight + 1);
-      iHalfMvy += 2;
-      sParams.iStrideA = kiStrideRef;
-      sParams.iStrideB = ME_REFINE_BUF_STRIDE;
-      sParams.pSrcA[0] = pMeRefine->pHalfPixV + ME_REFINE_BUF_STRIDE;
-      sParams.pSrcA[3] = sParams.pSrcA[2] = sParams.pSrcA[1] = sParams.pSrcA[0];
-      sParams.pSrcB[0] = pRef;
-      sParams.pSrcB[1] = pRef + kiStrideRef;
-      sParams.pSrcB[2] = pMeRefine->pHalfPixHV + ME_REFINE_BUF_STRIDE;
-      sParams.pSrcB[3] = pMeRefine->pHalfPixHV + ME_REFINE_BUF_STRIDE + 1;
-    }
-    break;
-    default:
-      break;
-    }
-    sParams.iLms[0] = COST_MVD (pMe->pMvdCost, iHalfMvx - pMe->sMvp.iMvX, iHalfMvy - 1 - pMe->sMvp.iMvY);
-    sParams.iLms[1] = COST_MVD (pMe->pMvdCost, iHalfMvx - pMe->sMvp.iMvX, iHalfMvy + 1 - pMe->sMvp.iMvY);
-    sParams.iLms[2] = COST_MVD (pMe->pMvdCost, iHalfMvx - 1 - pMe->sMvp.iMvX, iHalfMvy - pMe->sMvp.iMvY);
-    sParams.iLms[3] = COST_MVD (pMe->pMvdCost, iHalfMvx + 1 - pMe->sMvp.iMvX, iHalfMvy - pMe->sMvp.iMvY);
-  }
-  MeRefineQuarPixel (pFunc, pMe, pMeRefine, iWidth, iHeight, &sParams, kiStrideEnc);
-
-  if (iBestCost > sParams.iBestCost) {
-    pBestPredInter = pMeRefine->pQuarPixBest;
-    iBestCost = sParams.iBestCost;
-  }
-  iBestQuarPix = sParams.iBestQuarPix;
-
-  //update final best MV
-  pMe->sMv.iMvX = iHalfMvx + iMvQuarAddX[iBestQuarPix];
-  pMe->sMv.iMvY = iHalfMvy + pMvQuarAddY[iBestQuarPix];
-  pMe->uiSatdCost = iBestCost;
-
-  //No half or quarter pixel best, so do MC with integer pixel MV
-  if (iBestHalfPix + iBestQuarPix == NO_BEST_FRAC_PIX) {
-    pBestPredInter = pRef;
-    iInterBlk4Stride = kiStrideRef;
-  }
-  pMeRefine->pfCopyBlockByMode (pMemPredInterMb, MB_WIDTH_LUMA, pBestPredInter,
-                                iInterBlk4Stride);
 }
 
 
