@@ -474,7 +474,6 @@ int32_t CWelsPreProcess::DownsamplePadding (SPicture* pSrc, SPicture* pDstPic,  
   sSrcPixMap.pPixel[0]   = pSrc->pData[0];
   sSrcPixMap.pPixel[1]   = pSrc->pData[1];
   sSrcPixMap.pPixel[2]   = pSrc->pData[2];
-  sSrcPixMap.iSizeInBits = g_kiPixMapSizeInBits;
   sSrcPixMap.sRect.iRectWidth  = iSrcWidth;
   sSrcPixMap.sRect.iRectHeight = iSrcHeight;
   sSrcPixMap.iStride[0]  = pSrc->iLineSize[0];
@@ -487,7 +486,6 @@ int32_t CWelsPreProcess::DownsamplePadding (SPicture* pSrc, SPicture* pDstPic,  
     sDstPicMap.pPixel[0]   = pDstPic->pData[0];
     sDstPicMap.pPixel[1]   = pDstPic->pData[1];
     sDstPicMap.pPixel[2]   = pDstPic->pData[2];
-    sDstPicMap.iSizeInBits = g_kiPixMapSizeInBits;
     sDstPicMap.sRect.iRectWidth  = iShrinkWidth;
     sDstPicMap.sRect.iRectHeight = iShrinkHeight;
     sDstPicMap.iStride[0]  = pDstPic->iLineSize[0];
@@ -529,22 +527,18 @@ void CWelsPreProcess::VaaCalculation (SVAAFrameInfo* pVaaInfo, SPicture* pCurPic
     SVAACalcParam calc_param = {0};
 
     sCurPixMap.pPixel[0] = pCurPicture->pData[0];
-    sCurPixMap.iSizeInBits = g_kiPixMapSizeInBits;
     sCurPixMap.sRect.iRectWidth = pCurPicture->iWidthInPixel;
     sCurPixMap.sRect.iRectHeight = pCurPicture->iHeightInPixel;
     sCurPixMap.iStride[0] = pCurPicture->iLineSize[0];
     sCurPixMap.eFormat = VIDEO_FORMAT_I420;
 
     sRefPixMap.pPixel[0] = pRefPicture->pData[0];
-    sRefPixMap.iSizeInBits = g_kiPixMapSizeInBits;
     sRefPixMap.sRect.iRectWidth = pRefPicture->iWidthInPixel;
     sRefPixMap.sRect.iRectHeight = pRefPicture->iHeightInPixel;
     sRefPixMap.iStride[0] = pRefPicture->iLineSize[0];
     sRefPixMap.eFormat = VIDEO_FORMAT_I420;
 
-    calc_param.iCalcVar = bCalculateVar;
     calc_param.iCalcBgd = bCalculateBGD;
-    calc_param.iCalcSsd = bCalculateSQDiff;
     calc_param.pCalcResult = &pVaaInfo->sVaaCalcInfo;
 
     m_pInterfaceVp->Set (iMethodIdx, &calc_param);
@@ -570,7 +564,6 @@ void CWelsPreProcess::AnalyzePictureComplexity (sWelsEncCtx* pCtx, SPicture* pCu
 
   sComplexityAnalysisParam->iFrameComplexity = 0;
   sComplexityAnalysisParam->pGomComplexity = pWelsSvcRc->pCurrentFrameGomSad;
-  sComplexityAnalysisParam->iGomNumInFrame = pWelsSvcRc->iGomSize;
   sComplexityAnalysisParam->iIdrFlag = (pCtx->eSliceType == I_SLICE);
   sComplexityAnalysisParam->iMbRowInGom = GOM_H_SCC;
   sComplexityAnalysisParam->sScrollResult.bScrollDetectFlag = false;
@@ -585,7 +578,6 @@ void CWelsPreProcess::AnalyzePictureComplexity (sWelsEncCtx* pCtx, SPicture* pCu
   int32_t iRet = 0;
 
   sSrcPixMap.pPixel[0] = pCurPicture->pData[0];
-  sSrcPixMap.iSizeInBits = g_kiPixMapSizeInBits;
   sSrcPixMap.iStride[0] = pCurPicture->iLineSize[0];
   sSrcPixMap.sRect.iRectWidth = pCurPicture->iWidthInPixel;
   sSrcPixMap.sRect.iRectHeight = pCurPicture->iHeightInPixel;
@@ -593,7 +585,6 @@ void CWelsPreProcess::AnalyzePictureComplexity (sWelsEncCtx* pCtx, SPicture* pCu
 
   if (pRefPicture != NULL) {
     sRefPixMap.pPixel[0] = pRefPicture->pData[0];
-    sRefPixMap.iSizeInBits = g_kiPixMapSizeInBits;
     sRefPixMap.iStride[0] = pRefPicture->iLineSize[0];
     sRefPixMap.sRect.iRectWidth = pRefPicture->iWidthInPixel;
     sRefPixMap.sRect.iRectHeight = pRefPicture->iHeightInPixel;
@@ -611,7 +602,6 @@ void CWelsPreProcess::InitPixMap (const SPicture* pPicture, SPixMap* pPixMap) {
   pPixMap->pPixel[0] = pPicture->pData[0];
   pPixMap->pPixel[1] = pPicture->pData[1];
   pPixMap->pPixel[2] = pPicture->pData[2];
-  pPixMap->iSizeInBits = sizeof (uint8_t);
   pPixMap->iStride[0] = pPicture->iLineSize[0];
   pPixMap->iStride[1] = pPicture->iLineSize[1];
   pPixMap->sRect.iRectWidth = pPicture->iWidthInPixel;
@@ -659,11 +649,9 @@ void CWelsPreProcessScreen::GetAvailableRefList (SPicture** pSrcPicList, uint8_t
 
 
 void CWelsPreProcessScreen::InitRefJudgement (SRefJudgement* pRefJudgement) {
-  pRefJudgement->iMinFrameComplexity = INT_MAX;
   pRefJudgement->iMinFrameComplexity08 = INT_MAX;
   pRefJudgement->iMinFrameComplexity11 = INT_MAX;
 
-  pRefJudgement->iMinFrameNumGap = INT_MAX;
   pRefJudgement->iMinFrameQp = INT_MAX;
 }
 bool CWelsPreProcessScreen::JudgeBestRef (SPicture* pRefPic, const SRefJudgement& sRefJudgement,
@@ -676,7 +664,6 @@ bool CWelsPreProcessScreen::JudgeBestRef (SPicture* pRefPic, const SRefJudgement
 void CWelsPreProcessScreen::SaveBestRefToJudgement (const int32_t iRefPictureAvQP, const int64_t iComplexity,
     SRefJudgement* pRefJudgement) {
   pRefJudgement->iMinFrameQp = iRefPictureAvQP;
-  pRefJudgement->iMinFrameComplexity =  iComplexity;
   pRefJudgement->iMinFrameComplexity08 = static_cast<int32_t> (iComplexity * 0.8);
   pRefJudgement->iMinFrameComplexity11 = static_cast<int32_t> (iComplexity * 1.1);
 }
@@ -844,7 +831,6 @@ ESceneChangeIdc CWelsPreProcessScreen::DetectSceneChange (SPicture* pCurPicture,
     SaveBestRefToVaa (sSceneLtrSaved, & (pVaaExt->sVaaLtrBestRefCandidate[0]));
   }
 
-  pVaaExt->iNumOfAvailableRef = 1;
   return static_cast<ESceneChangeIdc> (iVaaFrameSceneChangeIdc);
 }
 

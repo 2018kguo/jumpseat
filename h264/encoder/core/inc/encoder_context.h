@@ -67,29 +67,17 @@ typedef struct TagRefList {
   SPicture*     pNextBuffer;
   SPicture*     pRef[1 + MAX_REF_PIC_COUNT];    // plus 1 for swap intend
   uint8_t       uiShortRefCount;
-  uint8_t       uiLongRefCount; // dependend on pRef pic module
 } SRefList;
 
 typedef struct TagLTRState {
 // LTR mark feedback
-  uint32_t      uiLtrMarkState; // LTR mark state, indicate whether there is a LTR mark feedback unsolved
-  int32_t       iLtrMarkFbFrameNum;// the unsolved LTR mark feedback, the marked iFrameNum feedback from decoder
 
 // LTR used as recovery reference
-  int32_t       iLastRecoverFrameNum; // reserve the last LTR or IDR recover iFrameNum
-  int32_t       iLastCorFrameNumDec; // reserved the last correct position in decoder side, use to select valid LTR to recover or to decide the LTR mark validation
-  int32_t       iCurFrameNumInDec; // current iFrameNum in decoder side, use to select valid LTR to recover or to decide the LTR mark validation
 
 // LTR mark
-  int32_t       iLTRMarkMode; // direct mark or delay mark
-  int32_t       iLTRMarkSuccessNum; //successful marked num, for mark mode switch
-  int32_t       iCurLtrIdx;// current int32_t term reference index to mark
   int32_t       iLastLtrIdx[MAX_TEMPORAL_LAYER_NUM];
 
-  uint32_t      uiLtrMarkInterval;// the interval from the last int32_t term pRef mark
 
-  bool          bLTRMarkingFlag;        //decide whether current frame marked as LTR
-  bool          bLTRMarkEnable; //when LTR is confirmed and the interval is no smaller than the marking period
   bool          bReceivedT0LostFlag;    // indicate whether a t0 lost feedback is recieved, for LTR recovery
 } SLTRState;
 
@@ -203,7 +191,6 @@ typedef struct TagWelsEncCtx {
   //related to Statistics
 
   int32_t iEncoderError;
-  bool bDeliveryFlag;
   int64_t            uiLastTimestamp;
   uint8_t*           pDynamicBsBuffer[MAX_THREADS_NUM];
 } sWelsEncCtx/*, *PWelsEncCtx*/;

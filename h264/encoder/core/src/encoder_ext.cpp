@@ -1816,7 +1816,6 @@ int32_t WelsInitEncoderExt (sWelsEncCtx** ppCtx, SWelsSvcCodingParam* pCodingPar
           );
 
   pCtx->uiLastTimestamp = -1;
-  pCtx->bDeliveryFlag = true;
   *ppCtx = pCtx;
 
   WelsLog (pLogCtx, WELS_LOG_INFO, "WelsInitEncoderExt(), pCtx= 0x%p.", (void*)pCtx);

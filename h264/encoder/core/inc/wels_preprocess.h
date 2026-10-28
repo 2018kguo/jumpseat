@@ -61,11 +61,9 @@ typedef  struct {
 } Scaled_Picture;
 
 typedef struct {
-  int64_t iMinFrameComplexity;
   int64_t iMinFrameComplexity08;
   int64_t iMinFrameComplexity11;
 
-  int32_t iMinFrameNumGap;
   int32_t iMinFrameQp;
 } SRefJudgement;
 
@@ -106,7 +104,6 @@ typedef struct SVAAFrameInfoExt_t: public SVAAFrameInfo {
   SScrollDetectionParam    sScrollDetectInfo;
   SRefInfoParam    sVaaStrBestRefCandidate[MAX_REF_PIC_COUNT];
   SRefInfoParam    sVaaLtrBestRefCandidate[MAX_REF_PIC_COUNT];
-  int32_t    iNumOfAvailableRef;
 
   int32_t     iVaaBestRefFrameNum;
   uint8_t*    pVaaBestBlockStaticIdc;//pointer

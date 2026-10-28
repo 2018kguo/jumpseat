@@ -106,7 +106,6 @@ typedef struct {
 
 typedef struct {
   void*        pPixel[3];
-  int          iSizeInBits;
   int          iStride[3];
   SRect        sRect;
   EVideoFormat eFormat;
@@ -175,9 +174,7 @@ typedef struct {
 } SVAACalcResult;
 
 typedef struct {
-  int iCalcVar;
   int iCalcBgd;
-  int iCalcSsd;
   SVAACalcResult*  pCalcResult;
 } SVAACalcParam;
 
@@ -203,7 +200,6 @@ typedef struct {
 typedef struct {
   int  iMbRowInGom;
   int*  pGomComplexity;
-  int  iGomNumInFrame;
   long long  iFrameComplexity; //255*255(MaxMbSAD)*36864(MaxFS) make the highest bit of 32-bit integer 1
   int  iIdrFlag;
   SScrollDetectionParam sScrollResult;

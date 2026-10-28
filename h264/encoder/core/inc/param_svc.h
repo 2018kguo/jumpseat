@@ -79,7 +79,6 @@ static inline uint32_t GetLogFactor (float base, float upper) {
 typedef struct TagDLayerParam {
   int32_t       iActualWidth;                   // input source picture actual width
   int32_t       iActualHeight;                  // input source picture actual height
-  int32_t       iTemporalResolution;
   int32_t       iDecompositionStages;
   uint8_t       uiCodingIdx2TemporalId[ (1 << MAX_TEMPORAL_LEVEL) + 1];
 
@@ -447,7 +446,6 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
       }
 
       pDlp->iHighestTemporalId   = iMaxTemporalId;
-      pDlp->iTemporalResolution  = kuiLogFactorMaxInRate + kuiLogFactorInOutRate;
       pDlp->iDecompositionStages = iDecStages - kuiLogFactorMaxInRate - kuiLogFactorInOutRate;
       if (pDlp->iDecompositionStages < 0) {
         return ENC_RETURN_INVALIDINPUT;

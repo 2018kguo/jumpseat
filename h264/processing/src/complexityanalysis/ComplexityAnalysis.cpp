@@ -164,7 +164,6 @@ void CComplexityAnalysisScreen::GomComplexityAnalysisIntra (SPixMap* pSrc) {
 
     pPtrY += iRowStrideY;
   }
-  m_ComplexityAnalysisParam.iGomNumInFrame = iIdx;
 }
 
 
@@ -249,7 +248,6 @@ void CComplexityAnalysisScreen::GomComplexityAnalysisInter (SPixMap* pSrc, SPixM
     pPtrX += iRowStrideX;
     pPtrY += iRowStrideY;
   }
-  m_ComplexityAnalysisParam.iGomNumInFrame = iIdx;
 }
 
 WELSVP_NAMESPACE_END

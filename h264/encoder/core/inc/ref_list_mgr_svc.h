@@ -48,11 +48,6 @@
 
 namespace WelsEnc {
 
-typedef enum {
-LTR_DIRECT_MARK = 0,
-LTR_DELAY_MARK = 1
-} LTR_MARKING_PROCESS_MODE;
-
 /*
 *   reset LTR marking , recovery ,feedback state to default
 */

@@ -248,9 +248,6 @@ struct TagWelsFuncPointerList {
   /* For Deblocking */
 
 
-  PSetMemoryZero        pfSetMemZeroSize8;      // for size is times to 8
-  PSetMemoryZero        pfSetMemZeroSize64Aligned16;      // for size is times of 64, and address is align to 16
-  PSetMemoryZero        pfSetMemZeroSize64;      // for size is times of 64, and don't know address is align to 16 or not
 
   PCavlcParamCalFunc    pfCavlcParamCal;
   PWelsSpatialWriteMbSyn pfWelsSpatialWriteMbSyn;

@@ -131,14 +131,6 @@ typedef enum {
 /**
 * @brief Enumerate the type of key frame request
 */
-typedef enum {
-  NO_RECOVERY_REQUSET  = 0,
-  LTR_RECOVERY_REQUEST = 1,
-  IDR_RECOVERY_REQUEST = 2,
-  NO_LTR_MARKING_FEEDBACK = 3,
-  LTR_MARKING_SUCCESS = 4,
-  LTR_MARKING_FAILED = 5
-} KEY_FRAME_REQUEST_TYPE;
 
 /**
 * @brief Enumerate the type of rate control mode

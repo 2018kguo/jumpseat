@@ -41,22 +41,11 @@ namespace WelsEnc {
 */
 void ResetLtrState (SLTRState* pLtr) {
   pLtr->bReceivedT0LostFlag = false;
-  pLtr->iLastRecoverFrameNum = 0;
-  pLtr->iLastCorFrameNumDec = -1;
-  pLtr->iCurFrameNumInDec = -1;
 
   // LTR mark
-  pLtr->iLTRMarkMode = LTR_DIRECT_MARK;
-  pLtr->iLTRMarkSuccessNum = 0; //successful marked num
-  pLtr->bLTRMarkingFlag = false; //decide whether current frame marked as LTR
-  pLtr->bLTRMarkEnable = false; //when LTR is confirmed and the interval is no smaller than the marking period
-  pLtr->iCurLtrIdx = 0;
   memset (&pLtr->iLastLtrIdx , 0 , sizeof (pLtr->iLastLtrIdx)) ;
-  pLtr->uiLtrMarkInterval = 0;
 
   // LTR mark feedback
-  pLtr->uiLtrMarkState = NO_LTR_MARKING_FEEDBACK ;
-  pLtr->iLtrMarkFbFrameNum = -1;
 }
 
 /*
@@ -73,7 +62,6 @@ void WelsResetRefList (sWelsEncCtx* pCtx) {
   for (i = 0; i < pCtx->pSvcParam->iNumRefFrame + 1; i++)
     pRefList->pRef[i]->SetUnref();
 
-  pRefList->uiLongRefCount = 0;
   pRefList->uiShortRefCount = 0;
   pRefList->pNextBuffer = pRefList->pRef[0];
 }

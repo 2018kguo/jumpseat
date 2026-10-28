@@ -76,25 +76,16 @@ int32_t InitFunctionPointers (sWelsEncCtx* pEncCtx, SWelsSvcCodingParam* pParam,
   SWelsFuncPtrList* pFuncList = pEncCtx->pFuncList;
 
   /* Functionality utilization of CPU instructions dependency */
-  pFuncList->pfSetMemZeroSize8              = WelsSetMemZero_c;             // confirmed_safe_unsafe_usage
-  pFuncList->pfSetMemZeroSize64Aligned16    = WelsSetMemZero_c;     // confirmed_safe_unsafe_usage
-  pFuncList->pfSetMemZeroSize64             = WelsSetMemZero_c;     // confirmed_safe_unsafe_usage
 #if defined(X86_ASM)
   if (uiCpuFlag & WELS_CPU_MMXEXT) {
-    pFuncList->pfSetMemZeroSize8            = WelsSetMemZeroSize8_mmx;              // confirmed_safe_unsafe_usage
-    pFuncList->pfSetMemZeroSize64           = WelsSetMemZeroSize64_mmx;     // confirmed_safe_unsafe_usage
   }
   if (uiCpuFlag & WELS_CPU_SSE2) {
-    pFuncList->pfSetMemZeroSize64Aligned16  = WelsSetMemZeroAligned64_sse2; // confirmed_safe_unsafe_usage
   }
 #endif//X86_ASM
 
 
 #if defined(HAVE_NEON_AARCH64)
   if (uiCpuFlag & WELS_CPU_NEON) {
-    pFuncList->pfSetMemZeroSize8            = WelsSetMemZero_AArch64_neon;
-    pFuncList->pfSetMemZeroSize64Aligned16  = WelsSetMemZero_AArch64_neon;
-    pFuncList->pfSetMemZeroSize64           = WelsSetMemZero_AArch64_neon;
   }
 #endif
 
@@ -263,8 +254,4 @@ EVideoFrameType DecideFrameType (sWelsEncCtx* pEncCtx, const int8_t kiSpatialNum
 
 
 
-/***********************************************************************************/
-void WelsSetMemZero_c (void* pDst, int32_t iSize) { // confirmed_safe_unsafe_usage
-  memset (pDst, 0, iSize);
-}
 }
