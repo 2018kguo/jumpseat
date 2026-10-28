@@ -25,21 +25,24 @@ cores on two). "Stream CPU" counts the X server and the streamer.
 | OpenH264, camera mode (default, BSD) | 0.27 / 0.44 | 1160 / 5589 |
 | OpenH264, screen mode (`JUMPSEAT_OH264=usage=1`) | 0.52 / 0.70 | **627** / 5376 |
 
-## jumpseat's encoder (`h264/`, OpenH264 changed for desktops)
+## jumpseat's encoder (`h264/`) against x264
 
-Screen mode finds scrolled content with a hash of every pixel's 8x8 sum
-over the whole reference frame, every frame. The patch runs that only on
-scrolling frames, from running sums, over every 8th column.
+Recorded 1280x800 desktop frames (scroll, CSS animation over half the
+screen, typing) through both encoders on x86 (bench/). Bits: BD-rate, the
+average bitrate difference at equal PSNR across each encoder's quality
+range. CPU: instructions per frame under callgrind, since wall time on a
+shared VM varies ~30%. x264 is the streamer's ultrafast/zerolatency setup on
+one thread (its default four slice threads cost more CPU).
 
-| same VM, one ABBA round | stream CPU scroll / type | kbit/s scroll |
+| | bits vs x264 | CPU vs x264 |
 |---|---|---|
-| OpenH264 camera mode | 0.29 / 0.08 | 1186 |
-| OpenH264 screen mode, stock | 0.55 / 0.11 | 632 |
-| OpenH264 screen mode, patched | **0.41** / **0.08** | 644 |
+| scrolling text | **-38%** | **0.91x** |
+| typing | **-26%** | **0.68x** |
+| animation | **-1.3%** | **0.97x** |
 
-On arm64 (bench/, encode only, 1280x800): scroll 5.35 → 1.8 ms a frame
-and typing 4.9 → 0.85, at the same bitrate and PSNR. x86 gains less
-because stock OpenH264 already has SSE for the sums.
+`h264/README.md` lists what changed from OpenH264 to get there; stock
+OpenH264's screen mode scrolled at 1.6x x264's CPU, and its first frame was
+blurrier than the QP asked for (typing 45 dB where we get 54).
 
 ## What made the difference, and what did not
 

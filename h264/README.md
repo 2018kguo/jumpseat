@@ -26,10 +26,19 @@ streams, 32-bit ARM, MIPS and LoongArch.
 - **First IDR's QP** (`ratectl.cpp`): with bits to spare, the caller's QP
   floor bounds it, not OpenH264's table (which floored it at 22). Static
   content keeps its IDR's quality: typing 45 -> 54 dB at QP 17.
-- **Experiments** (`encoder/core/inc/jumpseat_exp.h`): `JUMPSEAT_EXP` bits
-  under test in bench/ (0: no intra 4x4 in P slices, 1: integer-pel motion,
-  3: no 16x16 plane prediction).
-  Winners become plain code; losers are deleted.
+- **Scroll detection** (`ScrollDetection.cpp`): regions with no changed
+  row are skipped, and a zero scroll is reported as none (every reader
+  treats them alike). Typing: 12.9M -> 10.8M instructions a frame.
+- **Scene change** (`SceneChangeDetection.h`): 8x8 SADs two blocks at a
+  time (psadbw / vabd). **Coefficient zeroing** (`svc_encode_mb.cpp`):
+  inline memset, not MMX calls. **No 16x16 plane prediction**
+  (`svc_base_layer_md.cpp`): 0.1% of animation bits for 3% of its CPU.
+- **Low complexity in screen mode** (the streamer's setting) works like x264
+  ultrafast: integer-pel motion (`md.cpp`) and no intra 4x4 in P slices
+  (`svc_base_layer_md.cpp`). Medium complexity keeps both: 8% fewer
+  animation bits for ~30% more of its CPU.
+
+All but the last two leave the output bit-identical on the bench.
 
 Measure every change with bench/ (BD-rate and CPU against x264 on recorded
 desktop frames): `bench/local.sh rd usage=1`, `bench/modal_lab.py rd usage=1`.

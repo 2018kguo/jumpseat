@@ -41,7 +41,6 @@
 #include "mv_pred.h"
 #include "svc_enc_golomb.h"
 #include "svc_base_layer_md.h"
-#include "jumpseat_exp.h"
 #include "encoder.h"
 #include "svc_encode_mb.h"
 #include "svc_encode_slice.h"
@@ -924,8 +923,15 @@ int32_t WelsMdIntraChroma (SWelsFuncPtrList* pFunc, SDqLayer* pCurDqLayer, SMbCa
   pMbCache->uiChmaI8x8Mode = iBestMode;
   return iBestCost;
 }
+// jumpseat: screen content at low complexity has no intra 4x4 in P slices,
+// as x264 ultrafast has none (animation: 11% of the CPU for 4% of the bits).
+static inline bool LowComplexityScreenP (sWelsEncCtx* pEncCtx) {
+  return P_SLICE == pEncCtx->eSliceType && pEncCtx->pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME
+         && pEncCtx->pSvcParam->iComplexityMode == LOW_COMPLEXITY;
+}
+
 int32_t WelsMdIntraFinePartition (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCache* pMbCache) {
-  if (JumpseatExp (0) && P_SLICE == pEncCtx->eSliceType) return pWelsMd->iCostLuma;
+  if (LowComplexityScreenP (pEncCtx)) return pWelsMd->iCostLuma;
   int32_t iCosti4x4 = WelsMdI4x4 (pEncCtx, pWelsMd, pCurMb, pMbCache);
 
   if (iCosti4x4 < pWelsMd->iCostLuma) {
@@ -936,7 +942,7 @@ int32_t WelsMdIntraFinePartition (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* p
 }
 
 int32_t WelsMdIntraFinePartitionVaa (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCache* pMbCache) {
-  if (JumpseatExp (0) && P_SLICE == pEncCtx->eSliceType) return pWelsMd->iCostLuma;
+  if (LowComplexityScreenP (pEncCtx)) return pWelsMd->iCostLuma;
 
   if (MdIntraAnalysisVaaInfo (pEncCtx, pMbCache->SPicData.pEncMb[0])) {
     int32_t iCosti4x4 = WelsMdI4x4Fast (pEncCtx, pWelsMd, pCurMb, pMbCache);

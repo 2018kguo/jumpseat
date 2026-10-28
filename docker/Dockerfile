@@ -22,7 +22,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
       xvfb openbox chromium xdotool xclip procps libyuv0 fonts-dejavu-core ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=server /jumpseat /usr/local/bin/jumpseat
-ENV JUMPSEAT_OH264=usage=1
 COPY docker/start.sh /usr/local/bin/start.sh
 EXPOSE 8080
 CMD ["/usr/local/bin/start.sh"]

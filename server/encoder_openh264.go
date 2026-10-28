@@ -140,15 +140,12 @@ type encoder struct {
 	converted time.Duration
 }
 
-// The OpenH264 build's defaults, from same-VM A/B against x264 (README):
-// camera mode with the deblocking filter off and low complexity matches
-// x264 ultrafast's CPU (0.27 cores scrolling); a QP floor of 17 under
-// quality-mode rate control matches its picture (48 dB). Screen mode
-// (JUMPSEAT_OH264=usage=1) halves scrolling bandwidth for twice the CPU,
-// for links where bandwidth is what is short.
+// The encoder's defaults (h264/, BENCHMARKS.md): screen mode at low
+// complexity, deblocking off, quality-mode rate control with a QP floor of
+// 17 takes fewer bits and less CPU than x264 ultrafast on desktop content.
 const (
 	openH264QP         = 17
-	openH264Usage      = 0 // CAMERA_VIDEO_REAL_TIME
+	openH264Usage      = 1 // SCREEN_CONTENT_REAL_TIME
 	openH264LoopFilter = 1 // deblocking off, as x264 ultrafast has it
 	openH264Complexity = 0 // LOW_COMPLEXITY
 )

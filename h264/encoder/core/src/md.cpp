@@ -40,7 +40,6 @@
 
 #include "ls_defines.h"
 #include "md.h"
-#include "jumpseat_exp.h"
 #include "cpu_core.h"
 #include "svc_enc_golomb.h"
 
@@ -606,7 +605,10 @@ void MeRefineFracPixel (sWelsEncCtx* pEncCtx, uint8_t* pMemPredInterMb, SWelsME*
                 COST_MVD (pMe->pMvdCost, iMvx - pMe->sMvp.iMvX, iMvy - pMe->sMvp.iMvY);
   }
 
-  if (JumpseatExp (1)) { // integer-pel motion only
+  // jumpseat: screen content at low complexity stays integer-pel, as x264
+  // ultrafast does (animation: 8% of the CPU for 3.5% of the bits).
+  if (pEncCtx->pSvcParam->iUsageType == SCREEN_CONTENT_REAL_TIME
+      && pEncCtx->pSvcParam->iComplexityMode == LOW_COMPLEXITY) {
     pMe->uiSatdCost = iBestCost;
     pMeRefine->pfCopyBlockByMode (pMemPredInterMb, MB_WIDTH_LUMA, pRef, kiStrideRef);
     return;
@@ -752,7 +754,6 @@ void MeRefineFracPixel (sWelsEncCtx* pEncCtx, uint8_t* pMemPredInterMb, SWelsME*
     sParams.iLms[2] = COST_MVD (pMe->pMvdCost, iHalfMvx - 1 - pMe->sMvp.iMvX, iHalfMvy - pMe->sMvp.iMvY);
     sParams.iLms[3] = COST_MVD (pMe->pMvdCost, iHalfMvx + 1 - pMe->sMvp.iMvX, iHalfMvy - pMe->sMvp.iMvY);
   }
-  if (!JumpseatExp (5)) // half-pel only
   MeRefineQuarPixel (pFunc, pMe, pMeRefine, iWidth, iHeight, &sParams, kiStrideEnc);
 
   if (iBestCost > sParams.iBestCost) {
