@@ -51,7 +51,6 @@ $(TargetPath)
  * Options for optimization, not change bitrate
  ****************************************************************************/
 //#undef        X86_ASM             // X86_ASM is included in project preprocessor definitions, undef it when need to disable asm code
-#define SINGLE_REF_FRAME            // need to disable it when use multi-reference
 
 //#define STAT_OUTPUT
 //#define MB_TYPES_CHECK

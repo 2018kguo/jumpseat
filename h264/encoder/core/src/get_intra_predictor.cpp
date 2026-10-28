@@ -45,9 +45,6 @@
 #include "get_intra_predictor.h"
 
 namespace WelsEnc {
-#define I4x4_COUNT 4
-#define I8x8_COUNT 8
-#define I16x16_COUNT 16
 
 typedef void (*PFillingPred) (uint8_t* pPred, uint8_t* pSrc);
 typedef void (*PFillingPred1to16) (uint8_t* pPred, const uint8_t kuiSrc);
@@ -69,12 +66,6 @@ static inline void WelsFillingPred1to16_c (uint8_t* pPred, const uint8_t kuiSrc)
 #define WelsFillingPred8to16 WelsFillingPred8to16_c
 #define WelsFillingPred8x2to16 WelsFillingPred8x2to16_c
 #define WelsFillingPred1to16 WelsFillingPred1to16_c
-
-
-
-#define I4x4_PRED_STRIDE 4
-#define I4x4_PRED_STRIDE2 8
-#define I4x4_PRED_STRIDE3 12
 
 void WelsI4x4LumaPredV_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride) {
   const uint32_t kuiSrc = LD32 (&pRef[-kiStride]);
@@ -181,7 +172,6 @@ void WelsI4x4LumaPredDDLTop_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiSt
   WelsFillingPred8x2to16 (pPred, uiSrc);
 }
 
-
 /*down right*/
 void WelsI4x4LumaPredDDR_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride) {
   const int32_t kiStridex2  = kiStride << 1;
@@ -223,7 +213,6 @@ void WelsI4x4LumaPredDDR_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStrid
   WelsFillingPred8x2to16 (pPred, uiSrc);
 }
 
-
 /*vertical pLeft*/
 void WelsI4x4LumaPredVL_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride) {
   /*get pTop*/
@@ -258,8 +247,6 @@ void WelsI4x4LumaPredVL_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride
 
   WelsFillingPred8x2to16 (pPred, uiSrc);
 }
-
-
 
 /*vertical pLeft*/
 void WelsI4x4LumaPredVLTop_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride) {
@@ -327,7 +314,6 @@ void WelsI4x4LumaPredVR_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride
   WelsFillingPred8x2to16 (pPred, uiSrc);
 }
 
-
 /*horizontal up*/
 void WelsI4x4LumaPredHU_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride) {
   const int32_t kiStridex2  = kiStride << 1;
@@ -357,7 +343,6 @@ void WelsI4x4LumaPredHU_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride
 
   WelsFillingPred8x2to16 (pPred, uiSrc);
 }
-
 
 /*horizontal down*/
 void WelsI4x4LumaPredHD_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride) {
@@ -397,8 +382,6 @@ void WelsI4x4LumaPredHD_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride
   WelsFillingPred8x2to16 (pPred, uiSrc);
 }
 
-
-
 #define I8x8_PRED_STRIDE 8
 
 void WelsIChromaPredV_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride) {
@@ -429,7 +412,6 @@ void WelsIChromaPredH_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride) 
   } while (i-- > 0);
 }
 
-
 void WelsIChromaPredPlane_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride) {
   int32_t iLTshift = 0, iTopshift = 0, iLeftshift = 0, iTopSum = 0, iLeftSum = 0;
   int32_t i, j;
@@ -452,7 +434,6 @@ void WelsIChromaPredPlane_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStri
     pPred += I8x8_PRED_STRIDE;
   }
 }
-
 
 void WelsIChromaPredDc_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride) {
   const int32_t kuiL1 = kiStride - 1;
@@ -538,7 +519,6 @@ void WelsIChromaPredDcNA_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStrid
   ST64 (pPred + 56, kuiDcValue64);
 }
 
-
 void WelsI16x16LumaPredPlane_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride) {
   int32_t iLTshift = 0, iTopshift = 0, iLeftshift = 0, iTopSum = 0, iLeftSum = 0;
   int32_t i, j;
@@ -577,7 +557,6 @@ void WelsI16x16LumaPredDc_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStri
   iMean = (16 + iSum) >> 5;
   memset (pPred, iMean, 256);
 }
-
 
 void WelsI16x16LumaPredDcTop_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride) {
   int32_t iSum = 0;
@@ -698,8 +677,6 @@ void WelsInitIntraPredFuncs (SWelsFuncPtrList* pFuncList, const uint32_t kuiCpuF
     pFuncList->pfGetChromaPred[C_PRED_P]    = WelsIChromaPredPlane_sse2;
   }
 #endif
-
-
 
 }
 }

@@ -64,12 +64,9 @@
 #define MIN_BIT_RATE                    1       // minimal bit rate need support
 
 #define SVC_QUALITY_BASE_QP             26
-#define MAX_SLICEGROUP_IDS              8       // Count number of SSlice Groups
 #define MAX_THREADS_NUM                 4       // assume to support up to 4 logical cores(threads)
 
 #define INTPEL_NEEDED_MARGIN            (3)  // for safe sub-pel MC
-
-#define I420_PLANES                     3
 
 #define COMPRESS_RATIO_THR (1.0f)       //set to size of the original data, which will be large enough considering MinCR
 
@@ -116,7 +113,6 @@
 #define LONG_TERM_REF_NUM_SCREEN        4
 #define MAX_REF_PIC_COUNT               16 // 32 in standard, maximal Short + Long reference pictures
 #define MIN_REF_PIC_COUNT               1               // minimal count number of reference pictures, 1 short + 2 key reference based?
-#define MAX_MULTI_REF_PIC_COUNT         1       //maximum multi-reference number
 //#define TOTAL_REF_MINUS_HALF_GOP      1       // last t0 in last gop
 #define MAX_MMCO_COUNT                  66
 
@@ -128,12 +124,6 @@
 
 #define BASE_DEPENDENCY_ID              0
 #define MAX_DQ_LAYER_NUM                (MAX_DEPENDENCY_LAYER/**MAX_QUALITY_LEVEL*/)
-
-#define INVALID_ID                      (-1)
-
-#define NAL_HEADER_ADD_0X30BYTES        20
-
-#define SLICE_NUM_EXPAND_COEF           2
 
 enum {
 BLOCK_16x16    = 0,

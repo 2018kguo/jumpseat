@@ -108,15 +108,6 @@ enum ENalPriority {
   NAL_PRIORITY_HIGHEST    = 3
 };
 
-#define IS_PARAMETER_SET_NAL(eNalRefIdc, eNalType) \
-( (eNalRefIdc == NAL_PRIORITY_HIGHEST) && (eNalType == (NAL_SPS|NAL_PPS) || eNalType == NAL_SPS) )
-
-#define IS_IDR_NAL(eNalRefIdc, eNalType) \
-( (eNalRefIdc == NAL_PRIORITY_HIGHEST) && (eNalType == NAL_SLICE_IDR) )
-
-#define FRAME_NUM_PARAM_SET     (-1)
-#define FRAME_NUM_IDR           0
-
 /**
  * @brief eDeblockingIdc
  */

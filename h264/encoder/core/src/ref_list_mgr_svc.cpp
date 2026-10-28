@@ -36,7 +36,6 @@
 #include "picture_handle.h"
 namespace WelsEnc {
 
-#define STR_ROOM 1
 /*
 *   reset LTR marking , recovery ,feedback state to default
 */
@@ -90,8 +89,6 @@ static inline void DeleteSTRFromShortList (sWelsEncCtx* pCtx, int32_t iIdx) {
   pRefList->uiShortRefCount--;
 
 }
-
-
 
 static void PrefetchNextBuffer (sWelsEncCtx* pCtx) {
   SRefList* pRefList            = pCtx->ppRefPicListExt[pCtx->uiDependencyId];
@@ -174,7 +171,6 @@ bool WelsUpdateRefList (sWelsEncCtx* pCtx) {
   return true;
 }
 
-
 static inline void WelsMarkMMCORefInfoWithBase (SSlice** ppSliceList,
     SSlice* pBaseSlice,
     const int32_t kiCountSliceNum) {
@@ -195,7 +191,6 @@ void WelsMarkMMCORefInfo (sWelsEncCtx* pCtx, SLTRState* pLtr,
 
   memset (pRefPicMark, 0, sizeof (SRefPicMarking));
 
-
   WelsMarkMMCORefInfoWithBase (ppSliceList, pBaseSlice, kiCountSliceNum);
 }
 
@@ -203,10 +198,8 @@ void WelsMarkPic (sWelsEncCtx* pCtx) {
   SLTRState* pLtr               = &pCtx->pLtr[pCtx->uiDependencyId];
   const int32_t kiCountSliceNum = pCtx->pCurDqLayer->iMaxSliceNum;
 
-
   WelsMarkMMCORefInfo (pCtx, pLtr, pCtx->pCurDqLayer->ppSliceInLayer, kiCountSliceNum);
 }
-
 
 /*
  *  build reference picture list
@@ -331,7 +324,6 @@ static inline void UpdateOriginalPicInfo (SPicture* pOrigPic, SPicture* pReconPi
   pOrigPic->iFrameAverageQp = pReconPic->iFrameAverageQp;
 }
 
-
 void UpdateSrcPicList (sWelsEncCtx* pCtx) {
   int32_t iDIdx = pCtx->uiDependencyId;
   //update info in src list
@@ -340,13 +332,6 @@ void UpdateSrcPicList (sWelsEncCtx* pCtx) {
   pCtx->pVpp->UpdateSrcList (pCtx->pEncPic, iDIdx, pCtx->ppRefPicListExt[iDIdx]->pShortRefList,
                              pCtx->ppRefPicListExt[iDIdx]->uiShortRefCount);
 }
-
-
-
-
-
-
-
 
 } // namespace WelsEnc
 

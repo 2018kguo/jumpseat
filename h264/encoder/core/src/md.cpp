@@ -44,7 +44,6 @@
 #include "svc_enc_golomb.h"
 
 namespace WelsEnc {
-#define INTRA_VARIANCE_SAD_THRESHOLD 150
 #define INTER_VARIANCE_SAD_THRESHOLD 20
 
 //fill cache of neighbor MB, containing pNonZeroCount, sample_avail, pIntra4x4PredMode
@@ -121,7 +120,6 @@ void FillNeighborCacheIntra (SMbCache* pMbCache, SMB* pCurMb, int32_t iMbWidth) 
   if (uiNeighborAvail & TOPLEFT_MB_POS) {
     uiNeighborIntra |= 0x04;
   }
-
 
   if (uiNeighborAvail & TOPRIGHT_MB_POS) {
     uiNeighborIntra |= 0x08;
@@ -250,7 +248,6 @@ void FillNeighborCacheInterWithoutBGD (SMbCache* pMbCache, SMB* pCurMb, int32_t 
           pMvComp->iRefIndexCache[23] = REF_NOT_AVAIL;
 }
 
-
 void InitFillNeighborCacheInterFunc (SWelsFuncPtrList* pFuncList, const int32_t kiFlag) {
   pFuncList->pfFillInterNeighborCache = FillNeighborCacheInterWithoutBGD; // jumpseat: no background detection
 }
@@ -264,7 +261,6 @@ void UpdateMbMv_c (SMVUnitXY* pMvBuffer, const SMVUnitXY ksMv) {
           pMvBuffer[k + 3] = ksMv;
   }
 }
-
 
 uint8_t MdInterAnalysisVaaInfo_c (int32_t* pSad8x8) {
   int32_t iSadBlock[4], iAverageSadBlock[4];
@@ -312,7 +308,6 @@ uint8_t MdInterAnalysisVaaInfo_c (int32_t* pSad8x8) {
   return (uiMbSign);
 }
 
-
 void InitIntraAnalysisVaaInfo (SWelsFuncPtrList* pFuncList, const uint32_t kuiCpuFlag) {
   pFuncList->pfGetMbSignFromInterVaa        = MdInterAnalysisVaaInfo_c;
   pFuncList->pfUpdateMbMv                   = UpdateMbMv_c;
@@ -327,7 +322,6 @@ void InitIntraAnalysisVaaInfo (SWelsFuncPtrList* pFuncList, const uint32_t kuiCp
 #endif//X86_ASM
 }
 
-
 void InitMeRefinePointer (SMeRefinePointer* pMeRefine, SMbCache* pMbCache, int32_t iStride) {
   pMeRefine->pHalfPixH    = &pMbCache->pBufferInterPredMe[0] + iStride;
   pMeRefine->pHalfPixV    = &pMbCache->pBufferInterPredMe[640] + iStride;
@@ -335,7 +329,6 @@ void InitMeRefinePointer (SMeRefinePointer* pMeRefine, SMbCache* pMbCache, int32
   pMeRefine->pQuarPixBest = &pMbCache->pBufferInterPredMe[1280] + iStride;
   pMeRefine->pQuarPixTmp  = &pMbCache->pBufferInterPredMe[1920] + iStride;
 }
-
 
 // jumpseat: screen content at low complexity stays integer-pel, as x264
 // ultrafast does (animation: 8% of the CPU for 3.5% of the bits): this keeps
@@ -357,7 +350,6 @@ void MeRefineFracPixel (sWelsEncCtx* pEncCtx, uint8_t* pMemPredInterMb, SWelsME*
   }
   pMeRefine->pfCopyBlockByMode (pMemPredInterMb, MB_WIDTH_LUMA, pRef, kiStrideRef);
 }
-
 
 /*
  * iMvdSz = (648*2+1) or (972*2+1);
@@ -433,7 +425,6 @@ void PredictSad (int8_t* pRefIndexCache, int32_t* pSadCostCache, int32_t uiRef, 
   *pSadPred = (REPLACE_SAD_MULTIPLY (iCount) + 32) >> 6;
 #undef REPLACE_SAD_MULTIPLY
 }
-
 
 void PredictSadSkip (int8_t* pRefIndexCache, bool* pMbSkipCache, int32_t* pSadCostCache, int32_t uiRef,
                      int32_t* iSadPredSkip) {

@@ -50,7 +50,6 @@ namespace WelsEnc {
 ////////////////////////
 // INTERFACE, called by svc_encode_slice.c
 ///////////////////////
-#define DELTA_QP_SCD_THD 5
 
 typedef enum {
 STATIC,

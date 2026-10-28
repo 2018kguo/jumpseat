@@ -172,11 +172,6 @@ template<typename T> T WelsClip3(T iX, T iY, T iZ) {
   return iX;
 }
 
-#define DISALLOW_COPY_AND_ASSIGN(cclass) \
-private:	\
-cclass(const cclass &);	\
-cclass& operator=(const cclass &);
-
 /*
  * Description: to check variable validation and return the specified result
  *  iResult:    value to be checked
@@ -226,7 +221,6 @@ static inline int32_t WELS_LOG2 (uint32_t v) {
 }
 
 #define CLIP3_QP_0_51(q) WELS_CLIP3(q, 0, 51) // ((q) < (0) ? (0) : ((q) > (51) ? (51) : (q)))
-#define   CALC_BI_STRIDE(width,bitcount)  ((((width * bitcount) + 31) & ~31) >> 3)
 
 #ifndef BUTTERFLY1x2
 #define BUTTERFLY1x2(b) (((b)<<8) | (b))

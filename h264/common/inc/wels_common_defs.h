@@ -41,7 +41,6 @@
 namespace WelsCommon {
 /*common use table*/
 
-#define  CTX_NA 0
 #define LEVEL_NUMBER 17
 typedef struct TagLevelLimits {
   ELevelIdc uiLevelIdc;  // level idc
@@ -135,18 +134,6 @@ enum EVclType {
  *  vcl type map for given NAL unit type and corresponding H264 type (0: AVC; 1: SVC).
  */
 extern const EVclType g_keTypeMap[32][2];
-
-#define IS_VCL_NAL(t, ext_idx)                  (g_keTypeMap[t][ext_idx] == VCL)
-#define IS_PARAM_SETS_NALS(t)                   ( (t) == NAL_UNIT_SPS || (t) == NAL_UNIT_PPS || (t) == NAL_UNIT_SUBSET_SPS )
-#define IS_SPS_NAL(t)                           ( (t) == NAL_UNIT_SPS )
-#define IS_SUBSET_SPS_NAL(t)                    ( (t) == NAL_UNIT_SUBSET_SPS )
-#define IS_PPS_NAL(t)                           ( (t) == NAL_UNIT_PPS )
-#define IS_SEI_NAL(t)                           ( (t) == NAL_UNIT_SEI )
-#define IS_AU_DELIMITER_NAL(t)                  ( (t) == NAL_UNIT_AU_DELIMITER )
-#define IS_PREFIX_NAL(t)                        ( (t) == NAL_UNIT_PREFIX )
-#define IS_SUBSET_SPS_USED(t)                   ( (t) == NAL_UNIT_SUBSET_SPS || (t) == NAL_UNIT_CODED_SLICE_EXT )
-#define IS_VCL_NAL_AVC_BASE(t)                  ( (t) == NAL_UNIT_CODED_SLICE || (t) == NAL_UNIT_CODED_SLICE_IDR )
-#define IS_NEW_INTRODUCED_SVC_NAL(t)            ( (t) == NAL_UNIT_PREFIX || (t) == NAL_UNIT_CODED_SLICE_EXT )
 
 /* Base SSlice Types
  * Invalid in case of eSliceType exceeds 9,
@@ -274,12 +261,6 @@ typedef struct TagNalUnitHeaderExt {
 #define MB_TYPE_INTRA_PCM   0x00000200
 #define MB_TYPE_INTRA_BL    0x00000400
 #define MB_TYPE_DIRECT      0x00000800
-#define MB_TYPE_P0L0        0x00001000
-#define MB_TYPE_P1L0        0x00002000
-#define MB_TYPE_P0L1        0x00004000
-#define MB_TYPE_P1L1        0x00008000
-#define MB_TYPE_L0        (MB_TYPE_P0L0 | MB_TYPE_P1L0)
-#define MB_TYPE_L1        (MB_TYPE_P0L1 | MB_TYPE_P1L1)
 
 #define SUB_MB_TYPE_8x8     0x00000001
 #define SUB_MB_TYPE_8x4     0x00000002
@@ -289,28 +270,14 @@ typedef struct TagNalUnitHeaderExt {
 #define MB_TYPE_INTRA     (MB_TYPE_INTRA4x4 | MB_TYPE_INTRA16x16 | MB_TYPE_INTRA8x8 | MB_TYPE_INTRA_PCM)
 #define MB_TYPE_INTER     (MB_TYPE_16x16 | MB_TYPE_16x8 | MB_TYPE_8x16 | MB_TYPE_8x8 | MB_TYPE_8x8_REF0 | MB_TYPE_SKIP | MB_TYPE_DIRECT)
 #define IS_INTRA4x4(type) ( MB_TYPE_INTRA4x4 == (type) )
-#define IS_INTRA8x8(type) ( MB_TYPE_INTRA8x8 == (type) )
-#define IS_INTRANxN(type) ( MB_TYPE_INTRA4x4 == (type) || MB_TYPE_INTRA8x8 == (type) )
 #define IS_INTRA16x16(type) ( MB_TYPE_INTRA16x16 == (type) )
 #define IS_INTRA(type) ( (type)&MB_TYPE_INTRA )
 #define IS_INTER(type) ( (type)&MB_TYPE_INTER )
-#define IS_INTER_16x16(type) ( (type)&MB_TYPE_16x16 )
-#define IS_INTER_16x8(type) ( (type)&MB_TYPE_16x8 )
-#define IS_INTER_8x16(type) ( (type)&MB_TYPE_8x16 )
-#define IS_TYPE_L0(type) ( (type)&MB_TYPE_L0 )
-#define IS_TYPE_L1(type) ( (type)&MB_TYPE_L1 )
-#define IS_DIR(a, part, list) ((a) & (MB_TYPE_P0L0<<((part)+2*(list))))
 
 #define IS_SKIP(type) ( ((type)&MB_TYPE_SKIP) != 0 )
-#define IS_DIRECT(type) ( ((type)&MB_TYPE_DIRECT) != 0 )
 #define IS_SVC_INTER(type) IS_INTER(type)
 #define IS_I_BL(type) ( (type) == MB_TYPE_INTRA_BL )
-#define IS_SVC_INTRA(type) ( IS_I_BL(type) || IS_INTRA(type) )
 #define IS_Inter_8x8(type) ( ((type)&MB_TYPE_8x8) != 0)
-#define IS_SUB_8x8(sub_type) (((sub_type)&SUB_MB_TYPE_8x8) != 0)
-#define IS_SUB_8x4(sub_type) (((sub_type)&SUB_MB_TYPE_8x4) != 0)
-#define IS_SUB_4x8(sub_type) (((sub_type)&SUB_MB_TYPE_4x8) != 0)
-#define IS_SUB_4x4(sub_type) (((sub_type)&SUB_MB_TYPE_4x4) != 0)
 
 #define REF_NOT_AVAIL   -2
 #define REF_NOT_IN_LIST -1  //intra

@@ -216,7 +216,6 @@ void NotCalculateSatdCost (PSampleSadSatdCostFunc pSatd, SWelsME* pMe,
                            const int32_t kiEncStride, const int32_t kiRefStride) {
 }
 
-
 /////////////////////////
 // Diamond Search Basics
 /////////////////////////
@@ -326,7 +325,6 @@ bool CheckDirectionalMv (PSampleSadSatdCostFunc pSad, SWelsME* pMe,
   return false;
 }
 
-
 /////////////////////////
 // Cross Search Basics
 /////////////////////////
@@ -356,7 +354,6 @@ void VerticalFullSearchUsingSSE41 (SWelsFuncPtrList* pFuncList, SWelsME* pMe,
   int32_t iFixedMvd = * (pMvdTable - pMe->sMvp.iMvX);
   uint16_t* pMvdCost  = & (pMvdTable[ (kiMinMv * (1 << 2)) - pMe->sMvp.iMvY]);
   int16_t iStartMv = 0;
-
 
   const int32_t kIsBlock16x16 = pMe->uiBlockSize == BLOCK_16x16;
   const int32_t kiEdgeBlocks = kIsBlock16x16 ? 16 : 8;
@@ -558,7 +555,6 @@ void WelsMotionCrossSearch (SWelsFuncPtrList* pFuncList, SWelsME* pMe, SSlice* p
   }
 }
 
-
 /////////////////////////
 // Feature Search Basics
 /////////////////////////
@@ -670,12 +666,6 @@ int32_t ReleaseScreenBlockFeatureStorage (CMemoryAlign* pMa, SScreenBlockFeature
   return ENC_RETURN_UNEXPECTED;
 }
 
-
-
-
-
-
-
 // jumpseat: the cross search's thresholds, as PerformFMEPreprocess sets
 // them, without the feature index; UINT_MAX (no cross search) when off.
 void SetCrossSearchThresholds (SPicture* pRef, SScreenBlockFeatureStorage* pStorage, const bool kbOn) {
@@ -687,12 +677,6 @@ void SetCrossSearchThresholds (SPicture* pRef, SScreenBlockFeatureStorage* pStor
       = pStorage->uiSadCostThreshold[BLOCK_4x4] = UINT_MAX;
 }
 
-
-
-
-
-#define FMESWITCH_MBAVERCOSTSAVING_THRESHOLD (2) //empirically set.
-#define FMESWITCH_GOODFRAMECOUNT_MAX (5)
 /////////////////////////
 // Search function options
 /////////////////////////
@@ -707,7 +691,6 @@ void WelsDiamondCrossSearch (SWelsFuncPtrList* pFunc, SWelsME* pMe, SSlice* pSli
     WelsMotionCrossSearch (pFunc, pMe, pSlice, kiEncStride, kiRefStride);
   }
 }
-
 
 } // namespace WelsEnc
 

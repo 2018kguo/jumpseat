@@ -42,7 +42,6 @@
 //          ONLY except with the interface file !!!!!
 ////////////////////////////////////////////////////////////////////////////
 
-#define __STDC_FORMAT_MACROS
 #include <stdint.h>
 #include <inttypes.h>
 

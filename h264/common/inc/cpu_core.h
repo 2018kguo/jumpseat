@@ -86,15 +86,12 @@
 #define WELS_CPU_CACHELINE_128   0x80000000    /* CacheLine Size 128 */
 
 /* For the android OS */
-#define WELS_CPU_ARMv7      0x000001    /* ARMv7 */
 #define WELS_CPU_VFPv3      0x000002    /* VFPv3 */
 #define WELS_CPU_NEON       0x000004    /* NEON */
 
 /* For loongson */
 #define WELS_CPU_MMI        0x00000001  /* mmi */
 #define WELS_CPU_MSA        0x00000002  /* msa */
-#define WELS_CPU_LSX        0x00000003  /* lsx */
-#define WELS_CPU_LASX       0x00000004  /* lasx */
 
 /*
  *  Interfaces for CPU core feature detection as below

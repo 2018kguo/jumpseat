@@ -56,10 +56,6 @@
 extern "C" {
 #endif
 
-#define     WELS_FILE_SEEK_SET           SEEK_SET
-#define     WELS_FILE_SEEK_CUR           SEEK_CUR
-#define     WESL_FILE_SEEK_END           SEEK_END
-
 typedef      FILE  WelsFileHandle;
 
 int32_t   WelsSnprintf (char* buffer,  int32_t sizeOfBuffer,  const char* format, ...);

@@ -58,16 +58,9 @@ namespace WelsEnc {
 // fine solution for MAX_SLICES_NUM, need us use the variable instead of MACRO for any resolution combining any multiple-slice mode adaptive
 #define SAVED_NALUNIT_NUM                       ( (MAX_SPATIAL_LAYER_NUM*MAX_QUALITY_LAYER_NUM) + 1 + MAX_SPATIAL_LAYER_NUM ) // SPS/PPS + SEI/SSEI + PADDING_NAL
 #define MAX_SLICES_NUM                          ( ( MAX_NAL_UNITS_IN_LAYER - SAVED_NALUNIT_NUM ) / 3 )  // Also MAX_SLICES_NUM need constrained by implementation: uiSliceIdc allocated in SSliceCtx.pOverallMbMap need a byte range as expected
-#define AVERSLICENUM_CONSTRAINT         (MAX_SLICES_NUM)                        // used in sNalList initialization,
 
-#define MIN_NUM_MB_PER_SLICE                    48                                                      // (128/16 * 96/16), addressing the lowest resolution for multiple slicing is 128x96 above
-
-#define DEFAULT_MAXPACKETSIZE_CONSTRAINT        (1200)          //in bytes
 //#define MINPACKETSIZE_CONSTRAINT                (1200)
 
-#define AVER_MARGIN_BYTES                       ( 100 ) //in bytes
-#define JUMPPACKETSIZE_CONSTRAINT(max_byte)             ( max_byte - AVER_MARGIN_BYTES ) //in bytes
-#define JUMPPACKETSIZE_JUDGE(len,mb_idx,max_byte)       ( (len) > JUMPPACKETSIZE_CONSTRAINT(max_byte) ) //( (mb_idx+1)%40/*16slice for compare*/ == 0 )        //
 //cur_mb_idx is for early tests, can be omit in optimization
 typedef struct TagSlice      SSlice;
 typedef struct TagDqLayer    SDqLayer;

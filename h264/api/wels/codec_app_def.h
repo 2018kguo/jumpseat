@@ -46,9 +46,6 @@
 #define MAX_LAYER_NUM_OF_FRAME          128
 #define MAX_NAL_UNITS_IN_LAYER          128     ///< predetermined here, adjust it later if need
 
-#define MAX_RTP_PAYLOAD_LEN             1000
-#define AVERAGE_RTP_PAYLOAD_LEN         800
-
 #define SAVED_NALUNIT_NUM_TMP           ( (MAX_SPATIAL_LAYER_NUM*MAX_QUALITY_LAYER_NUM) + 1 + MAX_SPATIAL_LAYER_NUM )  ///< SPS/PPS + SEI/SSEI + PADDING_NAL
 #define MAX_SLICES_NUM_TMP              ( ( MAX_NAL_UNITS_IN_LAYER - SAVED_NALUNIT_NUM_TMP ) / 3 )
 

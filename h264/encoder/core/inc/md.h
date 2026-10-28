@@ -46,34 +46,13 @@
 #include "wels_func_ptr_def.h"
 
 namespace WelsEnc {
-#define ME_REFINE_BUF_STRIDE       32
 #define ME_REFINE_BUF_WIDTH_BLK4   8
 #define ME_REFINE_BUF_WIDTH_BLK8   16
 #define ME_REFINE_BUF_STRIDE_BLK4  160
 #define ME_REFINE_BUF_STRIDE_BLK8  320
 
-#define REFINE_ME_NO_BEST_HALF_PIXEL 0 //( 0,  0)
-#define REFINE_ME_HALF_PIXEL_LEFT    3 //(-2,  0)
-#define REFINE_ME_HALF_PIXEL_RIGHT   4 //( 2,  0)
-#define REFINE_ME_HALF_PIXEL_TOP     1 //( 0, -2)
-#define REFINE_ME_HALF_PIXEL_BOTTOM  2 //( 0,  2)
-
-#define ME_NO_BEST_QUAR_PIXEL 1 //( 0,  0) or best half pixel
-#define ME_QUAR_PIXEL_LEFT    2 //(-1,  0)
-#define ME_QUAR_PIXEL_RIGHT   3 //( 1,  0)
-#define ME_QUAR_PIXEL_TOP     4 //( 0, -1)
-#define ME_QUAR_PIXEL_BOTTOM  5 //( 0,  1)
-
-#define NO_BEST_FRAC_PIX   1 // REFINE_ME_NO_BEST_HALF_PIXEL + ME_NO_BEST_QUAR_PIXEL
-
 //for vaa constants
 #define MBVAASIGN_FLAT       15
-#define MBVAASIGN_HOR1      3
-#define MBVAASIGN_HOR2      12
-#define MBVAASIGN_VER1       5
-#define MBVAASIGN_VER2       10
-#define MBVAASIGN_CMPX1    6
-#define MBVAASIGN_CMPX2    9
 
 extern const int32_t g_kiQpCostTable[52];
 extern const int8_t g_kiMapModeI16x16[7];

@@ -37,7 +37,6 @@
 
 // NOTE: please do not clean below lines even comment, turn on for potential memory leak verify and memory usage monitor etc.
 //#define MEMORY_CHECK
-#define MEMORY_MONITOR
 
 namespace WelsCommon {
 
@@ -89,8 +88,6 @@ void* WelsMallocz (const uint32_t kuiSize, const char* kpTag);
 *************************************************************************************
 */
 void WelsFree (void* pPtr, const char* kpTag);
-
-#define WELS_SAFE_FREE(pPtr, pTag)              if (pPtr) { WelsFree(pPtr, pTag); pPtr = NULL; }
 
 #define  WELS_NEW_OP(object, type)   \
   (type*)(new object);

@@ -129,11 +129,6 @@ typedef uint32_t Mb_Type;
 #define MB_LEFT_BIT             0// add to use in intra up-sample
 #define MB_TOP_BIT              1
 #define MB_TOPRIGHT_BIT         2
-#define MB_TOPLEFT_BIT          3
-#define MB_RIGHT_BIT            4
-#define MB_BOTTOM_BIT           5
-#define MB_BTMRIGHT_BIT         6
-#define MB_BTMLEFT_BIT          7
 
 #define MB_TYPE_BACKGROUND      0x00010000  // conditional BG skip_mb
 

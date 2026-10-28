@@ -58,10 +58,7 @@ WELSVP_NAMESPACE_BEGIN
 
 #define MB_WIDTH_LUMA  (16)
 #define PESN               (1e-6)       // desired float precision
-#define AQ_INT_MULTIPLY                   10000000
-#define AQ_TIME_INT_MULTIPLY                   10000
 #define AQ_QSTEP_INT_MULTIPLY                   100
-#define AQ_PESN 10 // (1e-6)*AQ_INT_MULTIPLY
 
 #define MB_TYPE_INTRA4x4                0x00000001
 #define MB_TYPE_INTRA16x16              0x00000002
@@ -89,17 +86,13 @@ WELSVP_NAMESPACE_BEGIN
 #define WelsDynamicCast(type, p) (dynamic_cast<type>(p))
 
 #define GET_METHOD(x)  ((x) & 0xff)          // mask method as the lowest 8bits
-#define GET_SPECIAL(x) (((x) >> 8) & 0xff)   // mask special flag as 8bits
 
 inline EMethods WelsVpGetValidMethod (int32_t a) {
   int32_t iMethod = GET_METHOD (a);
   return WelsStaticCast (EMethods, WELS_CLAMP (iMethod, METHOD_NULL + 1, METHOD_MASK - 1));
 }
 
-
-
 WELSVP_NAMESPACE_END
 
 #endif
-
 

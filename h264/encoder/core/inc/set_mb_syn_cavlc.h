@@ -54,8 +54,6 @@ enum ECtxBlockCat {
   CHROMA_AC   = 4
 };
 
-#define LUMA_DC_AC    0x04
-
 void  InitCoeffFunc (SWelsFuncPtrList* pFuncList, const uint32_t uiCpuFlag,int32_t iEntropyCodingModeFlag);
 
 int32_t  WriteBlockResidualCavlc (SWelsFuncPtrList* pFuncList, int16_t* pCoffLevel, int32_t iEndIdx,
