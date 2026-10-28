@@ -11,6 +11,10 @@ streams, 32-bit ARM, MIPS and LoongArch.
 
     make -j8        # build/libjumpseat_h264.a; x86-64 needs nasm
 
+Go's build cache does not hash a library named in cgo LDFLAGS: after
+changing h264/, rebuild the Go side with `go build -a`, or key the cache on
+the library, `CGO_CFLAGS="-DH264_SUM=$(cksum < h264/build/libjumpseat_h264.a | cut -d' ' -f1)"`.
+
 ## Changes from OpenH264
 
 - **Scroll search without the feature index** (`encoder_ext.cpp`,
