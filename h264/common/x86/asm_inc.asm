@@ -60,73 +60,6 @@
 ; Macros
 ;***********************************************************************
 
-%ifdef WIN64 ; Windows x64 ;************************************
-
-DEFAULT REL
-
-BITS 64
-
-%define arg1 rcx
-%define arg2 rdx
-%define arg3 r8
-%define arg4 r9
-%define arg5 [rsp + push_num*8 + 40]
-%define arg6 [rsp + push_num*8 + 48]
-%define arg7 [rsp + push_num*8 + 56]
-%define arg8 [rsp + push_num*8 + 64]
-%define arg9 [rsp + push_num*8 + 72]
-%define arg10 [rsp + push_num*8 + 80]
-%define arg11 [rsp + push_num*8 + 88]
-%define arg12 [rsp + push_num*8 + 96]
-
-%define arg1d ecx
-%define arg2d edx
-%define arg3d r8d
-%define arg4d r9d
-%define arg5d arg5
-%define arg6d arg6
-%define arg7d arg7
-%define arg8d arg8
-%define arg9d arg9
-%define arg10d arg10
-%define arg11d arg11
-%define arg12d arg12
-
-%define r0 rcx
-%define r1 rdx
-%define r2 r8
-%define r3 r9
-%define r4 rax
-%define r5 r10
-%define r6 r11
-%define r7 rsp
-
-%define r0d ecx
-%define r1d edx
-%define r2d r8d
-%define r3d r9d
-%define r4d eax
-%define r5d r10d
-%define r6d r11d
-
-%define r0w  cx
-%define r1w  dx
-%define r2w  r8w
-%define r3w  r9w
-%define r4w  ax
-%define r6w  r11w
-
-%define r0b  cl
-%define r1b  dl
-%define r2b  r8l
-%define r3b  r9l
-
-%define  PUSHRFLAGS     pushfq
-%define  POPRFLAGS      popfq
-%define  retrq          rax
-%define  retrd          eax
-
-%elifdef UNIX64 ; Unix x64 ;************************************
 
 DEFAULT REL
 
@@ -196,310 +129,72 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-
 %define  retrq          rax
 %define  retrd          eax
 
-%elifdef X86_32 ; X86_32 ;************************************
-
-BITS 32
-
-%ifidn __OUTPUT_FORMAT__,elf
-SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-executable
-%endif
-
-%define arg1 [esp + push_num*4 + 4]
-%define arg2 [esp + push_num*4 + 8]
-%define arg3 [esp + push_num*4 + 12]
-%define arg4 [esp + push_num*4 + 16]
-%define arg5 [esp + push_num*4 + 20]
-%define arg6 [esp + push_num*4 + 24]
-%define arg7 [esp + push_num*4 + 28]
-%define arg8 [esp + push_num*4 + 32]
-%define arg9 [esp + push_num*4 + 36]
-%define arg10 [esp + push_num*4 + 40]
-%define arg11 [esp + push_num*4 + 44]
-%define arg12 [esp + push_num*4 + 48]
-
-%define arg1d arg1
-%define arg2d arg2
-%define arg3d arg3
-%define arg4d arg4
-%define arg5d arg5
-%define arg6d arg6
-%define arg7d arg7
-%define arg8d arg8
-%define arg9d arg9
-%define arg10d arg10
-%define arg11d arg11
-%define arg12d arg12
-
-%define r0 eax
-%define r1 ecx
-%define r2 edx
-%define r3 ebx
-%define r4 esi
-%define r5 edi
-%define r6 ebp
-%define r7 esp
-
-%define r0d eax
-%define r1d ecx
-%define r2d edx
-%define r3d ebx
-%define r4d esi
-%define r5d edi
-%define r6d ebp
-
-%define r0w ax
-%define r1w cx
-%define r2w dx
-%define r3w bx
-%define r4w si
-%define r6w bp
-
-%define r0b al
-%define r1b cl
-%define r2b dl
-%define r3b bl
-
-%define  PUSHRFLAGS     pushfd
-%define  POPRFLAGS      popfd
-%define  retrq          eax      ; 32 bit mode do not support 64 bits regesters
-%define  retrd          eax
-
-%endif
 
 %macro LOAD_PARA 2
     mov %1, %2
 %endmacro
 
 %macro LOAD_1_PARA 0
-    %ifdef X86_32
-        mov r0, [esp + push_num*4 + 4]
-    %endif
 %endmacro
 
 %macro LOAD_2_PARA 0
-    %ifdef X86_32
-        mov r0, [esp + push_num*4 + 4]
-        mov r1, [esp + push_num*4 + 8]
-    %endif
 %endmacro
 
 %macro LOAD_3_PARA 0
-    %ifdef X86_32
-        mov r0, [esp + push_num*4 + 4]
-        mov r1, [esp + push_num*4 + 8]
-        mov r2, [esp + push_num*4 + 12]
-    %endif
 %endmacro
 
 %macro LOAD_4_PARA 0
-    %ifdef X86_32
-        push r3
-        %assign  push_num push_num+1
-        mov r0, [esp + push_num*4 + 4]
-        mov r1, [esp + push_num*4 + 8]
-        mov r2, [esp + push_num*4 + 12]
-        mov r3, [esp + push_num*4 + 16]
-    %endif
 %endmacro
 
 %macro LOAD_5_PARA 0
-    %ifdef X86_32
-        push r3
-        push r4
-        %assign  push_num push_num+2
-        mov r0, [esp + push_num*4 + 4]
-        mov r1, [esp + push_num*4 + 8]
-        mov r2, [esp + push_num*4 + 12]
-        mov r3, [esp + push_num*4 + 16]
-        mov r4, [esp + push_num*4 + 20]
-    %elifdef WIN64
-        mov r4, [rsp + push_num*8 + 40]
-    %endif
 %endmacro
 
 %macro LOAD_6_PARA 0
-    %ifdef X86_32
-        push r3
-        push r4
-        push r5
-        %assign  push_num push_num+3
-        mov r0, [esp + push_num*4 + 4]
-        mov r1, [esp + push_num*4 + 8]
-        mov r2, [esp + push_num*4 + 12]
-        mov r3, [esp + push_num*4 + 16]
-        mov r4, [esp + push_num*4 + 20]
-        mov r5, [esp + push_num*4 + 24]
-    %elifdef WIN64
-        mov r4, [rsp + push_num*8 + 40]
-        mov r5, [rsp + push_num*8 + 48]
-    %endif
 %endmacro
 
 %macro LOAD_7_PARA 0
-    %ifdef X86_32
-        push r3
-        push r4
-        push r5
-        push r6
-        %assign  push_num push_num+4
-        mov r0, [esp + push_num*4 + 4]
-        mov r1, [esp + push_num*4 + 8]
-        mov r2, [esp + push_num*4 + 12]
-        mov r3, [esp + push_num*4 + 16]
-        mov r4, [esp + push_num*4 + 20]
-        mov r5, [esp + push_num*4 + 24]
-        mov r6, [esp + push_num*4 + 28]
-    %elifdef WIN64
-        mov r4, [rsp + push_num*8 + 40]
-        mov r5, [rsp + push_num*8 + 48]
-        mov r6, [rsp + push_num*8 + 56]
-    %elifdef UNIX64
         mov r6, [rsp + push_num*8 + 8]
-    %endif
 %endmacro
 
 
 
 %macro LOAD_4_PARA_POP 0
-    %ifdef X86_32
-        pop r3
-    %endif
 %endmacro
 
 %macro LOAD_5_PARA_POP 0
-    %ifdef X86_32
-        pop r4
-        pop r3
-    %endif
 %endmacro
 
 %macro LOAD_6_PARA_POP 0
-    %ifdef X86_32
-        pop r5
-        pop r4
-        pop r3
-    %endif
 %endmacro
 
 %macro LOAD_7_PARA_POP 0
-    %ifdef X86_32
-        pop r6
-        pop r5
-        pop r4
-        pop r3
-    %endif
 %endmacro
 
 %macro PUSH_XMM 1
-    %ifdef WIN64
-        %assign xmm_num_regs %1
-        %if xmm_num_regs > 6
-            %ifdef push_num
-                %assign push_num push_num+2*(%1-6)
-            %endif
-            sub rsp, 16*(%1 - 6)
-            movdqu [rsp], xmm6
-        %endif
-        %if xmm_num_regs > 7
-            movdqu [rsp+16], xmm7
-        %endif
-        %if xmm_num_regs > 8
-            movdqu [rsp+32], xmm8
-        %endif
-        %if xmm_num_regs > 9
-            movdqu [rsp+48], xmm9
-        %endif
-        %if xmm_num_regs > 10
-            movdqu [rsp+64], xmm10
-        %endif
-        %if xmm_num_regs > 11
-            movdqu [rsp+80], xmm11
-        %endif
-        %if xmm_num_regs > 12
-            movdqu [rsp+96], xmm12
-        %endif
-        %if xmm_num_regs > 13
-            movdqu [rsp+112], xmm13
-        %endif
-        %if xmm_num_regs > 14
-            movdqu [rsp+128], xmm14
-        %endif
-        %if xmm_num_regs > 15
-            movdqu [rsp+144], xmm15
-        %endif
-    %endif
 %endmacro
 
 %macro POP_XMM 0
-    %ifdef WIN64
-        %if xmm_num_regs > 15
-            movdqu xmm15, [rsp+144]
-        %endif
-        %if xmm_num_regs > 14
-            movdqu xmm14, [rsp+128]
-        %endif
-        %if xmm_num_regs > 13
-            movdqu xmm13, [rsp+112]
-        %endif
-        %if xmm_num_regs > 12
-            movdqu xmm12, [rsp+96]
-        %endif
-        %if xmm_num_regs > 11
-            movdqu xmm11, [rsp+80]
-        %endif
-        %if xmm_num_regs > 10
-            movdqu xmm10, [rsp+64]
-        %endif
-        %if xmm_num_regs > 9
-            movdqu xmm9, [rsp+48]
-        %endif
-        %if xmm_num_regs > 8
-            movdqu xmm8, [rsp+32]
-        %endif
-        %if xmm_num_regs > 7
-            movdqu xmm7, [rsp+16]
-        %endif
-        %if xmm_num_regs > 6
-            movdqu xmm6, [rsp]
-            add rsp, 16*(xmm_num_regs - 6)
-        %endif
-    %endif
 %endmacro
 
 %macro SIGN_EXTENSION 2
-    %ifndef X86_32
         movsxd %1, %2
-    %endif
 %endmacro
 
 %macro SIGN_EXTENSIONW 2
-    %ifndef X86_32
         movsx %1, %2
-    %endif
 %endmacro
 
 %macro ZERO_EXTENSION 1
-    %ifndef X86_32
         mov dword %1, %1
-    %endif
 %endmacro
 
 %macro WELS_EXTERN 1
     ALIGN 16, nop
-    %ifdef PREFIX
-        %ifdef WELS_PRIVATE_EXTERN
-            global _%1: WELS_PRIVATE_EXTERN
-        %else
-            global _%1
-        %endif
-        %define %1 _%1
-    %else
         %ifdef WELS_PRIVATE_EXTERN
             global %1: WELS_PRIVATE_EXTERN
         %else
             global %1
         %endif
-    %endif
     %1:
 %endmacro
 
@@ -684,24 +379,7 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-
 
 ; Used internally by other macros.
 %macro INIT_X86_32_PIC_ 2
-%ifdef X86_32_PICASM
-    %xdefine pic_ptr %1
-    %xdefine pic_ptr_preserve %2
-  %if pic_ptr_preserve
-    %assign push_num push_num+1
-    push            pic_ptr
-  %endif
-    call            %%get_pc
-%%pic_refpoint:
-    jmp             %%pic_init_done
-%%get_pc:
-    mov             pic_ptr, [esp]
-    ret
-%%pic_init_done:
-    %define pic(data_addr) (pic_ptr+(data_addr)-%%pic_refpoint)
-%else
     %define pic(data_addr) (data_addr)
-%endif
 %endmacro
 
 ; Get program counter and define a helper macro "pic(addr)" to convert absolute
@@ -720,24 +398,10 @@ SECTION .note.GNU-stack noalloc noexec nowrite progbits ; Mark the stack as non-
 ; Clean up after INIT_X86_32_PIC.
 ; Restore the register used to hold PC/EIP if applicable, and undefine defines.
 %macro DEINIT_X86_32_PIC 0
-%ifdef X86_32_PICASM
-  %if pic_ptr_preserve
-    pop             pic_ptr
-    %assign push_num push_num-1
-  %endif
-    %undef pic_ptr
-    %undef pic_ptr_preserve
-%endif
     %undef pic
 %endmacro
 
 ; Equivalent as above, but without undefining. Useful for functions with
 ; multiple epilogues.
 %macro DEINIT_X86_32_PIC_KEEPDEF 0
-%ifdef X86_32_PICASM
-  %if pic_ptr_preserve
-    pop             pic_ptr
-    %assign push_num push_num-1
-  %endif
-%endif
 %endmacro

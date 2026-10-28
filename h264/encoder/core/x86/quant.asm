@@ -332,9 +332,7 @@ WELS_EXTERN WelsDequantFour4x4_sse2
 WELS_EXTERN WelsDequantIHadamard4x4_sse2
     %assign push_num 0
     LOAD_2_PARA
-    %ifndef X86_32
     movzx r1, r1w
-    %endif
 
     ; WelsDequantLumaDc4x4
     SSE2_Copy8Times xmm1,       r1d
@@ -370,7 +368,6 @@ WELS_EXTERN WelsDequantIHadamard4x4_sse2
     ret
 
 
-%ifdef HAVE_AVX2
 ; data=%1 abs_out=%2 ff=%3 mf=%4 7FFFh=%5
 %macro AVX2_Quant 5
     vpabsw          %2, %1
@@ -503,5 +500,4 @@ WELS_EXTERN WelsQuantFour4x4Max_avx2
     POP_XMM
     LOAD_4_PARA_POP
     ret
-%endif
 

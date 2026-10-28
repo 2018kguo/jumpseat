@@ -49,77 +49,36 @@
 
 WELSVP_NAMESPACE_BEGIN
 
-typedef void (VAACalcSadBgdFunc) (const uint8_t* pCurData, const uint8_t* pRefData, int32_t iPicWidth,
-                                  int32_t iPicHeight,
-                                  int32_t iPicStride,
-                                  int32_t* pFrameSad, int32_t* pSad8x8, int32_t* pSd8x8, uint8_t* pMad8x8);
 
-typedef void (VAACalcSadSsdBgdFunc) (const uint8_t* pCurData, const uint8_t* pRefData, int32_t iPicWidth,
-                                     int32_t iPicHeight,
-                                     int32_t iPicStride,
-                                     int32_t* pFrameSad, int32_t* pSad8x8, int32_t* pSum16x16, int32_t* pSumSquare16x16,
-                                     int32_t* pSsd16x16, int32_t* pSd8x8, uint8_t* pMad8x8);
 
 typedef void (VAACalcSadFunc) (const uint8_t* pCurData, const uint8_t* pRefData, int32_t iPicWidth, int32_t iPicHeight,
                                int32_t iPicStride,
                                int32_t* pFrameSad, int32_t* pSad8x8);
 
-typedef void (VAACalcSadVarFunc) (const uint8_t* pCurData, const uint8_t* pRefData, int32_t iPicWidth,
-                                  int32_t iPicHeight,
-                                  int32_t iPicStride,
-                                  int32_t* pFrameSad, int32_t* pSad8x8, int32_t* pSum16x16, int32_t* pSumSquare16x16);
-
-typedef void (VAACalcSadSsdFunc) (const uint8_t* pCurData, const uint8_t* pRefData, int32_t iPicWidth,
-                                  int32_t iPicHeight,
-                                  int32_t iPicStride,
-                                  int32_t* pFrameSad, int32_t* pSad8x8, int32_t* pSum16x16, int32_t* pSumSquare16x16, int32_t* pSsd16x16);
 
 
-typedef VAACalcSadBgdFunc*       PVAACalcSadBgdFunc;
-typedef VAACalcSadSsdBgdFunc*    PVAACalcSadSsdBgdFunc;
+
 typedef VAACalcSadFunc*          PVAACalcSadFunc;
-typedef VAACalcSadVarFunc*       PVAACalcSadVarFunc;
-typedef VAACalcSadSsdFunc*       PVAACalcSadSsdFunc;
 
 typedef  struct TagVaaFuncs {
-  PVAACalcSadBgdFunc    pfVAACalcSadBgd;
-  PVAACalcSadSsdBgdFunc pfVAACalcSadSsdBgd;
   PVAACalcSadFunc       pfVAACalcSad;
-  PVAACalcSadVarFunc    pfVAACalcSadVar;
-  PVAACalcSadSsdFunc    pfVAACalcSadSsd;
 } SVaaFuncs;
 
 
-VAACalcSadBgdFunc       VAACalcSadBgd_c;
-VAACalcSadSsdBgdFunc    VAACalcSadSsdBgd_c;
 VAACalcSadFunc          VAACalcSad_c;
-VAACalcSadVarFunc       VAACalcSadVar_c;
-VAACalcSadSsdFunc       VAACalcSadSsd_c;
 
 
 #ifdef X86_ASM
 WELSVP_EXTERN_C_BEGIN
-VAACalcSadBgdFunc       VAACalcSadBgd_sse2;
-VAACalcSadSsdBgdFunc    VAACalcSadSsdBgd_sse2;
 VAACalcSadFunc          VAACalcSad_sse2;
-VAACalcSadVarFunc       VAACalcSadVar_sse2;
-VAACalcSadSsdFunc       VAACalcSadSsd_sse2;
-VAACalcSadBgdFunc       VAACalcSadBgd_avx2;
-VAACalcSadSsdBgdFunc    VAACalcSadSsdBgd_avx2;
 VAACalcSadFunc          VAACalcSad_avx2;
-VAACalcSadVarFunc       VAACalcSadVar_avx2;
-VAACalcSadSsdFunc       VAACalcSadSsd_avx2;
 WELSVP_EXTERN_C_END
 #endif
 
 
 #ifdef HAVE_NEON_AARCH64
 WELSVP_EXTERN_C_BEGIN
-VAACalcSadBgdFunc       VAACalcSadBgd_AArch64_neon;
-VAACalcSadSsdBgdFunc    VAACalcSadSsdBgd_AArch64_neon;
 VAACalcSadFunc          VAACalcSad_AArch64_neon;
-VAACalcSadVarFunc       VAACalcSadVar_AArch64_neon;
-VAACalcSadSsdFunc       VAACalcSadSsd_AArch64_neon;
 WELSVP_EXTERN_C_END
 #endif
 

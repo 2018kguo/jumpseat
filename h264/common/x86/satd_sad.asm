@@ -53,11 +53,7 @@
 ;***********************************************************************
 ; Data
 ;***********************************************************************
-%ifdef X86_32_PICASM
-SECTION .text align=16
-%else
 SECTION .rodata align=16
-%endif
 
 align 16
 HSumSubDB1:   db 1,1,1,1,1,1,1,1,1,-1,1,-1,1,-1,1,-1
@@ -372,15 +368,7 @@ WELS_EXTERN WelsSampleSatd16x16_sse2
 ;***********************************************************************
 WELS_EXTERN WelsSampleSatdThree4x4_sse2
 
-%ifdef X86_32
-    push r3
-    push r4
-    push r5
-    push r6
-    %assign  push_num 4
-%else
     %assign  push_num 0
-%endif
     PUSH_XMM 8
 
     mov  r2, arg3
@@ -432,10 +420,8 @@ WELS_EXTERN WelsSampleSatdThree4x4_sse2
     mov r1, arg2
     SIGN_EXTENSION r1, r1d
     sub r0, r1
-%ifdef UNIX64
     push r4
     push r5
-%endif
 
     movzx     r2d,  byte [r0]
     movzx     r3d,  byte [r0+1]
@@ -530,10 +516,8 @@ WELS_EXTERN WelsSampleSatdThree4x4_sse2
     WELS_AbsW  xmm7, xmm1
     paddusw        xmm6, xmm7
     SSE2_SumWHorizon1  xmm6, xmm1 ; satd of DC is stored in xmm6
-%ifdef UNIX64
     pop r5
     pop r4
-%endif
     ; comparing order: DC H V
 
     mov  r4, arg5
@@ -565,12 +549,6 @@ WELS_EXTERN WelsSampleSatdThree4x4_sse2
     mov       dword [r5], 0x02
     mov retrd, r2d
     POP_XMM
-%ifdef X86_32
-    pop r6
-    pop r5
-    pop r4
-    pop r3
-%endif
     ret
 
 not_dc:
@@ -607,12 +585,6 @@ not_dc:
     mov r5, arg6
     mov       dword [r5], 0x01
     POP_XMM
-%ifdef X86_32
-    pop r6
-    pop r5
-    pop r4
-    pop r3
-%endif
     ret
 not_dc_h:
     sub        r0, r1
@@ -625,12 +597,6 @@ not_dc_h:
     mov r5, arg6
     mov       dword [r5], 0x00
     POP_XMM
-%ifdef X86_32
-    pop r6
-    pop r5
-    pop r4
-    pop r3
-%endif
     ret
 
 
@@ -771,10 +737,8 @@ WELS_EXTERN WelsIntra16x16Combined3Satd_sse41
     SIGN_EXTENSION r3, r3d
     SIGN_EXTENSION r5, r5d
 
-%ifndef X86_32
     push r12
     mov  r12, r2
-%endif
 
     INIT_X86_32_PIC r2
     pxor        xmm4,   xmm4
@@ -830,9 +794,7 @@ WELS_EXTERN WelsIntra16x16Combined3Satd_sse41
     pxor        xmm4,   xmm4 ;V
     pxor        xmm5,   xmm5 ;H
     pxor        xmm6,   xmm6 ;DC
-%ifdef UNIX64
     push r4
-%endif
     mov         r0,    0
     mov         r4,    0
 
@@ -844,11 +806,7 @@ WELS_EXTERN WelsIntra16x16Combined3Satd_sse41
     jl          .loopStart1
     cmp         r4, 16
     je          .loop16x16_get_satd_end
-%ifdef X86_32
-    mov r2, arg3
-%else
     mov r2, r12
-%endif
     add         r2, 8
     mov         r0, 0
     add         r4, 16
@@ -862,16 +820,12 @@ WELS_EXTERN WelsIntra16x16Combined3Satd_sse41
     SSE41_HSum8W     xmm5, xmm0, xmm1
     SSE41_HSum8W     xmm6, xmm0, xmm1
 
-%ifdef UNIX64
     pop r4
-%endif
     ; comparing order: DC H V
     movd      r3d, xmm6 ;DC
     movd      r1d, xmm5 ;H
     movd      r0d, xmm4 ;V
-%ifndef X86_32
     pop r12
-%endif
     shl       r5d, 1
     add       r1d, r5d
     add       r3d, r5d
@@ -1338,10 +1292,6 @@ WELS_EXTERN WelsSampleSatd4x4_sse41
 ;
 ;***********************************************************************
 WELS_EXTERN WelsSampleSatd8x8_sse41
-%ifdef X86_32
-    push  r4
-    push  r5
-%endif
     %assign  push_num 2
     INIT_X86_32_PIC r6
     LOAD_4_PARA
@@ -1361,10 +1311,6 @@ WELS_EXTERN WelsSampleSatd8x8_sse41
     POP_XMM
     LOAD_4_PARA_POP
     DEINIT_X86_32_PIC
-%ifdef X86_32
-    pop  r5
-    pop  r4
-%endif
     ret
 
 ;***********************************************************************
@@ -1373,11 +1319,6 @@ WELS_EXTERN WelsSampleSatd8x8_sse41
 ;
 ;***********************************************************************
 WELS_EXTERN WelsSampleSatd8x16_sse41
-%ifdef X86_32
-    push  r4
-    push  r5
-    push  r6
-%endif
     %assign  push_num 3
     LOAD_4_PARA
     PUSH_XMM 8
@@ -1401,11 +1342,6 @@ loop_get_satd_8x16:
     SSSE3_SumWHorizon retrd, xmm6, xmm5, xmm7
     POP_XMM
     LOAD_4_PARA_POP
-%ifdef X86_32
-    pop  r6
-    pop  r5
-    pop  r4
-%endif
     ret
 
 ;***********************************************************************
@@ -1414,10 +1350,6 @@ loop_get_satd_8x16:
 ;
 ;***********************************************************************
 WELS_EXTERN WelsSampleSatd16x8_sse41
-%ifdef X86_32
-    push  r4
-    push  r5
-%endif
     %assign  push_num 2
     INIT_X86_32_PIC r6
     LOAD_4_PARA
@@ -1448,10 +1380,6 @@ WELS_EXTERN WelsSampleSatd16x8_sse41
     POP_XMM
     LOAD_4_PARA_POP
     DEINIT_X86_32_PIC
-%ifdef X86_32
-    pop  r5
-    pop  r4
-%endif
     ret
 
 ;***********************************************************************
@@ -1461,11 +1389,6 @@ WELS_EXTERN WelsSampleSatd16x8_sse41
 ;***********************************************************************
 
 WELS_EXTERN WelsSampleSatd16x16_sse41
-%ifdef X86_32
-    push  r4
-    push  r5
-    push  r6
-%endif
     %assign  push_num 3
     LOAD_4_PARA
     PUSH_XMM 8
@@ -1505,11 +1428,6 @@ loop_get_satd_16x16_right:
     SSSE3_SumWHorizon retrd, xmm6, xmm5, xmm7
     POP_XMM
     LOAD_4_PARA_POP
-%ifdef X86_32
-    pop  r6
-    pop  r5
-    pop  r4
-%endif
     ret
 
 ;***********************************************************************
@@ -1524,7 +1442,6 @@ loop_get_satd_16x16_right:
 ;
 ;***********************************************************************
 
-%ifdef HAVE_AVX2
 ; out=%1 pSrcA=%2 pSrcB=%3 HSumSubDB1_256=%4 ymm_clobber=%5
 %macro AVX2_LoadDiffSatd16x1 5
     vbroadcasti128   %1, [%2]
@@ -1622,10 +1539,6 @@ loop_get_satd_16x16_right:
 
 WELS_EXTERN WelsSampleSatd8x16_avx2
     %assign push_num 0
-%ifdef X86_32
-    push r4
-    %assign push_num 1
-%endif
     mov r4, 2                      ; loop cnt
     jmp WelsSampleSatd8x8N_avx2
 
@@ -1637,18 +1550,9 @@ WELS_EXTERN WelsSampleSatd8x16_avx2
 
 WELS_EXTERN WelsSampleSatd8x8_avx2
     %assign push_num 0
-%ifdef X86_32
-    push           r4
-    %assign push_num 1
-%endif
     mov            r4, 1           ; loop cnt
                                    ; fall through
 WelsSampleSatd8x8N_avx2:
-%ifdef X86_32
-    push           r5
-    push           r6
-    %assign push_num push_num+2
-%endif
     LOAD_4_PARA
     PUSH_XMM 8
     SIGN_EXTENSION r1, r1d
@@ -1675,11 +1579,6 @@ WelsSampleSatd8x8N_avx2:
     vzeroupper
     POP_XMM
     LOAD_4_PARA_POP
-%ifdef X86_32
-    pop            r6
-    pop            r5
-    pop            r4
-%endif
     ret
 
 ;***********************************************************************
@@ -1690,10 +1589,6 @@ WelsSampleSatd8x8N_avx2:
 
 WELS_EXTERN WelsSampleSatd16x16_avx2
     %assign push_num 0
-%ifdef X86_32
-    push r4
-    %assign push_num 1
-%endif
     mov r4, 4                      ; loop cnt
     jmp WelsSampleSatd16x4N_avx2
 
@@ -1705,18 +1600,9 @@ WELS_EXTERN WelsSampleSatd16x16_avx2
 
 WELS_EXTERN WelsSampleSatd16x8_avx2
     %assign push_num 0
-%ifdef X86_32
-    push r4
-    %assign push_num 1
-%endif
     mov r4, 2                      ; loop cnt
                                    ; fall through
 WelsSampleSatd16x4N_avx2:
-%ifdef X86_32
-    push r5
-    push r6
-    %assign push_num push_num+2
-%endif
     LOAD_4_PARA
     PUSH_XMM 7
     SIGN_EXTENSION r1, r1d
@@ -1741,14 +1627,8 @@ WelsSampleSatd16x4N_avx2:
     vzeroupper
     POP_XMM
     LOAD_4_PARA_POP
-%ifdef X86_32
-    pop r6
-    pop r5
-    pop r4
-%endif
     ret
 
-%endif
 
 ;***********************************************************************
 ;
@@ -1822,10 +1702,6 @@ WelsSampleSatd16x4N_avx2:
 ;
 ;***********************************************************************
 WELS_EXTERN WelsSampleSad16x16_sse2
-%ifdef X86_32
-    push  r4
-    push  r5
-%endif
 
     %assign  push_num 2
     LOAD_4_PARA
@@ -1851,10 +1727,6 @@ WELS_EXTERN WelsSampleSad16x16_sse2
     movd retrd, xmm0
     POP_XMM
     LOAD_4_PARA_POP
-%ifdef X86_32
-    pop  r5
-    pop  r4
-%endif
     ret
 
 ;***********************************************************************
@@ -1928,11 +1800,6 @@ WELS_EXTERN WelsSampleSad8x8_sse21
     CACHE_SPLIT_CHECK r2, 8, 64
     jle    near   .pixel_sad_8x8_nsplit
     pop     r2
-%ifdef X86_32
-    push    r3
-    push    r4
-    push    r5
-%endif
     %assign  push_num 3
     PUSH_XMM 8
     mov     r0,  arg1
@@ -2028,11 +1895,6 @@ WELS_EXTERN WelsSampleSad8x8_sse21
     paddw      xmm0, xmm7
     movd       retrd,  xmm0
     POP_XMM
-%ifdef X86_32
-    pop  r5
-    pop  r4
-    pop  r3
-%endif
     jmp        .return
 
 .pixel_sad_8x8_nsplit:

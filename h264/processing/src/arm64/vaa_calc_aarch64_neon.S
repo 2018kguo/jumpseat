@@ -117,60 +117,6 @@ WELS_ASM_AARCH64_FUNC_END
  * void vaa_calc_sad_bgd_neon(uint8_t *cur_data, uint8_t *ref_data, int32_t pic_width, int32_t pic_height, int32_t pic_stride,
  *                             int32_t *psadframe, int32_t *psad8x8, int32_t *p_sd8x8, uint8_t *p_mad8x8)
  */
-WELS_ASM_AARCH64_FUNC_BEGIN VAACalcSadBgd_AArch64_neon
-    ldr     x15, [sp, #0]
-    eor     v28.16b, v28.16b, v28.16b
-
-    SIGN_EXTENSION x4, w4
-    lsl     x9, x4, #4
-    sub     x10, x9, #16    //x10 keep the 16*pic_stride-16
-    sub     x9, x9, x2      //x9 keep the 16*pic_stride-pic_width
-vaa_calc_sad_bgd_loop0:
-    mov     w11, w2
-vaa_calc_sad_bgd_loop1:
-    SAD_SD_MAD_8x16BYTES
-    umaxv   b24, v31.8b
-    ins     v31.d[0], v31.d[1]
-    umaxv   b25, v31.8b
-    uaddlv  s20, v2.4h
-    ins     v2.d[0], v2.d[1]
-    uaddlv  s21, v2.4h
-    usubl   v6.4s, v4.4h, v5.4h
-    usubl2  v7.4s, v4.8h, v5.8h
-    addv    s16, v6.4s
-    addv    s17, v7.4s
-
-    SAD_SD_MAD_8x16BYTES
-    umaxv   b26, v31.8b
-    ins     v31.d[0], v31.d[1]
-    umaxv   b27, v31.8b
-    uaddlv  s22, v2.4h
-    ins     v2.d[0], v2.d[1]
-    uaddlv  s23, v2.4h
-    usubl   v6.4s, v4.4h, v5.4h
-    usubl2  v7.4s, v4.8h, v5.8h
-    addv    s18, v6.4s
-    addv    s19, v7.4s
-    st4     {v20.s, v21.s, v22.s, v23.s}[0], [x6], #16
-
-    sub     x0, x0, x10
-    sub     x1, x1, x10
-    st4     {v16.s, v17.s, v18.s, v19.s}[0], [x7], #16
-    sub     w11, w11, #16
-    st4     {v24.b, v25.b, v26.b, v27.b}[0], [x15], #4
-    add     v29.2s, v20.2s, v21.2s
-    add     v30.2s, v22.2s, v23.2s
-    add     v29.2s, v29.2s, v30.2s
-    add     v28.2s, v28.2s, v29.2s
-    cbnz    w11, vaa_calc_sad_bgd_loop1
-
-    add     x0, x0, x9
-    add     x1, x1, x9
-    sub     w3, w3, #16
-    cbnz    w3, vaa_calc_sad_bgd_loop0
-    str     s28, [x5]
-
-WELS_ASM_AARCH64_FUNC_END
 
 .macro SAD_SSD_BGD_8x16BYTES_1
     ld1     {v0.16b}, [x0], x4
@@ -256,73 +202,6 @@ WELS_ASM_AARCH64_FUNC_END
  * void vaa_calc_sad_ssd_bgd_c(uint8_t *cur_data, uint8_t *ref_data, int32_t pic_width, int32_t pic_height, int32_t pic_stride,
  *        int32_t *psadframe,int32_t *psad8x8, int32_t *psum16x16, int32_t *psqsum16x16, int32_t *psqdiff16x16, int32_t *p_sd8x8, uint8_t *p_mad8x8)
  */
-WELS_ASM_AARCH64_FUNC_BEGIN VAACalcSadSsdBgd_AArch64_neon
-    ldr     x12, [sp, #0]   //psqsum16x16
-    ldr     x13, [sp, #8]   //psqdiff16x16
-    ldr     x14, [sp, #16]  //p_sd8x8
-    ldr     x15, [sp, #24]  //p_mad8x8
-    eor     v17.16b, v17.16b, v17.16b
-
-    SIGN_EXTENSION x4, w4
-    lsl     x9, x4, #4
-    sub     x10, x9, #16    //x10 keep the 16*pic_stride-16
-    sub     x9, x9, x2      //x9 keep the 16*pic_stride-pic_width
-
-vaa_calc_sad_ssd_bgd_height_loop:
-    mov     w11, w2
-vaa_calc_sad_ssd_bgd_width_loop:
-    SAD_SSD_BGD_8x16BYTES_1     //psad:v2, v16, psum:v28, psqsum:v27, psqdiff:v29, psd:v4, v5, v6, v7, pmad:v31, v26
-    SAD_SSD_BGD_8x16BYTES_2
-
-    umaxv   b22, v31.8b
-    ins     v31.d[0], v31.d[1]
-    umaxv   b23, v31.8b
-    umaxv   b24, v26.8b
-    ins     v26.d[0], v26.d[1]
-    umaxv   b25, v26.8b
-    st4     {v22.b, v23.b, v24.b, v25.b}[0], [x15], #4
-
-    usubl   v20.4s, v4.4h, v5.4h
-    usubl2  v21.4s, v4.8h, v5.8h
-    addv    s20, v20.4s
-    addv    s21, v21.4s
-    usubl   v22.4s, v6.4h, v7.4h
-    usubl2  v23.4s, v6.8h, v7.8h
-    addv    s22, v22.4s
-    addv    s23, v23.4s
-    st4     {v20.s, v21.s, v22.s, v23.s}[0], [x14], #16
-
-    uaddlv  s20, v2.4h
-    ins     v2.d[0], v2.d[1]
-    uaddlv  s21, v2.4h
-    uaddlv  s22, v16.4h
-    ins     v16.d[0], v16.d[1]
-    uaddlv  s23, v16.4h
-    st4     {v20.s, v21.s, v22.s, v23.s}[0], [x6], #16
-
-    uaddlv  s28, v28.8h
-    str     s28, [x7], #4
-    addv    s27, v27.4s
-    str     s27, [x12], #4
-    addv    s29, v29.4s
-    str     s29, [x13], #4
-
-    sub     x0, x0, x10
-    sub     x1, x1, x10
-    sub     w11, w11, #16
-    add     v29.2s, v20.2s, v21.2s
-    add     v30.2s, v22.2s, v23.2s
-    add     v29.2s, v29.2s, v30.2s
-    add     v17.2s, v17.2s, v29.2s
-    cbnz    w11, vaa_calc_sad_ssd_bgd_width_loop
-
-    add     x0, x0, x9
-    add     x1, x1, x9
-    sub     w3, w3, #16
-    cbnz    w3, vaa_calc_sad_ssd_bgd_height_loop
-    str     s17, [x5]
-WELS_ASM_AARCH64_FUNC_END
-
 
 .macro SAD_SSD_8x16BYTES_1
     ld1     {v0.16b}, [x0], x4
@@ -399,53 +278,6 @@ WELS_ASM_AARCH64_FUNC_END
  * void vaa_calc_sad_ssd_c(uint8_t *cur_data, uint8_t *ref_data, int32_t pic_width, int32_t pic_height, int32_t pic_stride,
  *        int32_t *psadframe,int32_t *psad8x8, int32_t *psum16x16, int32_t *psqsum16x16, int32_t *psqdiff16x16)
  */
-WELS_ASM_AARCH64_FUNC_BEGIN VAACalcSadSsd_AArch64_neon
-    ldr     x12, [sp, #0]   //psqsum16x16
-    ldr     x13, [sp, #8]   //psqdiff16x16
-    eor     v17.16b, v17.16b, v17.16b
-
-    SIGN_EXTENSION x4, w4
-    lsl     x9, x4, #4
-    sub     x10, x9, #16    //x10 keep the 16*pic_stride-16
-    sub     x9, x9, x2      //x9 keep the 16*pic_stride-pic_width
-
-vaa_calc_sad_ssd_height_loop:
-    mov     w11, w2
-vaa_calc_sad_ssd_width_loop:
-    SAD_SSD_8x16BYTES_1     //psad:v2, v16, psum:v28, psqsum:v27, psqdiff:v29
-    SAD_SSD_8x16BYTES_2
-
-    uaddlv  s20, v2.4h
-    ins     v2.d[0], v2.d[1]
-    uaddlv  s21, v2.4h
-    uaddlv  s22, v16.4h
-    ins     v16.d[0], v16.d[1]
-    uaddlv  s23, v16.4h
-    st4     {v20.s, v21.s, v22.s, v23.s}[0], [x6], #16
-
-    uaddlv  s28, v28.8h
-    str     s28, [x7], #4
-    addv    s27, v27.4s
-    str     s27, [x12], #4
-    addv    s29, v29.4s
-    str     s29, [x13], #4
-
-    sub     x0, x0, x10
-    sub     x1, x1, x10
-    sub     w11, w11, #16
-    add     v29.2s, v20.2s, v21.2s
-    add     v30.2s, v22.2s, v23.2s
-    add     v29.2s, v29.2s, v30.2s
-    add     v17.2s, v17.2s, v29.2s
-    cbnz    w11, vaa_calc_sad_ssd_width_loop
-
-    add     x0, x0, x9
-    add     x1, x1, x9
-    sub     w3, w3, #16
-    cbnz    w3, vaa_calc_sad_ssd_height_loop
-    str     s17, [x5]
-WELS_ASM_AARCH64_FUNC_END
-
 
 .macro SAD_VAR_8x16BYTES_1
     ld1     {v0.16b}, [x0], x4
@@ -501,49 +333,5 @@ WELS_ASM_AARCH64_FUNC_END
  * void vaa_calc_sad_var_c(uint8_t *cur_data, uint8_t *ref_data, int32_t pic_width, int32_t pic_height, int32_t pic_stride,
  *        int32_t *psadframe,int32_t *psad8x8, int32_t *psum16x16, int32_t *psqsum16x16)
  */
-WELS_ASM_AARCH64_FUNC_BEGIN VAACalcSadVar_AArch64_neon
-    ldr     x12, [sp, #0]   //psqsum16x16
-    eor     v17.16b, v17.16b, v17.16b
-
-    SIGN_EXTENSION x4, w4
-    lsl     x9, x4, #4
-    sub     x10, x9, #16    //x10 keep the 16*pic_stride-16
-    sub     x9, x9, x2      //x9 keep the 16*pic_stride-pic_width
-
-vaa_calc_sad_var_height_loop:
-    mov     w11, w2
-vaa_calc_sad_var_width_loop:
-    SAD_VAR_8x16BYTES_1     //psad:v2, v16, psum:v28, psqsum:v27
-    SAD_VAR_8x16BYTES_2
-
-    uaddlv  s20, v2.4h
-    ins     v2.d[0], v2.d[1]
-    uaddlv  s21, v2.4h
-    uaddlv  s22, v16.4h
-    ins     v16.d[0], v16.d[1]
-    uaddlv  s23, v16.4h
-    st4     {v20.s, v21.s, v22.s, v23.s}[0], [x6], #16
-
-    uaddlv  s28, v28.8h
-    str     s28, [x7], #4
-    addv    s27, v27.4s
-    str     s27, [x12], #4
-
-    sub     x0, x0, x10
-    sub     x1, x1, x10
-    sub     w11, w11, #16
-    add     v29.2s, v20.2s, v21.2s
-    add     v30.2s, v22.2s, v23.2s
-    add     v29.2s, v29.2s, v30.2s
-    add     v17.2s, v17.2s, v29.2s
-
-    cbnz    w11, vaa_calc_sad_var_width_loop
-
-    add     x0, x0, x9
-    add     x1, x1, x9
-    sub     w3, w3, #16
-    cbnz    w3, vaa_calc_sad_var_height_loop
-    str     s17, [x5]
-WELS_ASM_AARCH64_FUNC_END
 
 #endif

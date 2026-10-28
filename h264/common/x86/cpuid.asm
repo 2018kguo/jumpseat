@@ -74,26 +74,6 @@ WELS_EXTERN WelsCPUIdVerify
 ;****************************************************************************************************
 ;   void WelsCPUId( int32_t uiIndex, int32_t *pFeatureA, int32_t *pFeatureB, int32_t *pFeatureC, int32_t *pFeatureD )
 ;****************************************************************************************************
-%ifdef       WIN64
-
-WELS_EXTERN WelsCPUId
-    push     rbx
-    push     rdx
-
-    mov      eax,     ecx
-    mov      ecx,     [r9]
-    cpuid
-    mov      [r9],    ecx
-    mov      [r8],    ebx
-    mov      rcx,    [rsp + 2*8 + 40]
-    mov      [rcx],   edx
-    pop      rdx
-    mov      [rdx],   eax
-
-    pop      rbx
-    ret
-
-%elifdef     UNIX64
 WELS_EXTERN WelsCPUId
     push     rbx
     push     rcx
@@ -112,48 +92,14 @@ WELS_EXTERN WelsCPUId
     pop      rbx
     ret
 
-%elifdef     X86_32
-
-WELS_EXTERN WelsCPUId
-    push    ebx
-    push    edi
-
-    mov     eax, [esp+12]   ; operating index
-    mov     edi, [esp+24]
-    mov     ecx, [edi]
-    cpuid                   ; cpuid
-
-    ; processing various information return
-    mov     edi, [esp+16]
-    mov     [edi], eax
-    mov     edi, [esp+20]
-    mov     [edi], ebx
-    mov     edi, [esp+24]
-    mov     [edi], ecx
-    mov     edi, [esp+28]
-    mov     [edi], edx
-
-    pop     edi
-    pop     ebx
-    ret
-
-%endif
 
 ; need call after cpuid=1 and eax, ecx flag got then
 ;****************************************************************************************************
 ;   int32_t WelsCPUSupportAVX( uint32_t eax, uint32_t ecx )
 ;****************************************************************************************************
 WELS_EXTERN WelsCPUSupportAVX
-%ifdef     WIN64
-    mov   eax,    ecx
-    mov   ecx,    edx
-%elifdef   UNIX64
     mov eax, edi
     mov ecx, esi
-%else
-    mov eax, [esp+4]
-    mov ecx, [esp+8]
-%endif
 
     ; refer to detection of AVX addressed in INTEL AVX manual document
     and ecx, 018000000H
@@ -177,16 +123,8 @@ avx_not_supported:
 ;   int32_t WelsCPUSupportFMA( uint32_t eax, uint32_t ecx )
 ;****************************************************************************************************
 WELS_EXTERN WelsCPUSupportFMA
-%ifdef     WIN64
-    mov   eax,   ecx
-    mov   ecx,   edx
-%elifdef   UNIX64
     mov   eax,   edi
     mov   ecx,   esi
-%else
-    mov eax, [esp+4]
-    mov ecx, [esp+8]
-%endif
     ; refer to detection of FMA addressed in INTEL AVX manual document
     and ecx, 018001000H
     cmp ecx, 018001000H     ; check OSXSAVE, AVX, FMA feature flags
@@ -214,11 +152,7 @@ WELS_EXTERN WelsEmms
 ;   int32_t WelsCPUDetectAVX512()
 ;*****************************************************************************
 WELS_EXTERN WelsCPUDetectAVX512
-%ifdef    X86_32
-    push ebx
-%else
     push rbx
-%endif
 
     mov eax, 1
     mov ecx, 0
@@ -245,19 +179,11 @@ WELS_EXTERN WelsCPUDetectAVX512
     and ebx, 0xC0030000
     mov eax, ebx
 
-%ifdef    X86_32
-    pop ebx
-%else
     pop rbx
-%endif
     ret
 
 avx512_not_supported:
     mov eax, 0
-%ifdef    X86_32
-    pop ebx
-%else
     pop rbx
-%endif
     ret
 

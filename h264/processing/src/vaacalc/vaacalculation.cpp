@@ -52,25 +52,13 @@ CVAACalculation::~CVAACalculation() {
 
 void CVAACalculation::InitVaaFuncs (SVaaFuncs& sVaaFuncs, int32_t iCpuFlag) {
   sVaaFuncs.pfVAACalcSad         = VAACalcSad_c;
-  sVaaFuncs.pfVAACalcSadBgd      = VAACalcSadBgd_c;
-  sVaaFuncs.pfVAACalcSadSsd      = VAACalcSadSsd_c;
-  sVaaFuncs.pfVAACalcSadSsdBgd   = VAACalcSadSsdBgd_c;
-  sVaaFuncs.pfVAACalcSadVar      = VAACalcSadVar_c;
 #ifdef X86_ASM
   if ((iCpuFlag & WELS_CPU_SSE2) == WELS_CPU_SSE2) {
     sVaaFuncs.pfVAACalcSad       = VAACalcSad_sse2;
-    sVaaFuncs.pfVAACalcSadBgd    = VAACalcSadBgd_sse2;
-    sVaaFuncs.pfVAACalcSadSsd    = VAACalcSadSsd_sse2;
-    sVaaFuncs.pfVAACalcSadSsdBgd = VAACalcSadSsdBgd_sse2;
-    sVaaFuncs.pfVAACalcSadVar    = VAACalcSadVar_sse2;
   }
 #ifdef HAVE_AVX2
   if (iCpuFlag & WELS_CPU_AVX2) {
     sVaaFuncs.pfVAACalcSad       = VAACalcSad_avx2;
-    sVaaFuncs.pfVAACalcSadBgd    = VAACalcSadBgd_avx2;
-    sVaaFuncs.pfVAACalcSadSsd    = VAACalcSadSsd_avx2;
-    sVaaFuncs.pfVAACalcSadSsdBgd = VAACalcSadSsdBgd_avx2;
-    sVaaFuncs.pfVAACalcSadVar    = VAACalcSadVar_avx2;
   }
 #endif
 #endif//X86_ASM
@@ -78,10 +66,6 @@ void CVAACalculation::InitVaaFuncs (SVaaFuncs& sVaaFuncs, int32_t iCpuFlag) {
 #ifdef HAVE_NEON_AARCH64
   if ((iCpuFlag & WELS_CPU_NEON) == WELS_CPU_NEON) {
     sVaaFuncs.pfVAACalcSad       = VAACalcSad_AArch64_neon;
-    sVaaFuncs.pfVAACalcSadBgd    = VAACalcSadBgd_AArch64_neon;
-    sVaaFuncs.pfVAACalcSadSsd    = VAACalcSadSsd_AArch64_neon;
-    sVaaFuncs.pfVAACalcSadSsdBgd = VAACalcSadSsdBgd_AArch64_neon;
-    sVaaFuncs.pfVAACalcSadVar    = VAACalcSadVar_AArch64_neon;
   }
 #endif//HAVE_NEON_AARCH64
 
@@ -103,29 +87,9 @@ EResult CVAACalculation::Process (int32_t iType, SPixMap* pSrcPixMap, SPixMap* p
 
   pResult->pCurY = pCurData;
   pResult->pRefY = pRefData;
-  if (m_sCalcParam.iCalcBgd) {
-    if (m_sCalcParam.iCalcSsd) {
-      m_sVaaFuncs.pfVAACalcSadSsdBgd (pCurData, pRefData, iPicWidth, iPicHeight, iPicStride, &pResult->iFrameSad,
-                                      (int32_t*)pResult->pSad8x8, pResult->pSum16x16, pResult->pSumOfSquare16x16, pResult->pSsd16x16,
-                                      (int32_t*)pResult->pSumOfDiff8x8, (uint8_t*)pResult->pMad8x8);
-    } else {
-      m_sVaaFuncs.pfVAACalcSadBgd (pCurData, pRefData, iPicWidth, iPicHeight, iPicStride, &pResult->iFrameSad,
-                                   (int32_t*) (pResult->pSad8x8), (int32_t*) (pResult->pSumOfDiff8x8), (uint8_t*)pResult->pMad8x8);
-    }
-  } else {
-    if (m_sCalcParam.iCalcSsd) {
-      m_sVaaFuncs.pfVAACalcSadSsd (pCurData, pRefData, iPicWidth, iPicHeight, iPicStride, &pResult->iFrameSad,
-                                   (int32_t*)pResult->pSad8x8, pResult->pSum16x16, pResult->pSumOfSquare16x16, pResult->pSsd16x16);
-    } else {
-      if (m_sCalcParam.iCalcVar) {
-        m_sVaaFuncs.pfVAACalcSadVar (pCurData, pRefData, iPicWidth, iPicHeight, iPicStride, &pResult->iFrameSad,
-                                     (int32_t*)pResult->pSad8x8, pResult->pSum16x16, pResult->pSumOfSquare16x16);
-      } else {
-        m_sVaaFuncs.pfVAACalcSad (pCurData, pRefData, iPicWidth, iPicHeight, iPicStride, &pResult->iFrameSad,
-                                  (int32_t*)pResult->pSad8x8);
-      }
-    }
-  }
+  // jumpseat: SAD only (no background detection, SSD or variance)
+  m_sVaaFuncs.pfVAACalcSad (pCurData, pRefData, iPicWidth, iPicHeight, iPicStride, &pResult->iFrameSad,
+                            (int32_t*)pResult->pSad8x8);
 
   return RET_SUCCESS;
 }

@@ -49,11 +49,7 @@
 ;***********************************************************************
 ; Local Data (Read Only)
 ;***********************************************************************
-%ifdef X86_32_PICASM
-SECTION .text align=16
-%else
 SECTION .rodata align=16
-%endif
 
 ;align 16
 ;se2_2 dw 2, 2, 2, 2, 2, 2, 2, 2
@@ -171,12 +167,7 @@ SECTION .text
 ;void WelsScan4x4DcAc_sse2( int16_t level[16], int16_t *pDct )
 ;***********************************************************************
 WELS_EXTERN WelsScan4x4DcAc_sse2
-    %ifdef X86_32
-    push r3
-    %assign push_num 1
-    %else
     %assign push_num 0
-    %endif
     LOAD_2_PARA
     movdqa     xmm0, [r1]           ; 7 6 5 4 3 2 1 0
     movdqa     xmm1, [r1+16]        ; f e d c b a 9 8
@@ -194,9 +185,6 @@ WELS_EXTERN WelsScan4x4DcAc_sse2
     pshuflw    xmm1, xmm3, 0x39     ; f e b 7 a d c 9
     movdqa     [r0],xmm0
     movdqa     [r0+16], xmm1
-    %ifdef X86_32
-    pop r3
-    %endif
     ret
 
 ;***********************************************************************
@@ -260,12 +248,7 @@ WELS_EXTERN WelsScan4x4Ac_sse2
 ;void int32_t WelsCalculateSingleCtr4x4_sse2( int16_t *pDct );
 ;***********************************************************************
 WELS_EXTERN WelsCalculateSingleCtr4x4_sse2
-    %ifdef X86_32
-    push r3
-    %assign push_num 1
-    %else
     %assign push_num 0
-    %endif
     INIT_X86_32_PIC r4
     LOAD_1_PARA
     movdqa    xmm0, [r0]
@@ -308,11 +291,7 @@ WELS_EXTERN WelsCalculateSingleCtr4x4_sse2
     lea   r2, [pic(high_mask_table)]
     add       r0b,  [r2+r1]
     DEINIT_X86_32_PIC
-    %ifdef X86_32
-    pop r3
-    %else
     mov retrd, r0d
-    %endif
     ret
 
 

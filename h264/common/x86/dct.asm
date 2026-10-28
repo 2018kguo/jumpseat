@@ -40,31 +40,14 @@
 %include "asm_inc.asm"
 
 %macro LOAD_3_PARA_TO_5_PARA_IDCT 0
-%ifdef X86_32
-    push r3
-    push r4
-    %assign push_num push_num+2
-    mov r0, [esp + push_num*4 + 4]
-    mov r1, [esp + push_num*4 + 8]
-    mov r4, [esp + push_num*4 + 12]
-%else
     mov r4, r2
-%endif
     mov r2, r0
     mov r3, r1
 %endmacro
 
-%ifdef PREFIX
-    %define prefixed(a) _ %+ a
-%else
     %define prefixed(a) a
-%endif
 
-%ifdef X86_32_PICASM
-SECTION .text align=32
-%else
 SECTION .rodata align=32
-%endif
 
 ;***********************************************************************
 ; Constant
@@ -213,14 +196,6 @@ WELS_EXTERN WelsDctT4_mmx
     ret
 
 ;***********************************************************************
-; void IdctResAddPred_mmx(uint8_t* pPred, int32_t iStride, int16_t* pDct);
-;***********************************************************************
-WELS_EXTERN IdctResAddPred_mmx
-    %assign push_num 0
-    LOAD_3_PARA_TO_5_PARA_IDCT
-    jmp prefixed(WelsIDctT4Rec_mmx.begin)
-
-;***********************************************************************
 ;   void WelsIDctT4Rec_mmx(uint8_t *rec, int32_t stride, uint8_t *pred, int32_t pred_stride, int16_t *rs)
 ;***********************************************************************
 WELS_EXTERN WelsIDctT4Rec_mmx
@@ -252,7 +227,6 @@ WELS_EXTERN WelsIDctT4Rec_mmx
     WELSEMMS
     LOAD_5_PARA_POP
     ret
-
 
 ;***********************************************************************
 ; SSE2 functions
@@ -594,14 +568,6 @@ WELS_EXTERN WelsDctT4_sse2
     ret
 
 ;***********************************************************************
-; void IdctResAddPred_sse2(uint8_t* pPred, int32_t iStride, int16_t* pDct);
-;***********************************************************************
-WELS_EXTERN IdctResAddPred_sse2
-    %assign push_num 0
-    LOAD_3_PARA_TO_5_PARA_IDCT
-    jmp prefixed(WelsIDctT4Rec_sse2.begin)
-
-;***********************************************************************
 ; void WelsIDctT4Rec_sse2(uint8_t* pRec, int32_t iStride, uint8_t* pPred, int32_t iPredStride, int16_t* pDct);
 ;***********************************************************************
 WELS_EXTERN WelsIDctT4Rec_sse2
@@ -685,12 +651,10 @@ WELS_EXTERN WelsIDctRecI16x16Dc_sse2
     LOAD_5_PARA_POP
     ret
 
-
 ;***********************************************************************
 ; AVX2 functions
 ;***********************************************************************
 
-%ifdef HAVE_AVX2
 ; out=%1 pPixel1=%2 iStride1=%3 pPixel2=%4 iStride2=%5 wels_shufb0312_movzxw=%6 clobber=%7,%8
 %macro AVX2_LoadDiff16P 8
     vmovq         x%1, [%2         ]
@@ -935,14 +899,6 @@ WELS_EXTERN WelsDctFourT4_avx2
     ret
 
 ;***********************************************************************
-; void IdctFourResAddPred_avx2(uint8_t* pPred, int32_t iStride, const int16_t* pDct, const int8_t* pNzc);
-;***********************************************************************
-WELS_EXTERN IdctFourResAddPred_avx2
-    %assign push_num 0
-    LOAD_3_PARA_TO_5_PARA_IDCT
-    jmp prefixed(WelsIDctFourT4Rec_avx2.begin)
-
-;***********************************************************************
 ; void WelsIDctFourT4Rec_avx2(uint8_t* pRec, int32_t iStride, uint8_t* pPred, int32_t iPredStride, int16_t* pDct);
 ;***********************************************************************
 WELS_EXTERN WelsIDctFourT4Rec_avx2
@@ -1000,14 +956,6 @@ WELS_EXTERN WelsDctT4_avx2
     ret
 
 ;***********************************************************************
-; void IdctResAddPred_avx2(uint8_t* pPred, int32_t iStride, int16_t* pDct);
-;***********************************************************************
-WELS_EXTERN IdctResAddPred_avx2
-    %assign push_num 0
-    LOAD_3_PARA_TO_5_PARA_IDCT
-    jmp prefixed(WelsIDctT4Rec_avx2.begin)
-
-;***********************************************************************
 ; void WelsIDctT4Rec_avx2(uint8_t* pRec, int32_t iStride, uint8_t* pPred, int32_t iPredStride, int16_t* pDct);
 ;***********************************************************************
 WELS_EXTERN WelsIDctT4Rec_avx2
@@ -1032,5 +980,4 @@ WELS_EXTERN WelsIDctT4Rec_avx2
     DEINIT_X86_32_PIC
     LOAD_5_PARA_POP
     ret
-%endif
 

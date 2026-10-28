@@ -45,11 +45,7 @@
 ; Local Data (Read Only)
 ;***********************************************************************
 
-%ifdef X86_32_PICASM
-SECTION .text align=16
-%else
 SECTION .rodata align=16
-%endif
 
 align 16
 sse2_plane_inc_minus dw -7, -6, -5, -4, -3, -2, -1, 0

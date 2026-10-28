@@ -77,10 +77,6 @@ void McChromaWidthEq4_mmx (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDs
                            const uint8_t* kpABCD, int32_t iHeight);
 void McCopyWidthEq8_mmx (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
                          int32_t iHeight);
-void PixelAvgWidthEq4_mmx (uint8_t* pDst, int32_t iDstStride, const uint8_t* pSrcA, int32_t iSrcAStride,
-                           const uint8_t* pSrcB, int32_t iSrcBStride, int32_t iHeight);
-void PixelAvgWidthEq8_mmx (uint8_t* pDst, int32_t iDstStride, const uint8_t* pSrcA, int32_t iSrcAStride,
-                           const uint8_t* pSrcB, int32_t iSrcBStride, int32_t iHeight);
 
 //***************************************************************************//
 //                       SSE2 definition                                     //
@@ -90,17 +86,10 @@ void McChromaWidthEq8_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pD
 void McCopyWidthEq16_sse2 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
                            int32_t iHeight);
 
-void PixelAvgWidthEq16_sse2 (uint8_t* pDst, int32_t iDstStride, const uint8_t* pSrcA, int32_t iSrcAStride,
-                             const uint8_t* pSrcB, int32_t iSrcBStride, int32_t iHeight);
 
 
 
 
-//***************************************************************************//
-//                       SSE3 definition                                     //
-//***************************************************************************//
-void McCopyWidthEq16_sse3 (const uint8_t* pSrc, int32_t iSrcStride, uint8_t* pDst, int32_t iDstStride,
-                           int32_t iHeight);
 
 //***************************************************************************//
 //                       SSSE3 definition                                    //

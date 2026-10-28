@@ -152,13 +152,6 @@ WELS_EXTERN AnalysisVaaInfoIntra_sse2
     PUSH_XMM 8
     SIGN_EXTENSION r1,r1d
 
-%ifdef X86_32
-    push r3
-    push r4
-    push r5
-    push r6
-    %assign push_num push_num+4
-%endif
 
     mov  r5,r7
     and  r5,0fh
@@ -227,12 +220,6 @@ WELS_EXTERN AnalysisVaaInfoIntra_sse2
     add r7,32
     add r7,r5
 
-%ifdef X86_32
-    pop r6
-    pop r5
-    pop r4
-    pop r3
-%endif
     POP_XMM
 
     ret
@@ -247,13 +234,6 @@ WELS_EXTERN AnalysisVaaInfoIntra_ssse3
     PUSH_XMM 8
     SIGN_EXTENSION r1,r1d
 
-%ifdef X86_32
-    push r3
-    push r4
-    push r5
-    push r6
-    %assign push_num push_num+4
-%endif
 
     mov  r5,r7
     and  r5,0fh
@@ -322,12 +302,6 @@ WELS_EXTERN AnalysisVaaInfoIntra_ssse3
 
     add r7,32
     add r7,r5
-%ifdef X86_32
-    pop r6
-    pop r5
-    pop r4
-    pop r3
-%endif
     POP_XMM
 
     ret
