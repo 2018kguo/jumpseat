@@ -17,9 +17,11 @@ typedef struct {
 	uint8_t *i420;
 } oh264;
 
-// Tunables, each -1 for OpenH264's own default (JUMPSEAT_OH264).
+// Tunables, each -1 for the encoder's own default (JUMPSEAT_OH264). The
+// encoder fixes the rest (h264/README.md): screen content, low complexity,
+// quality-mode rate control, one thread, one slice.
 typedef struct {
-	int qp, complexity, bg, aq, scd, ltr, threads, refs, rc, vui, usage;
+	int qp, refs, vui;
 } oh_opts;
 
 static oh264 *open_encoder(int w, int h, int fps, oh_opts o) {
@@ -27,8 +29,7 @@ static oh264 *open_encoder(int w, int h, int fps, oh_opts o) {
 	if (WelsCreateSVCEncoder(&e->enc) != 0) return 0;
 	SEncParamExt p;
 	(*e->enc)->GetDefaultParams(e->enc, &p);
-	// The mode WebRTC uses for screen sharing.
-	p.iUsageType = o.usage == 0 ? CAMERA_VIDEO_REAL_TIME : SCREEN_CONTENT_REAL_TIME;
+	p.iUsageType = SCREEN_CONTENT_REAL_TIME; // the mode WebRTC uses for screen sharing
 	p.iPicWidth = w; p.iPicHeight = h; p.fMaxFrameRate = fps;
 	// Quality-led rate control with no bitrate pressure, so frames go at
 	// o.qp the way x264's crf does; set_max_kbps adds the pressure on a slow
@@ -36,14 +37,7 @@ static oh264 *open_encoder(int w, int h, int fps, oh_opts o) {
 	int qp = o.qp;
 	p.iRCMode = RC_QUALITY_MODE; p.iTargetBitrate = 50000000; p.iMaxBitrate = UNSPECIFIED_BIT_RATE;
 	p.iMinQp = qp; p.iMaxQp = 51;
-	if (o.rc == 0) { p.iRCMode = RC_OFF_MODE; p.iMaxQp = qp; }
 	p.bEnableFrameSkip = 0; p.uiIntraPeriod = 0; p.iMultipleThreadIdc = 1;
-	if (o.complexity >= 0) p.iComplexityMode = (ECOMPLEXITY_MODE)o.complexity;
-	if (o.bg >= 0) p.bEnableBackgroundDetection = o.bg;
-	if (o.aq >= 0) p.bEnableAdaptiveQuant = o.aq;
-	if (o.scd >= 0) p.bEnableSceneChangeDetect = o.scd;
-	if (o.ltr >= 0) p.bEnableLongTermReference = o.ltr;
-	if (o.threads >= 0) p.iMultipleThreadIdc = o.threads;
 	if (o.refs >= 0) p.iNumRefFrame = o.refs;
 	// libyuv's ARGBToI420 is BT.601, limited range: say so (as encoder.go).
 	p.sSpatialLayers[0].bVideoSignalTypePresent = o.vui != 0;
@@ -142,25 +136,18 @@ type encoder struct {
 // complexity, quality-mode rate control with a QP floor of 17 (h264/ has no
 // deblocking filter, as x264 ultrafast runs without one) takes fewer bits
 // and less CPU than x264 ultrafast on desktop content.
-const (
-	openH264QP         = 17
-	openH264Usage      = 1 // SCREEN_CONTENT_REAL_TIME
-	openH264Complexity = 0 // LOW_COMPLEXITY
-)
+const openH264QP = 17
 
 func newEncoder(width, height, fps int) (*encoder, error) {
-	opts := C.oh_opts{qp: openH264QP, complexity: openH264Complexity, bg: -1, aq: -1, scd: -1, ltr: -1, threads: -1,
-		refs: -1, rc: -1, vui: -1, usage: openH264Usage}
-	// JUMPSEAT_OH264 ("qp=24,complexity=0,scd=0") overrides them for
-	// the A/B harness.
+	opts := C.oh_opts{qp: openH264QP, refs: -1, vui: -1}
+	// JUMPSEAT_OH264 ("qp=24,refs=1") overrides them for the A/B harness.
 	for _, pair := range strings.Split(os.Getenv("JUMPSEAT_OH264"), ",") {
 		key, value, _ := strings.Cut(pair, "=")
 		n, err := strconv.Atoi(value)
 		if err != nil {
 			continue
 		}
-		field := map[string]*C.int{"qp": &opts.qp, "complexity": &opts.complexity, "bg": &opts.bg, "aq": &opts.aq, "scd": &opts.scd,
-			"ltr": &opts.ltr, "threads": &opts.threads, "refs": &opts.refs, "rc": &opts.rc, "vui": &opts.vui, "usage": &opts.usage}[key]
+		field := map[string]*C.int{"qp": &opts.qp, "refs": &opts.refs, "vui": &opts.vui}[key]
 		if field != nil {
 			*field = C.int(n)
 		}

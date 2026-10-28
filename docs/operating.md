@@ -49,7 +49,7 @@ For measurement and A/B runs; defaults are what the benchmarks measured.
 |---|---|
 | `JUMPSEAT_TOKEN` | The token, instead of `--token`. |
 | `JUMPSEAT_TRACE=1` | Log each frame within 300 ms of a key press: when it was damaged, grabbed, encoded and sent, from the key reaching X. |
-| `JUMPSEAT_OH264` | Encoder settings, `key=value,…`: `qp`, `complexity`, `usage`, `refs`, `rc`, `scd`, `bg`, `aq`, `ltr`, `threads`, `vui` (−1 for OpenH264's default). |
+| `JUMPSEAT_OH264` | Encoder settings, `key=value,…`: `qp` (the QP floor, default 17), `refs`, `vui` (−1 for the encoder's default). The rest of the configuration is fixed ([h264/](../h264/README.md)). |
 | `JUMPSEAT_X264` | x264 options for the `-tags x264` build, `key=value:…` (`x264_param_parse`). |
 | `JUMPSEAT_MAX_FPS` | Pacing cap (default 90, above Chromium's 60 so early frames are not dropped). |
 | `JUMPSEAT_ENCODER_FPS` | The frame rate the rate control budgets for (default 60). |

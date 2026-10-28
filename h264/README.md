@@ -4,27 +4,38 @@ OpenH264 v2.6.0's encoder (cisco/openh264 652bdb77, BSD 2-clause, LICENSE),
 trimmed to what jumpseat links and changed for desktops. Not tracking
 upstream: changes here are ordinary commits.
 
-Kept: `api/` (the ISVCEncoder interface), `common/`, `encoder/`,
-`processing/` (scroll, scene-change, complexity and background analysis,
-adaptive quantization), with x86-64 (nasm) and arm64 assembly, and plain-C
-versions of every SIMD routine.
+It encodes one configuration, the streamer's, and the parameters force it
+(`param_svc.h`): screen content at low complexity, quality-mode rate control,
+CAVLC, no deblocking, one thread, one slice, one spatial and temporal layer,
+constant SPS/PPS ids, no LTR, background detection, adaptive quantization or
+frame skipping. `SetOption` takes the data format, bitrate and max bitrate.
 
-Removed, because jumpseat never runs it (each removal left the bench output
-identical to the byte, screen and camera mode):
+Kept: `api/` (the encoder interface), `common/`, `encoder/` and `processing/`
+(scroll, scene-change and complexity analysis, frame SAD), with x86-64 (nasm,
+elf64) and arm64 assembly, and plain-C versions of every SIMD routine. Where
+OpenH264 had several x86 versions of a routine, only the newest is kept (AVX2
+where there is one): a CPU without that ISA runs the C version.
 
-- From upstream's tree: the decoder, console apps, tests and test streams.
-- Downsampling, denoising and image rotation: one layer, at the input's size.
-- CABAC: baseline profile is CAVLC; parameters force it.
-- The deblocking filter: off, as x264 ultrafast runs; parameters force it.
-- SPS/PPS id strategies other than constant ids; parameters force it.
-- Code for targets and builds we never compile (`unifdef`): 32-bit ARM,
-  MIPS, LoongArch, 32-bit x86, Android, Windows, and the testbed,
-  statistics and frame-dump debug switches.
+Removed, because that configuration never runs it (each removal left the
+bench output identical to the byte, uncapped and at 1000 kbps):
 
-Still here though unused: multi-threaded and size-limited slicing, and
-multi-layer SVC. They are woven through the frame loop in `encoder_ext.cpp`,
-which also uses their helpers on the single-threaded path; taking them out
-means restructuring that loop.
+- From upstream's tree: the decoder and its API, console apps, tests and
+  test streams.
+- Other configurations: camera mode and its preprocessing (downsampling,
+  denoising, rotation, background detection, adaptive quantization), medium
+  and high complexity, the other four rate-control modes, CABAC, deblocking,
+  SPS/PPS id strategies, LTR and temporal-layer reference strategies, SVC
+  enhancement layers and prefix NALs, threads and the task manager,
+  multi-slice and size-limited (dynamic) slicing.
+- What the low-complexity screen path never reaches: sub-pel motion
+  (six-tap filters, quarter-pel averaging; luma prediction is a copy), the
+  feature-search index, 16x8/8x16 and smaller partition searches, intra 4x4
+  in P slices.
+- Encoder statistics and the debug dumps; options nothing sets.
+- Code for targets we never compile (`unifdef`): 32-bit ARM and x86,
+  MIPS, LoongArch, Android, Windows.
+- Then whatever nothing referenced any more: functions (the linker's
+  `--gc-sections`), statics, asm routines, macros, tables, types and members.
 
     make -j8        # build/libjumpseat_h264.a; x86-64 needs nasm
 
@@ -54,10 +65,10 @@ the library, `CGO_CFLAGS="-DH264_SUM=$(cksum < h264/build/libjumpseat_h264.a | c
   time (psadbw / vabd). **Coefficient zeroing** (`svc_encode_mb.cpp`):
   inline memset, not MMX calls. **No 16x16 plane prediction**
   (`svc_base_layer_md.cpp`): 0.1% of animation bits for 3% of its CPU.
-- **Low complexity in screen mode** (the streamer's setting) works like x264
-  ultrafast: integer-pel motion (`md.cpp`) and no intra 4x4 in P slices
-  (`svc_base_layer_md.cpp`). Medium complexity keeps both: 8% fewer
-  animation bits for ~30% more of its CPU.
+- **Low complexity in screen mode** works like x264 ultrafast: integer-pel
+  motion (`md.cpp`) and no intra 4x4 in P slices (`svc_base_layer_md.cpp`).
+  OpenH264's medium complexity, which kept both, took 8% fewer animation
+  bits for ~30% more of its CPU.
 
 - **Motion QP and rest refinement** (`ratectl.cpp`, `wels_preprocess.cpp`,
   `svc_mode_decision.cpp`): x264's CRF rule on a floor: frames whose moving

@@ -119,8 +119,10 @@ python3 bench/modal_lab.py callgrind scroll usage=1  # x86: where an encode's in
 `local.sh` builds `h264/` and runs in the lab container on this machine;
 `modal_lab.py` keeps an x86 sandbox on Modal and syncs `h264/` and `bench/`
 into it, so a change rebuilds in seconds. Options for `encode_bench`: `enc=1`
-(x264 as the streamer sets it up), `crf`, `xthreads`, `usage`, `qp`,
-`complexity`, `rest=N`, `perframe=1`; `X264_NO_AVX512=1` prices x264's
+(x264 as the streamer sets it up), `crf`, `xthreads`, `qp`, `kbps` (cap the
+rate as a slow link does), `rest=N`, `perframe=1` (`usage`, `complexity`, `rc`
+and the like only change stock OpenH264, `LAB_SRC=stock`: h264/ forces its
+configuration); `X264_NO_AVX512=1` prices x264's
 AVX-512 kernels. Every encoder change is judged on bits (BD-rate, or output
 identical to the byte for a pure speed-up) and instructions. Put run output
 in the ignored `.bench/`.
