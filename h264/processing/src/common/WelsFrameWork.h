@@ -44,7 +44,6 @@
 
 #include "IWelsVP.h"
 #include "util.h"
-#include "WelsThreadLib.h"
 
 WELSVP_NAMESPACE_BEGIN
 
@@ -122,7 +121,6 @@ class CVpFrameWork : public IWelsVP {
  private:
   IStrategy* m_pStgChain[MAX_STRATEGY_NUM];
 
-  WELS_MUTEX m_mutes;
 };
 
 WELSVP_NAMESPACE_END

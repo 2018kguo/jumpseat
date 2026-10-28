@@ -97,9 +97,6 @@ int32_t         iNalLen[2];
 int32_t         iNalIndex;              // coding NAL currently, 0 based
 
 // bool            bAnnexBFlag;            // annexeb flag, to figure it pOut the packetization mode whether need 4 bytes (0 0 0 1) of start code prefix
-#if MT_DEBUG_BS_WR
-bool            bSliceCodedFlag;
-#endif//MT_DEBUG_BS_WR
 } SWelsSliceBs;
 
 /*!

@@ -945,30 +945,6 @@ int32_t InitAllSlicesInThread (sWelsEncCtx* pCtx) {
   return ENC_RETURN_SUCCESS;
 }
 
-int32_t InitOneSliceInThread (sWelsEncCtx* pCtx,
-                              SSlice*& pSlice,
-                              const int32_t kiSlcBuffIdx,
-                              const int32_t kiDlayerIdx,
-                              const int32_t kiSliceIdx) {
-
-  if (pCtx->pCurDqLayer->bThreadSlcBufferFlag) {
-    const int32_t kiCodedNumInThread = pCtx->pCurDqLayer->sSliceBufferInfo[kiSlcBuffIdx].iCodedSliceNum;
-    assert (kiCodedNumInThread <= pCtx->pCurDqLayer->sSliceBufferInfo[kiSlcBuffIdx].iMaxSliceNum - 1);
-    pSlice = &pCtx->pCurDqLayer->sSliceBufferInfo [kiSlcBuffIdx].pSliceBuffer[kiCodedNumInThread];
-  } else {
-    pSlice = &pCtx->pCurDqLayer->sSliceBufferInfo [0].pSliceBuffer[kiSliceIdx];
-  }
-  pSlice->iSliceIdx   = kiSliceIdx;
-  pSlice->uiBufferIdx = kiSlcBuffIdx;
-
-  // Initialize slice bs buffer info
-  pSlice->sSliceBs.uiBsPos   = 0;
-  pSlice->sSliceBs.iNalIndex = 0;
-  pSlice->sSliceBs.pBsBuffer = pCtx->pSliceThreading->pThreadBsBuffer[kiSlcBuffIdx];
-
-  return ENC_RETURN_SUCCESS;
-}
-
 int32_t InitSliceThreadInfo (sWelsEncCtx* pCtx,
                              SDqLayer* pDqLayer,
                              const int32_t kiDlayerIndex,
@@ -1702,10 +1678,6 @@ bool DynSlcJudgeSliceBoundaryStepBack (void* pCtx, void* pSlice, SSliceCtx* pSli
              "DynSlcJudgeSliceBoundaryStepBack: AddSliceBoundary: iCurMbIdx=%d, uiLen=%d, iSliceIdx=%d", iCurMbIdx, uiLen,
              pCurSlice->iSliceIdx);
 
-    if (pEncCtx->pSvcParam->iMultipleThreadIdc > 1) {
-      WelsMutexLock (&pEncCtx->pSliceThreading->mutexSliceNumUpdate);
-      //lock the acessing to this variable: pSliceCtx->iSliceNumInFrame
-    }
     //tmp choice to avoid complex memory operation, 100520, to be modify
     //TODO: pSliceCtx->iSliceNumInFrame should match max slice num limitation in given profile based on standard
     //      current change is tmp solution which equal to origin design,
@@ -1715,9 +1687,6 @@ bool DynSlcJudgeSliceBoundaryStepBack (void* pCtx, void* pSlice, SSliceCtx* pSli
     AddSliceBoundary (pEncCtx, pCurSlice, pSliceCtx, pCurMb, iCurMbIdx, kiEndMbIdxOfPartition);
     ++ pSliceCtx->iSliceNumInFrame;
 
-    if (pEncCtx->pSvcParam->iMultipleThreadIdc > 1) {
-      WelsMutexUnlock (&pEncCtx->pSliceThreading->mutexSliceNumUpdate);
-    }
 
     return true;
   }

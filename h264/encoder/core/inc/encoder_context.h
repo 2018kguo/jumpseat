@@ -56,13 +56,9 @@
 #include "crt_util_safe_x.h"
 #include "utils.h"
 
-#include "mt_defs.h" // for multiple threadin,
-#include "WelsThreadLib.h"
-#include "wels_task_management.h"
 
 namespace WelsEnc {
 
-class IWelsTaskManage;
 class IWelsReferenceStrategy;
 
 /*
@@ -136,8 +132,6 @@ typedef struct TagWelsEncCtx {
   SStrideTables*    pStrideTab;     // stride tables for internal coding used
   SWelsFuncPtrList* pFuncList;
 
-  SSliceThreading*  pSliceThreading;
-  IWelsTaskManage*  pTaskManage; //was planning to put it under CWelsH264SVCEncoder but it may be updated (lock/no lock) when param is changed
   IWelsReferenceStrategy* pReferenceStrategy;
 
   // pointers
@@ -222,7 +216,6 @@ typedef struct TagWelsEncCtx {
   int64_t            iLastStatisticsLogTs;
 
   int32_t iEncoderError;
-  WELS_MUTEX mutexEncoderError;
   bool bDeliveryFlag;
   int64_t            uiLastTimestamp;
   uint8_t*           pDynamicBsBuffer[MAX_THREADS_NUM];

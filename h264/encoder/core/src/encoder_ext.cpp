@@ -51,7 +51,6 @@
 #include "ref_list_mgr_svc.h"
 #include "ls_defines.h"
 #include "crt_util_safe_x.h" // Safe CRT routines like utils for cross platforms
-#include "slice_multi_threading.h"
 #include "measure_time.h"
 #include "svc_set_mb_syn.h"
 
@@ -182,15 +181,8 @@ int32_t SliceArgumentValidationFixedSliceMode (SLogContext* pLogCtx,
 
   pSliceArgument->uiSliceSizeConstraint = 0;
 
-  if (pSliceArgument->uiSliceNum == 0) {
-    WelsCPUFeatureDetect (&iCpuCores);
-    if (0 == iCpuCores) {
-      // cpuid not supported or doesn't expose the number of cores,
-      // use high level system API as followed to detect number of pysical/logic processor
-      iCpuCores = DynamicDetectCpuCores();
-    }
-    pSliceArgument->uiSliceNum = iCpuCores;
-  }
+  if (pSliceArgument->uiSliceNum == 0)
+    pSliceArgument->uiSliceNum = 1; // jumpseat: one thread, so one slice
 
   if (pSliceArgument->uiSliceNum <= 1) {
     WelsLog (pLogCtx, WELS_LOG_INFO,
@@ -1635,12 +1627,6 @@ int32_t RequestMemorySvc (sWelsEncCtx** ppCtx, SExistingParasetList* pExistingPa
 
   // for dynamic slice mode&& CABAC,allocate slice buffer to restore slice data
   // for pSlice bs buffers
-  if (pParam->iMultipleThreadIdc > 1
-      && RequestMtResource (ppCtx, pParam, iCountBsLen, iMaxSliceBufferSize, bDynamicSlice)) {
-    WelsLog (& (*ppCtx)->sLogCtx, WELS_LOG_WARNING, "RequestMemorySvc(), RequestMtResource failed!");
-    return 1;
-  }
-
   (*ppCtx)->pReferenceStrategy = IWelsReferenceStrategy::CreateReferenceStrategy ((*ppCtx), pParam->iUsageType,
                                  pParam->bEnableLongTermReference);
   WELS_VERIFY_RETURN_IF (1, (NULL == (*ppCtx)->pReferenceStrategy))
@@ -1825,8 +1811,6 @@ void FreeMemorySvc (sWelsEncCtx** ppCtx) {
       pCtx->pOut = NULL;
     }
 
-    if (pParam != NULL && pParam->iMultipleThreadIdc > 1)
-      ReleaseMtResource (ppCtx);
 
     if (NULL != pCtx->pReferenceStrategy) {
       WELS_DELETE_OP (pCtx->pReferenceStrategy);
@@ -2121,19 +2105,8 @@ int32_t GetMultipleThreadIdc (SLogContext* pLogCtx, SWelsSvcCodingParam* pCoding
   iCacheLineSize = 16; // 16 bytes aligned in default
 #endif//X86_ASM
 
-  if (0 == pCodingParam->iMultipleThreadIdc && uiCpuCores == 0) {
-    // cpuid not supported or doesn't expose the number of cores,
-    // use high level system API as followed to detect number of pysical/logic processor
-    uiCpuCores = DynamicDetectCpuCores();
-  }
-
-  if (0 == pCodingParam->iMultipleThreadIdc)
-    pCodingParam->iMultipleThreadIdc = (uiCpuCores > 0) ? uiCpuCores : 1;
-
-  // So far so many cpu cores up to MAX_THREADS_NUM mean for server platforms,
-  // for client application here it is constrained by maximal to MAX_THREADS_NUM
-  pCodingParam->iMultipleThreadIdc = WELS_CLIP3 (pCodingParam->iMultipleThreadIdc, 1, MAX_THREADS_NUM);
-  uiCpuCores = pCodingParam->iMultipleThreadIdc;
+  pCodingParam->iMultipleThreadIdc = 1; // jumpseat: threads removed
+  uiCpuCores = 1;
 
   if (InitSliceSettings (pLogCtx, pCodingParam, uiCpuCores, &iSliceNum)) {
     WelsLog (pLogCtx, WELS_LOG_ERROR, "GetMultipleThreadIdc(), InitSliceSettings failed.");
@@ -2155,24 +2128,6 @@ void WelsUninitEncoderExt (sWelsEncCtx** ppCtx) {
            "WelsUninitEncoderExt(), pCtx= %p, iMultipleThreadIdc= %d.",
            (void*) (*ppCtx), (*ppCtx)->pSvcParam->iMultipleThreadIdc);
 
-
-  if ((*ppCtx)->pSvcParam->iMultipleThreadIdc > 1 && (*ppCtx)->pSliceThreading != NULL) {
-    const int32_t iThreadCount = (*ppCtx)->pSvcParam->iMultipleThreadIdc;
-    int32_t iThreadIdx = 0;
-
-    while (iThreadIdx < iThreadCount) {
-      int res = 0;
-      if ((*ppCtx)->pSliceThreading->pThreadHandles[iThreadIdx]) {
-
-        res = WelsThreadJoin ((*ppCtx)->pSliceThreading->pThreadHandles[iThreadIdx]); // waiting thread exit
-        WelsLog (& (*ppCtx)->sLogCtx, WELS_LOG_INFO, "WelsUninitEncoderExt(), pthread_join(pThreadHandles%d) return %d..",
-                 iThreadIdx,
-                 res);
-        (*ppCtx)->pSliceThreading->pThreadHandles[iThreadIdx] = 0;
-      }
-      ++ iThreadIdx;
-    }
-  }
 
   if ((*ppCtx)->pVpp) {
     (*ppCtx)->pVpp->FreeSpatialPictures (*ppCtx);
@@ -2512,9 +2467,6 @@ void WelsInitCurrentLayer (sWelsEncCtx* pCtx,
     pCurDq->bBaseLayerAvailableFlag = false;
   }
 
-  if (pCtx->pTaskManage) {
-    pCtx->pTaskManage->InitFrame (kiCurDid);
-  }
 }
 
 static inline void SetFastCodingFunc (SWelsFuncPtrList* pFuncList) {
@@ -3315,9 +3267,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
   SSpatialPicIndex* pSpatialIndexMap = &pCtx->sSpatialIndexMap[0];
   SPicture* fsnr                = NULL;
   SPicture* pEncPic             = NULL; // to be decided later
-#if defined(MT_DEBUG)
-  int32_t iDidList[MAX_DEPENDENCY_LAYER] = {0};
-#endif
   int32_t iLayerNum             = 0;
   int32_t iLayerSize            = 0;
   int32_t iSpatialNum           =
@@ -3421,37 +3370,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
 
     iCurWidth   = pParam->iVideoWidth;
     iCurHeight  = pParam->iVideoHeight;
-#if defined(MT_DEBUG)
-    iDidList[iSpatialIdx]       = iCurDid;
-#endif
-    // Encoding this picture might mulitiple sQualityStat layers potentially be encoded as followed
-    switch (pParam->sSliceArgument.uiSliceMode) {
-    case SM_FIXEDSLCNUM_SLICE: {
-      if ((pSvcParam->iMultipleThreadIdc > 1) &&
-          (pSvcParam->bUseLoadBalancing
-           && pSvcParam->iMultipleThreadIdc >= pSvcParam->sSpatialLayers[iCurDid].sSliceArgument.uiSliceNum)
-         ) {
-        if (iCurDid > 0)
-          AdjustEnhanceLayer (pCtx, iCurDid);
-        else
-          AdjustBaseLayer (pCtx);
-      }
-
-      break;
-    }
-    case SM_SIZELIMITED_SLICE: {
-      int32_t iPicIPartitionNum = PicPartitionNumDecision (pCtx);
-      // MT compatibility
-      pCtx->iActiveThreadsNum =
-        iPicIPartitionNum; // we try to active number of threads, equal to number of picture partitions
-      WelsInitCurrentDlayerMltslc (pCtx, iPicIPartitionNum);
-      break;
-    }
-    default: {
-      break;
-    }
-    }
-
     /* coding each spatial layer, only one sQualityStat layer within spatial support */
     int32_t iSliceCount = 1;
     if (iLayerNum >= MAX_LAYER_NUM_OF_FRAME) { // check available layer_bs_info writing as follows
@@ -3518,192 +3436,47 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
 
     //TODO Complexity Calculation here for screen content
     iLayerSize = 0;
-    if (SM_SINGLE_SLICE == pParam->sSliceArgument.uiSliceMode) { // only one slice within a sQualityStat layer
-      int32_t iSliceSize   = 0;
-      int32_t iPayloadSize = 0;
-      SSlice* pCurSlice    = &pCtx->pCurDqLayer->sSliceBufferInfo[0].pSliceBuffer[0];
+    // jumpseat: one slice, one thread (the multi-slice and threaded branches are removed)
+    int32_t iSliceSize   = 0;
+    int32_t iPayloadSize = 0;
+    SSlice* pCurSlice    = &pCtx->pCurDqLayer->sSliceBufferInfo[0].pSliceBuffer[0];
 
-      if (pCtx->bNeedPrefixNalFlag) {
-        pCtx->iEncoderError = AddPrefixNal (pCtx, pLayerBsInfo, &pLayerBsInfo->pNalLengthInByte[0], &iNalIdxInLayer, eNalType,
-                                            eNalRefIdc,
-                                            iPayloadSize);
-        WELS_VERIFY_RETURN_IFNEQ (pCtx->iEncoderError, ENC_RETURN_SUCCESS)
-        iLayerSize += iPayloadSize;
-      }
-
-      WelsLoadNal (pCtx->pOut, eNalType, eNalRefIdc);
-      assert (0 == (int) pCurSlice->iSliceIdx);
-      pCtx->iEncoderError   = SetSliceBoundaryInfo (pCtx->pCurDqLayer, pCurSlice, 0);
+    if (pCtx->bNeedPrefixNalFlag) {
+      pCtx->iEncoderError = AddPrefixNal (pCtx, pLayerBsInfo, &pLayerBsInfo->pNalLengthInByte[0], &iNalIdxInLayer, eNalType,
+                                          eNalRefIdc,
+                                          iPayloadSize);
       WELS_VERIFY_RETURN_IFNEQ (pCtx->iEncoderError, ENC_RETURN_SUCCESS)
-
-      pCtx->iEncoderError   = WelsCodeOneSlice (pCtx, pCurSlice, eNalType);
-      WELS_VERIFY_RETURN_IFNEQ (pCtx->iEncoderError, ENC_RETURN_SUCCESS)
-
-      WelsUnloadNal (pCtx->pOut);
-
-      pCtx->iEncoderError = WelsEncodeNal (&pCtx->pOut->sNalList[pCtx->pOut->iNalIndex - 1],
-                                           &pCtx->pCurDqLayer->sLayerInfo.sNalHeaderExt,
-                                           pCtx->iFrameBsSize - pCtx->iPosBsBuffer,
-                                           pCtx->pFrameBs + pCtx->iPosBsBuffer,
-                                           &pLayerBsInfo->pNalLengthInByte[iNalIdxInLayer]);
-      WELS_VERIFY_RETURN_IFNEQ (pCtx->iEncoderError, ENC_RETURN_SUCCESS)
-      iSliceSize = pLayerBsInfo->pNalLengthInByte[iNalIdxInLayer];
-
-      iLayerSize += iSliceSize;
-      pCtx->iPosBsBuffer               += iSliceSize;
-      pLayerBsInfo->uiLayerType         = VIDEO_CODING_LAYER;
-      pLayerBsInfo->uiSpatialId         = iCurDid;
-      pLayerBsInfo->uiTemporalId        = iCurTid;
-      pLayerBsInfo->uiQualityId         = 0;
-      pLayerBsInfo->iNalCount           = ++ iNalIdxInLayer;
-      pLayerBsInfo->eFrameType          = eFrameType;
-      pLayerBsInfo->iSubSeqId = GetSubSequenceId (pCtx, eFrameType);
+      iLayerSize += iPayloadSize;
     }
-    // for dynamic slicing single threading..
-    else if ((SM_SIZELIMITED_SLICE == pParam->sSliceArgument.uiSliceMode) && (pSvcParam->iMultipleThreadIdc <= 1)) {
-      const int32_t kiLastMbInFrame = pCtx->pCurDqLayer->sSliceEncCtx.iMbNumInFrame;
-      pCtx->iEncoderError = WelsCodeOnePicPartition (pCtx, pFbi, pLayerBsInfo, &iNalIdxInLayer, &iLayerSize, 0,
-                            kiLastMbInFrame - 1, 0);
-      pLayerBsInfo->eFrameType = eFrameType;
-      pLayerBsInfo->iSubSeqId = GetSubSequenceId (pCtx, eFrameType);
-      WELS_VERIFY_RETURN_IFNEQ (pCtx->iEncoderError, ENC_RETURN_SUCCESS)
-    } else {
-      //other multi-slice uiSliceMode
-      // THREAD_FULLY_FIRE_MODE/THREAD_PICK_UP_MODE for any mode of non-SM_SIZELIMITED_SLICE
-      if ((SM_SIZELIMITED_SLICE != pParam->sSliceArgument.uiSliceMode) && (pSvcParam->iMultipleThreadIdc > 1)) {
-        iSliceCount = GetCurrentSliceNum (pCtx->pCurDqLayer);
-        if (iLayerNum + 1 >= MAX_LAYER_NUM_OF_FRAME) { // check available layer_bs_info for further writing as followed
-          WelsLog (pLogCtx, WELS_LOG_ERROR,
-                   "WelsEncoderEncodeExt(), iLayerNum(%d) overflow(max:%d) at iDid= %d uiSliceMode= %d, iSliceCount= %d!",
-                   iLayerNum, MAX_LAYER_NUM_OF_FRAME, iCurDid, pParam->sSliceArgument.uiSliceMode, iSliceCount);
-          return ENC_RETURN_UNSUPPORTED_PARA;
-        }
-        if (iSliceCount <= 1) {
-          WelsLog (pLogCtx, WELS_LOG_ERROR,
-                   "WelsEncoderEncodeExt(), iSliceCount(%d) from GetCurrentSliceNum() is untrusted due stack/heap crupted!",
-                   iSliceCount);
-          return ENC_RETURN_UNEXPECTED;
-        }
-        //note: the old codes are removed at commit: 3e0ee69
-        pLayerBsInfo->pBsBuf = pCtx->pFrameBs + pCtx->iPosBsBuffer;
-        pLayerBsInfo->uiLayerType   = VIDEO_CODING_LAYER;
-        pLayerBsInfo->uiSpatialId   = pCtx->uiDependencyId;
-        pLayerBsInfo->uiTemporalId  = pCtx->uiTemporalId;
-        pLayerBsInfo->uiQualityId   = 0;
-        pLayerBsInfo->iNalCount     = 0;
-        pLayerBsInfo->eFrameType    = eFrameType;
-        pLayerBsInfo->iSubSeqId = GetSubSequenceId (pCtx, eFrameType);
 
-        pCtx->pTaskManage->ExecuteTasks();
-        if (pCtx->iEncoderError) {
-          WelsLog (pLogCtx, WELS_LOG_ERROR,
-                   "WelsEncoderEncodeExt(), multi-slice (mode %d) encoding error!",
-                   pParam->sSliceArgument.uiSliceMode);
-          return pCtx->iEncoderError;
-        }
+    WelsLoadNal (pCtx->pOut, eNalType, eNalRefIdc);
+    assert (0 == (int) pCurSlice->iSliceIdx);
+    pCtx->iEncoderError   = SetSliceBoundaryInfo (pCtx->pCurDqLayer, pCurSlice, 0);
+    WELS_VERIFY_RETURN_IFNEQ (pCtx->iEncoderError, ENC_RETURN_SUCCESS)
 
-        iLayerSize = AppendSliceToFrameBs (pCtx, pLayerBsInfo, iSliceCount);
-      }
-      // THREAD_FULLY_FIRE_MODE && SM_SIZELIMITED_SLICE
-      else if ((SM_SIZELIMITED_SLICE == pParam->sSliceArgument.uiSliceMode) && (pSvcParam->iMultipleThreadIdc > 1)) {
-        const int32_t kiPartitionCnt = pCtx->iActiveThreadsNum;
+    pCtx->iEncoderError   = WelsCodeOneSlice (pCtx, pCurSlice, eNalType);
+    WELS_VERIFY_RETURN_IFNEQ (pCtx->iEncoderError, ENC_RETURN_SUCCESS)
 
-        //TODO: use a function to remove duplicate code here and ln3994
-        int32_t iLayerBsIdx       = pCtx->pOut->iLayerBsIndex;
-        SLayerBSInfo* pLbi        = &pFbi->sLayerInfo[iLayerBsIdx];
-        pLbi->pBsBuf = pCtx->pFrameBs + pCtx->iPosBsBuffer;
-        pLbi->uiLayerType   = VIDEO_CODING_LAYER;
-        pLbi->uiSpatialId   = pCtx->uiDependencyId;
-        pLbi->uiTemporalId  = pCtx->uiTemporalId;
-        pLbi->uiQualityId   = 0;
-        pLbi->iNalCount     = 0;
-        pLbi->eFrameType = eFrameType;
-        pLbi->iSubSeqId = GetSubSequenceId (pCtx, eFrameType);
-        int32_t iIdx = 0;
-        while (iIdx < kiPartitionCnt) {
-          pCtx->pSliceThreading->pThreadPEncCtx[iIdx].pFrameBsInfo = pFbi;
-          pCtx->pSliceThreading->pThreadPEncCtx[iIdx].iSliceIndex  = iIdx;
-          ++ iIdx;
-        }
+    WelsUnloadNal (pCtx->pOut);
 
-        int32_t iRet = InitAllSlicesInThread (pCtx);
-        if (iRet) {
-          WelsLog (pLogCtx, WELS_LOG_ERROR,
-                   "WelsEncoderEncodeExt(), multi-slice (mode %d) InitAllSlicesInThread() error!",
-                   pParam->sSliceArgument.uiSliceMode);
-          return ENC_RETURN_UNEXPECTED;
-        }
-        pCtx->pTaskManage->ExecuteTasks();
+    pCtx->iEncoderError = WelsEncodeNal (&pCtx->pOut->sNalList[pCtx->pOut->iNalIndex - 1],
+                                         &pCtx->pCurDqLayer->sLayerInfo.sNalHeaderExt,
+                                         pCtx->iFrameBsSize - pCtx->iPosBsBuffer,
+                                         pCtx->pFrameBs + pCtx->iPosBsBuffer,
+                                         &pLayerBsInfo->pNalLengthInByte[iNalIdxInLayer]);
+    WELS_VERIFY_RETURN_IFNEQ (pCtx->iEncoderError, ENC_RETURN_SUCCESS)
+    iSliceSize = pLayerBsInfo->pNalLengthInByte[iNalIdxInLayer];
 
-        if (pCtx->iEncoderError) {
-          WelsLog (pLogCtx, WELS_LOG_ERROR,
-                   "WelsEncoderEncodeExt(), multi-slice (mode %d) encoding error = %d!",
-                   pParam->sSliceArgument.uiSliceMode, pCtx->iEncoderError);
-          return pCtx->iEncoderError;
-        }
+    iLayerSize += iSliceSize;
+    pCtx->iPosBsBuffer               += iSliceSize;
+    pLayerBsInfo->uiLayerType         = VIDEO_CODING_LAYER;
+    pLayerBsInfo->uiSpatialId         = iCurDid;
+    pLayerBsInfo->uiTemporalId        = iCurTid;
+    pLayerBsInfo->uiQualityId         = 0;
+    pLayerBsInfo->iNalCount           = ++ iNalIdxInLayer;
+    pLayerBsInfo->eFrameType          = eFrameType;
+    pLayerBsInfo->iSubSeqId = GetSubSequenceId (pCtx, eFrameType);
 
-        iRet = SliceLayerInfoUpdate (pCtx, pFbi, pLayerBsInfo, pParam->sSliceArgument.uiSliceMode);
-        if (iRet) {
-          WelsLog (pLogCtx, WELS_LOG_ERROR,
-                   "WelsEncoderEncodeExt(), multi-slice (mode %d) InitAllSlicesInThread() error!",
-                   pParam->sSliceArgument.uiSliceMode);
-          return ENC_RETURN_UNEXPECTED;
-        }
-
-        iSliceCount = GetCurrentSliceNum (pCtx->pCurDqLayer);
-        iLayerSize  = AppendSliceToFrameBs (pCtx, pLayerBsInfo, iSliceCount);
-      } else { // for non-dynamic-slicing mode single threading branch..
-        const bool bNeedPrefix = pCtx->bNeedPrefixNalFlag;
-        int32_t iSliceIdx    = 0;
-        SSlice* pCurSlice    = NULL;
-
-        iSliceCount = GetCurrentSliceNum (pCtx->pCurDqLayer);
-        while (iSliceIdx < iSliceCount) {
-          int32_t iSliceSize    = 0;
-          int32_t iPayloadSize  = 0;
-
-          if (bNeedPrefix) {
-            pCtx->iEncoderError = AddPrefixNal (pCtx, pLayerBsInfo, &pLayerBsInfo->pNalLengthInByte[0], &iNalIdxInLayer, eNalType,
-                                                eNalRefIdc,
-                                                iPayloadSize);
-            WELS_VERIFY_RETURN_IFNEQ (pCtx->iEncoderError, ENC_RETURN_SUCCESS)
-            iLayerSize += iPayloadSize;
-          }
-
-          WelsLoadNal (pCtx->pOut, eNalType, eNalRefIdc);
-
-          pCurSlice = &pCtx->pCurDqLayer->sSliceBufferInfo[0].pSliceBuffer[iSliceIdx];
-          assert (iSliceIdx == pCurSlice->iSliceIdx);
-          pCtx->iEncoderError   = SetSliceBoundaryInfo (pCtx->pCurDqLayer, pCurSlice, iSliceIdx);
-
-          pCtx->iEncoderError = WelsCodeOneSlice (pCtx, pCurSlice, eNalType);
-          WELS_VERIFY_RETURN_IFNEQ (pCtx->iEncoderError, ENC_RETURN_SUCCESS)
-
-          WelsUnloadNal (pCtx->pOut);
-
-          pCtx->iEncoderError = WelsEncodeNal (&pCtx->pOut->sNalList[pCtx->pOut->iNalIndex - 1],
-                                               &pCtx->pCurDqLayer->sLayerInfo.sNalHeaderExt,
-                                               pCtx->iFrameBsSize - pCtx->iPosBsBuffer,
-                                               pCtx->pFrameBs + pCtx->iPosBsBuffer, &pLayerBsInfo->pNalLengthInByte[iNalIdxInLayer]);
-          WELS_VERIFY_RETURN_IFNEQ (pCtx->iEncoderError, ENC_RETURN_SUCCESS)
-          iSliceSize = pLayerBsInfo->pNalLengthInByte[iNalIdxInLayer];
-
-          pCtx->iPosBsBuffer += iSliceSize;
-          iLayerSize         += iSliceSize;
-
-          ++ iNalIdxInLayer;
-          ++ iSliceIdx;
-        }
-
-        pLayerBsInfo->uiLayerType       = VIDEO_CODING_LAYER;
-        pLayerBsInfo->uiSpatialId       = iCurDid;
-        pLayerBsInfo->uiTemporalId      = iCurTid;
-        pLayerBsInfo->uiQualityId       = 0;
-        pLayerBsInfo->iNalCount         = iNalIdxInLayer;
-        pLayerBsInfo->eFrameType        = eFrameType;
-        pLayerBsInfo->iSubSeqId         = GetSubSequenceId (pCtx, eFrameType);
-      }
-    }
 
     if (NULL != pCtx->pFuncList->pfRc.pfWelsRcPostFrameSkipping
         && pCtx->pFuncList->pfRc.pfWelsRcPostFrameSkipping (pCtx, iCurDid, pFbi->uiTimeStamp)) {
@@ -3834,16 +3607,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
       iFrameSize += iPaddingNalSize;
     }
 
-    if ((pParam->sSliceArgument.uiSliceMode == SM_FIXEDSLCNUM_SLICE)
-        && pSvcParam->bUseLoadBalancing
-        && pSvcParam->iMultipleThreadIdc > 1 &&
-        pSvcParam->iMultipleThreadIdc >= pParam->sSliceArgument.uiSliceNum) {
-      CalcSliceComplexRatio (pCtx->pCurDqLayer);
-#if defined(MT_DEBUG)
-      TrackSliceComplexities (pCtx, iCurDid);
-#endif//#if defined(MT_DEBUG)
-    }
-
     pCtx->eLastNalPriority[iCurDid] = eNalRefIdc;
     ++ iSpatialIdx;
 
@@ -3887,9 +3650,6 @@ int32_t WelsEncoderEncodeExt (sWelsEncCtx* pCtx, SFrameBSInfo* pFbi, const SSour
     return ENC_RETURN_CORRECTED;
   }
 
-#if defined(MT_DEBUG)
-  TrackSliceConsumeTime (pCtx, iDidList, iSpatialNum);
-#endif//MT_DEBUG
 
   // to check number of layers / nals / slices dependencies
   if (iLayerNum > MAX_LAYER_NUM_OF_FRAME) {

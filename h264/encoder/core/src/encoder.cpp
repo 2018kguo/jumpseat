@@ -53,7 +53,6 @@
 #include "svc_mode_decision.h"
 #include "set_mb_syn_cavlc.h"
 #include "crt_util_safe_x.h" // Safe CRT routines like utils for cross_platforms
-#include "slice_multi_threading.h"
 
 //  global   function  pointers  definition
 namespace WelsEnc {

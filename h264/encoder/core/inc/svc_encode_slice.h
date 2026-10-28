@@ -113,12 +113,6 @@ int32_t InitSliceList (SSlice*& pSliceList,
 
 int32_t InitAllSlicesInThread (sWelsEncCtx* pCtx);
 
-int32_t InitOneSliceInThread (sWelsEncCtx* pCtx,
-                              SSlice*& pSlice,
-                              const int32_t kiSlcBuffIdx,
-                              const int32_t kiDlayerIdx,
-                              const int32_t kiSliceIdx);
-
 int32_t InitSliceInLayer (sWelsEncCtx* pCtx,
                           SDqLayer* pDqLayer,
                           const int32_t kiDlayerIndex,
