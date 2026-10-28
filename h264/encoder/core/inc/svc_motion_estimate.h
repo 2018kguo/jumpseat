@@ -242,6 +242,8 @@ void FillQpelLocationByFeatureValue_c (uint16_t* pFeatureOfBlock, const int32_t 
                                        uint16_t** pFeatureValuePointerList);
 int32_t SumOf8x8SingleBlock_c (uint8_t* pRef, const int32_t kiRefStride);
 int32_t SumOf16x16SingleBlock_c (uint8_t* pRef, const int32_t kiRefStride);
+void SumOf8x8BlockOfFrame_sliding (uint8_t* pRefPicture, const int32_t kiWidth, const int32_t kiHeight, const int32_t kiRefStride, uint16_t* pFeatureOfBlock, uint32_t pTimesOfFeatureValue[]);
+void FillQpelLocationByFeatureValue_sparse (uint16_t* pFeatureOfBlock, const int32_t kiWidth, const int32_t kiHeight, uint16_t** pFeatureValuePointerList);
 void SumOf8x8BlockOfFrame_c (uint8_t* pRefPicture, const int32_t kiWidth, const int32_t kiHeight,
                              const int32_t kiRefStride,
                              uint16_t* pFeatureOfBlock, uint32_t pTimesOfFeatureValue[]);
@@ -359,7 +361,7 @@ return (CheckInRangeCloseOpen (ksCurrentMv.iMvX, ksMinMv.iMvX, ksMaxMv.iMvX)
 //FME switch related
 inline bool CalcFMESwitchFlag (const uint8_t uiFMEGoodFrameCount, const int32_t iHighFreMbPrecentage,
                                const int32_t iAvgMbSAD, const bool bScrollingDetected) {
-return (bScrollingDetected || (uiFMEGoodFrameCount > 0 && iAvgMbSAD > FMESWITCH_MBSAD_THRESHOLD));
+return bScrollingDetected;
 //TODO: add the logic of iHighFreMbPrecentage
 //return ( iHighFreMbPrecentage > 2
 //            && ( bScrollingDetected || iHighFreMbPrecentage >15

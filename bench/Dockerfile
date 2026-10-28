@@ -1,14 +1,11 @@
-# The encoder lab: OpenH264 from source (stock and patched) with symbols,
-# the benchmark, and perf.
+# The encoder lab: compilers, nasm, x264, FFmpeg's decoder, perf, and a
+# stock OpenH264 v2.6.0 build at /openh264 as the baseline. jumpseat's own
+# encoder (h264/) is mounted at /h264: bench/local.sh, bench/modal_lab.py.
 #   docker build -t jumpseat-bench bench
-#   docker run --rm --privileged -v $DATA:/data -v $PWD/bench:/bench jumpseat-bench ...
-# $DATA holds frames from `jumpseat --record scroll.bgrx --frames 240`.
-# bench/run.sh usage=1 measures stock screen mode; for the patched build:
-#   cd /openh264 && git apply /patches/screen-fme.patch && make -j8 libopenh264.a
-# (with -v $PWD/openh264:/patches).
+# Frames come from `jumpseat --record scroll.bgrx --frames 240`.
 FROM debian:bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends \
-      build-essential nasm git ca-certificates libyuv-dev linux-perf libx264-dev \
+      build-essential nasm git ca-certificates libyuv-dev linux-perf libx264-dev libavcodec-dev \
     && rm -rf /var/lib/apt/lists/*
 ARG OPENH264=v2.6.0
 RUN git clone --depth 1 --branch "$OPENH264" https://github.com/cisco/openh264 /openh264 \

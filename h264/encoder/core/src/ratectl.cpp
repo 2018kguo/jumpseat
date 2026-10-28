@@ -446,8 +446,13 @@ void RcCalculateIdrQp (sWelsEncCtx* pEncCtx) {
   int32_t iMinQp = iQpRangeArray[i][1];
   iMinQp = WELS_CLIP3 (iMinQp, pWelsSvcRc->iMinQp, pWelsSvcRc->iMaxQp);
   iMaxQp = WELS_CLIP3 (iMaxQp, pWelsSvcRc->iMinQp, pWelsSvcRc->iMaxQp);
+  // jumpseat: with bits to spare (the top bucket), the caller's QP floor
+  // bounds the IDR, not the table's: a desktop's static content keeps its
+  // IDR's quality, since later frames skip it (typing 45 -> 54 dB).
+  if (i == 4 && pWelsSvcRc->iMinQp < iMinQp)
+    iMinQp = pWelsSvcRc->iMinQp;
   if (0 == pWelsSvcRc->iIdrNum) { //the first IDR frame
-    pWelsSvcRc->iInitialQp = dInitialQPArray[iBppIndex][i];
+    pWelsSvcRc->iInitialQp = i == 4 ? iMinQp : dInitialQPArray[iBppIndex][i];
   } else {
 
     //obtain the idr qp using previous idr complexity

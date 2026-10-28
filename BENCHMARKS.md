@@ -25,7 +25,7 @@ cores on two). "Stream CPU" counts the X server and the streamer.
 | OpenH264, camera mode (default, BSD) | 0.27 / 0.44 | 1160 / 5589 |
 | OpenH264, screen mode (`JUMPSEAT_OH264=usage=1`) | 0.52 / 0.70 | **627** / 5376 |
 
-## Patched OpenH264 screen mode (`openh264/screen-fme.patch`, the Docker image)
+## jumpseat's encoder (`h264/`, OpenH264 changed for desktops)
 
 Screen mode finds scrolled content with a hash of every pixel's 8x8 sum
 over the whole reference frame, every frame. The patch runs that only on

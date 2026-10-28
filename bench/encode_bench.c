@@ -1,11 +1,16 @@
 // Encoder benchmark: replays frames recorded with `jumpseat --record` through
-// OpenH264 with the streamer's settings and reports encode time per frame,
+// jumpseat's H.264 encoder (h264/, or a stock OpenH264 build) with the
+// streamer's settings and reports encode time per frame,
 // bitrate, and luma PSNR of the decoded stream against the input, so builds
 // of OpenH264 (stock or patched) are judged on identical input.
 //
 //   encode_bench FRAMES.bgrx [key=value ...]
-//   keys: usage (0 camera, 1 screen), complexity, loopfilter, qp, refs,
+//   keys: enc (0 OpenH264, 1 x264 as the streamer sets it up), crf and
+//         xthreads (x264; 0 = auto, as the streamer runs it),
+//         usage (0 camera, 1 screen), complexity, loopfilter, qp, refs,
 //         scd, bg, aq, ltr, threads, fps, repeat
+// "cpu" is process CPU time per frame: x264 runs sliced threads, so its
+// wall time understates what it costs.
 #include <math.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -23,6 +28,19 @@ static double now_ms(void) {
   clock_gettime(CLOCK_MONOTONIC, &t);
   return t.tv_sec * 1e3 + t.tv_nsec / 1e6;
 }
+
+static double cpu_ms(void) {
+  struct timespec t;
+  clock_gettime(CLOCK_PROCESS_CPUTIME_ID, &t);
+  return t.tv_sec * 1e3 + t.tv_nsec / 1e6;
+}
+
+// bench/x264_side.c: x264.h and OpenH264's headers define the same enums.
+void *x264_side_open(int width, int height, int fps, int crf, int threads);
+int x264_side_encode(void *x, uint8_t *i420, long long pts, uint8_t **out);
+// bench/decode_side.c
+int decode_side_open(void);
+int decode_side_frame(uint8_t *data, int size, uint8_t **luma, int *stride);
 
 static int opt(int argc, char **argv, const char *key, int fallback) {
   size_t n = strlen(key);
@@ -54,13 +72,16 @@ int main(int argc, char **argv) {
   free(bgrx);
 
   int qp = opt(argc, argv, "qp", 17), fps = opt(argc, argv, "fps", 60), repeat = opt(argc, argv, "repeat", 1);
+  int use_x264 = opt(argc, argv, "enc", 0), perframe = opt(argc, argv, "perframe", 0);
+  void *x = use_x264 ? x264_side_open(W, H, fps, opt(argc, argv, "crf", 25), opt(argc, argv, "xthreads", 0)) : 0;
+  if (use_x264 && !x) { fprintf(stderr, "x264 open failed\n"); return 1; }
   ISVCEncoder *enc;
   WelsCreateSVCEncoder(&enc);
   SEncParamExt p;
   (*enc)->GetDefaultParams(enc, &p);
   p.iUsageType = opt(argc, argv, "usage", 0) ? SCREEN_CONTENT_REAL_TIME : CAMERA_VIDEO_REAL_TIME;
   p.iPicWidth = W; p.iPicHeight = H; p.fMaxFrameRate = fps;
-  p.iRCMode = RC_QUALITY_MODE; p.iTargetBitrate = 50000000; p.iMaxBitrate = UNSPECIFIED_BIT_RATE;
+  p.iRCMode = (RC_MODES)opt(argc, argv, "rc", RC_QUALITY_MODE); p.iTargetBitrate = 50000000; p.iMaxBitrate = UNSPECIFIED_BIT_RATE;
   p.iMinQp = qp; p.iMaxQp = 51;
   p.bEnableFrameSkip = 0; p.uiIntraPeriod = 0;
   p.iMultipleThreadIdc = opt(argc, argv, "threads", 1);
@@ -80,18 +101,13 @@ int main(int argc, char **argv) {
   p.sSpatialLayers[0].iMaxSpatialBitrate = UNSPECIFIED_BIT_RATE;
   p.sSpatialLayers[0].iDLayerQp = qp;
   p.sSpatialLayers[0].sSliceArgument.uiSliceMode = SM_SINGLE_SLICE;
-  if ((*enc)->InitializeExt(enc, &p) != 0) { fprintf(stderr, "encoder init failed\n"); return 1; }
+  if (!use_x264 && (*enc)->InitializeExt(enc, &p) != 0) { fprintf(stderr, "encoder init failed\n"); return 1; }
   int format = videoFormatI420;
   (*enc)->SetOption(enc, ENCODER_OPTION_DATAFORMAT, &format);
 
-  ISVCDecoder *dec;
-  WelsCreateDecoder(&dec);
-  SDecodingParam dp;
-  memset(&dp, 0, sizeof dp);
-  dp.sVideoProperty.eVideoBsType = VIDEO_BITSTREAM_DEFAULT;
-  (*dec)->Initialize(dec, &dp);
+  if (decode_side_open() < 0) { fprintf(stderr, "decoder open failed\n"); return 1; }
 
-  double encode_ms = 0, worst = 0, squared = 0;
+  double encode_ms = 0, encode_cpu = 0, worst = 0, squared = 0;
   long bytes = 0, decoded = 0, encoded = 0;
   uint8_t *bitstream = malloc(W * H * 2);
   for (int r = 0; r < repeat; r++) {
@@ -105,42 +121,51 @@ int main(int argc, char **argv) {
       pic.uiTimeStamp = (long long)(r * frames + f) * 1000 / fps;
       SFrameBSInfo info;
       memset(&info, 0, sizeof info);
-      double t0 = now_ms();
-      (*enc)->EncodeFrame(enc, &pic, &info);
+      uint8_t *nal = 0;
+      int size = 0;
+      double t0 = now_ms(), c0 = cpu_ms();
+      if (use_x264) size = x264_side_encode(x, y, pic.uiTimeStamp, &nal);
+      else (*enc)->EncodeFrame(enc, &pic, &info);
       double took = now_ms() - t0;
+      encode_cpu += cpu_ms() - c0;
       encode_ms += took;
       if (took > worst) worst = took;
       encoded++;
-      if (info.eFrameType == videoFrameTypeSkip) continue;
-      int size = 0;
-      for (int l = 0; l < info.iLayerNum; l++) {
-        SLayerBSInfo *layer = &info.sLayerInfo[l];
-        int n = 0;
-        for (int k = 0; k < layer->iNalCount; k++) n += layer->pNalLengthInByte[k];
-        memcpy(bitstream + size, layer->pBsBuf, n);
-        size += n;
+      if (use_x264) {
+        if (size <= 0) continue;
+        memcpy(bitstream, nal, size);
+      } else {
+        if (info.eFrameType == videoFrameTypeSkip) continue;
+        for (int l = 0; l < info.iLayerNum; l++) {
+          SLayerBSInfo *layer = &info.sLayerInfo[l];
+          int n = 0;
+          for (int k = 0; k < layer->iNalCount; k++) n += layer->pNalLengthInByte[k];
+          memcpy(bitstream + size, layer->pBsBuf, n);
+          size += n;
+        }
       }
       bytes += size;
       if (r > 0) continue;
       // Decode and compare luma with the input.
-      uint8_t *planes[3] = {0};
-      SBufferInfo out;
-      memset(&out, 0, sizeof out);
-      (*dec)->DecodeFrameNoDelay(dec, bitstream, size, planes, &out);
-      if (out.iBufferStatus == 1) {
-        int stride = out.UsrData.sSystemBuffer.iStride[0];
+      uint8_t *luma;
+      int stride;
+      if (decode_side_frame(bitstream, size, &luma, &stride)) {
+        double frame = 0;
         for (int row = 0; row < H; row++)
           for (int col = 0; col < W; col++) {
-            double d = (double)planes[0][row * stride + col] - y[row * W + col];
-            squared += d * d;
+            double d = (double)luma[row * stride + col] - y[row * W + col];
+            frame += d * d;
           }
+        squared += frame;
+        if (perframe) fprintf(stderr, "frame %ld %d bytes psnr %.2f\n", f, size,
+                              10 * log10(255.0 * 255.0 * W * H / (frame > 1e-9 ? frame : 1e-9)));
         decoded++;
       }
     }
   }
   double mse = squared / ((double)decoded * W * H);
-  printf("frames %ld  encode %.3f ms/frame (worst %.1f)  %.0f kbit/s at %d fps  psnr %.2f dB\n",
-         encoded, encode_ms / encoded, worst, bytes * 8.0 / (encoded / (double)fps) / 1000, fps,
+  printf("frames %ld  encode %.3f ms/frame (cpu %.3f, worst %.1f)  %.0f kbit/s at %d fps  psnr %.2f dB\n",
+         encoded, encode_ms / encoded, encode_cpu / encoded, worst, bytes * 8.0 / (encoded / (double)fps) / 1000, fps,
          10 * log10(255.0 * 255.0 / (mse > 1e-9 ? mse : 1e-9)));
   return 0;
 }

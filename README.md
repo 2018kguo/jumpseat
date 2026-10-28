@@ -36,6 +36,9 @@ docker run --rm -p 8080:8080 -e JUMPSEAT_TOKEN=secret jumpseat
 open "http://localhost:8080/?token=secret"
 ```
 
+From source on Linux (needs libyuv, and nasm on x86-64):
+`make -C h264 -j8 && cd server && go build`.
+
 A desktop with Chromium appears. Make the "agent" talk:
 
 ```sh
@@ -79,8 +82,8 @@ The wire format is in [PROTOCOL.md](PROTOCOL.md).
 ## How it works
 
 XDamage says when the screen changed; the frame comes over MIT-SHM, libyuv
-converts it, and OpenH264 (BSD, the default) or libx264 (`-tags x264`, GPL,
-~45% less animation bandwidth) encodes it in process. The browser decodes
+converts it, and jumpseat's encoder (`h264/`: OpenH264 changed for
+desktops, BSD) or libx264 (`-tags x264`, GPL) encodes it in process. The browser decodes
 with WebCodecs onto a canvas and acks each frame; the server stops capturing
 while too much is unshown and caps the bitrate to what the link carries.
 Input goes back on the same socket and into X through XTest, with keys

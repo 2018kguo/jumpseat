@@ -2729,7 +2729,7 @@ void PreprocessSliceCoding (sWelsEncCtx* pCtx) {
         const int32_t kiMbSize = pCurLayer->iMbHeight * pCurLayer->iMbWidth;
         pFeatureSearchPreparation->bFMESwitchFlag = CalcFMESwitchFlag (pFeatureSearchPreparation->uiFMEGoodFrameCount,
             pFeatureSearchPreparation->iHighFreMbCount * 100 / kiMbSize, pCtx->pVaa->sVaaCalcInfo.iFrameSad / kiMbSize,
-            pVaaExt->sScrollDetectInfo.bScrollDetectFlag);
+            pVaaExt->sScrollDetectInfo.bScrollDetectFlag && (pVaaExt->sScrollDetectInfo.iScrollMvX | pVaaExt->sScrollDetectInfo.iScrollMvY));
 
         //PerformFMEPreprocess
         SScreenBlockFeatureStorage* pScreenBlockFeatureStorage = pCurLayer->pRefPic->pScreenBlockFeatureStorage;

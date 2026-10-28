@@ -3,7 +3,9 @@
 package main
 
 /*
-#cgo LDFLAGS: -lopenh264 -lyuv -lstdc++ -lm
+// h264/ is jumpseat's encoder: make -C h264 before go build.
+#cgo CFLAGS: -I${SRCDIR}/../h264/api
+#cgo LDFLAGS: -L${SRCDIR}/../h264/build -ljumpseat_h264 -lyuv -lstdc++ -lm
 #include <stdint.h>
 #include <string.h>
 #include <stdlib.h>

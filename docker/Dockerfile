@@ -7,19 +7,11 @@ WORKDIR /src
 COPY client client
 RUN cd client && bun build jumpseat.ts --format=esm --target=browser --outfile /out/jumpseat.js
 
-# OpenH264 with openh264/screen-fme.patch: screen mode's scroll search at
-# camera mode's CPU (BENCHMARKS.md).
-FROM debian:bookworm AS openh264
-RUN apt-get update && apt-get install -y --no-install-recommends build-essential nasm git ca-certificates
-COPY openh264 /patches
-RUN git clone --depth 1 --branch v2.6.0 https://github.com/cisco/openh264 /openh264 && cd /openh264 \
-    && git apply /patches/screen-fme.patch \
-    && make -j"$(nproc)" BUILDTYPE=Release PREFIX=/usr/local install-static >/dev/null
-
 FROM golang:1.26-bookworm AS server
-RUN apt-get update && apt-get install -y --no-install-recommends libyuv-dev libx264-dev
-COPY --from=openh264 /usr/local/include/wels /usr/local/include/wels
-COPY --from=openh264 /usr/local/lib/libopenh264.a /usr/local/lib/
+RUN apt-get update && apt-get install -y --no-install-recommends nasm libyuv-dev libx264-dev
+# h264/: jumpseat's encoder (OpenH264's, trimmed and tuned for desktops).
+COPY h264 /src/h264
+RUN make -C /src/h264 -j"$(nproc)" -s
 WORKDIR /src
 COPY server server
 COPY --from=client /out/jumpseat.js server/web/jumpseat.js

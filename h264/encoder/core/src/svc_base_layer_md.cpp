@@ -41,6 +41,7 @@
 #include "mv_pred.h"
 #include "svc_enc_golomb.h"
 #include "svc_base_layer_md.h"
+#include "jumpseat_exp.h"
 #include "encoder.h"
 #include "svc_encode_mb.h"
 #include "svc_encode_slice.h"
@@ -930,6 +931,7 @@ int32_t WelsMdIntraChroma (SWelsFuncPtrList* pFunc, SDqLayer* pCurDqLayer, SMbCa
   return iBestCost;
 }
 int32_t WelsMdIntraFinePartition (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCache* pMbCache) {
+  if (JumpseatExp (0) && P_SLICE == pEncCtx->eSliceType) return pWelsMd->iCostLuma;
   int32_t iCosti4x4 = WelsMdI4x4 (pEncCtx, pWelsMd, pCurMb, pMbCache);
 
   if (iCosti4x4 < pWelsMd->iCostLuma) {
@@ -940,6 +942,7 @@ int32_t WelsMdIntraFinePartition (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* p
 }
 
 int32_t WelsMdIntraFinePartitionVaa (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SMB* pCurMb, SMbCache* pMbCache) {
+  if (JumpseatExp (0) && P_SLICE == pEncCtx->eSliceType) return pWelsMd->iCostLuma;
 
   if (MdIntraAnalysisVaaInfo (pEncCtx, pMbCache->SPicData.pEncMb[0])) {
     int32_t iCosti4x4 = WelsMdI4x4Fast (pEncCtx, pWelsMd, pCurMb, pMbCache);

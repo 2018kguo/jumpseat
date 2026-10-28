@@ -40,6 +40,7 @@
 
 #include "ls_defines.h"
 #include "md.h"
+#include "jumpseat_exp.h"
 #include "cpu_core.h"
 #include "svc_enc_golomb.h"
 
@@ -605,6 +606,11 @@ void MeRefineFracPixel (sWelsEncCtx* pEncCtx, uint8_t* pMemPredInterMb, SWelsME*
                 COST_MVD (pMe->pMvdCost, iMvx - pMe->sMvp.iMvX, iMvy - pMe->sMvp.iMvY);
   }
 
+  if (JumpseatExp (1)) { // integer-pel motion only
+    pMe->uiSatdCost = iBestCost;
+    pMeRefine->pfCopyBlockByMode (pMemPredInterMb, MB_WIDTH_LUMA, pRef, kiStrideRef);
+    return;
+  }
   iBestHalfPix = REFINE_ME_NO_BEST_HALF_PIXEL;
 
   pFunc->sMcFuncs.pfLumaHalfpelVer (pRef - kiStrideRef, kiStrideRef, pMeRefine->pHalfPixV, ME_REFINE_BUF_STRIDE, iWidth,
