@@ -114,7 +114,6 @@ int32_t WelsCodePSlice (sWelsEncCtx* pEncCtx, SSlice* pSlice);
 int32_t WelsCodeOneSlice (sWelsEncCtx* pEncCtx, SSlice* pCurSlice,
                           const int32_t keNalType);
 
-void WelsInitSliceEncodingFuncs (uint32_t uiCpuFlag);
 
 int32_t WelsMdInterMbLoop (sWelsEncCtx* pEncCtx, SSlice* pSlice, void* pMd,
                            const int32_t kiSliceFirstMbXY);// for inter dynamic slice

@@ -63,7 +63,6 @@ struct {
 typedef struct TagRefPicMarking {
 struct {
   int32_t       iMmcoType;
-  int32_t       iShortFrameNum;
   int32_t       iDiffOfPicNum;
   int32_t       iLongTermPicNum;
   int32_t       iLongTermFrameIdx;

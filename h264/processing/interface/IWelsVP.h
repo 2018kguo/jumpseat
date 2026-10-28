@@ -97,11 +97,6 @@ typedef enum {
   VIDEO_FORMAT_VFlip      = 0x80000000
 } EVideoFormat;
 
-typedef enum {
-  BUFFER_HOSTMEM  = 0,
-  BUFFER_SURFACE
-} EPixMapBufferProperty;
-
 typedef struct {
   int iRectTop;
   int iRectLeft;
@@ -115,7 +110,6 @@ typedef struct {
   int          iStride[3];
   SRect        sRect;
   EVideoFormat eFormat;
-  EPixMapBufferProperty eProperty;//not use? to remove? but how about the size of SPixMap?
 } SPixMap;
 
 typedef enum {
@@ -184,32 +178,24 @@ typedef struct {
   int iCalcVar;
   int iCalcBgd;
   int iCalcSsd;
-  int iReserved;
   SVAACalcResult*  pCalcResult;
 } SVAACalcParam;
 
 typedef struct {
-  unsigned short    uiMotionIndex;
-  unsigned short    uiTextureIndex;
 } SMotionTextureUnit;
 
 typedef struct {
-  int                  iAdaptiveQuantMode; // 0:quality mode, 1:bitrates mode
   SVAACalcResult*      pCalcResult;
   SMotionTextureUnit*  pMotionTextureUnit;
 
   signed char*      pMotionTextureIndexToDeltaQp;
-  int               iAverMotionTextureIndexToDeltaQp; // *AQ_STEP_INT_MULTIPLY
 } SAdaptiveQuantizationParam;
 
 typedef struct {
-  int  iComplexityAnalysisMode;
   int  iCalcBgd;
-  int  iMbNumInGom;
   long long  iFrameComplexity;
   int*  pGomComplexity;
   int*  pGomForegroundBlockNum;
-  signed char*  pBackgroundMbFlag;
   unsigned int* uiRefMbType;
   SVAACalcResult*  pCalcResult;
 } SComplexityAnalysisParam;

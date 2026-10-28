@@ -85,7 +85,6 @@ typedef struct TagLTRState {
   int32_t       iLTRMarkSuccessNum; //successful marked num, for mark mode switch
   int32_t       iCurLtrIdx;// current int32_t term reference index to mark
   int32_t       iLastLtrIdx[MAX_TEMPORAL_LAYER_NUM];
-  int32_t       iSceneLtrIdx;// related to Scene LTR, used by screen content
 
   uint32_t      uiLtrMarkInterval;// the interval from the last int32_t term pRef mark
 
@@ -199,8 +198,6 @@ typedef struct TagWelsEncCtx {
   /* SVC only */
   SDqIdc*           pDqIdcMap;    // overall DQ map of full scalability in specific frame (All full D/T/Q layers involved)                                                                                                // pDqIdcMap[dq_index] for each SDqIdc pData
 
-  SParaSetOffset    sPSOVector;
-  SParaSetOffset*   pPSOVector;
   CMemoryAlign*     pMemAlign;
 
   //related to Statistics

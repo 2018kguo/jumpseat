@@ -149,7 +149,6 @@ int32_t WelsGetNextMbOfSlice (SDqLayer* pCurDq, const int32_t kiMbXY);
  *
  */
 int32_t GetInitialSliceNum (SSliceArgument* pSliceArgument);
-SSlice* GetSliceByIndex(sWelsEncCtx* pCtx, const int32_t kiSliceIdc);
 
 }
 #endif//WELS_SLICE_SEGMENT_H__

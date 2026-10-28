@@ -204,7 +204,6 @@ struct TagWelsFuncPointerList {
   PCalculateSatdFunc pfCalculateSatd;
   PCheckDirectionalMv pfCheckDirectionalMv;
 
-  PCalculateSingleBlockFeature pfCalculateSingleBlockFeature[2];//0 - for 8x8, 1 for 16x16
   PLineFullSearchFunc pfVerticalFullSearch;
   PLineFullSearchFunc pfHorizontalFullSearch;
 
@@ -248,7 +247,6 @@ struct TagWelsFuncPointerList {
 
   /* For Deblocking */
 
-  PAccumulateSadFunc         pfAccumulateSadForRc;
 
   PSetMemoryZero        pfSetMemZeroSize8;      // for size is times to 8
   PSetMemoryZero        pfSetMemZeroSize64Aligned16;      // for size is times of 64, and address is align to 16

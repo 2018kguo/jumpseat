@@ -67,8 +67,6 @@ extern "C" {
 int32_t CavlcParamCal_c (int16_t* pCoffLevel, uint8_t* pRun, int16_t* pLevel, int32_t* pTotalCoeffs ,
                          int32_t iEndIdx);
 #ifdef  X86_ASM
-int32_t CavlcParamCal_sse2 (int16_t* pCoffLevel, uint8_t* pRun, int16_t* pLevel, int32_t* pTotalCoeffs ,
-                            int32_t iEndIdx);
 int32_t CavlcParamCal_sse42 (int16_t* pCoffLevel, uint8_t* pRun, int16_t* pLevel, int32_t* pTotalCoeffs ,
                              int32_t iEndIdx);
 #endif

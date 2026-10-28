@@ -246,7 +246,6 @@ void WelsRcMbInitGom (sWelsEncCtx* pCtx, SMB* pCurMb, SSlice* pSlice);
 void WelsRcMbInfoUpdateGom (sWelsEncCtx* pCtx, SMB* pCurMb, int32_t iCostLuma, SSlice* pSlice);
 void WelsRcFreeMemory (sWelsEncCtx* pCtx);
 bool WelsRcCheckFrameStatus (sWelsEncCtx* pEncCtx,long long uiTimeStamp,int32_t iSpatialNum,int32_t iCurDid);
-bool WelsUpdateSkipFrameStatus();
 long long GetTimestampForRc(const long long uiTimeStamp, const long long uiLastTimeStamp, const float fFrameRate);
 
 }

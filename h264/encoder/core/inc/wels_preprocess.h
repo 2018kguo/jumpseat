@@ -72,7 +72,6 @@ typedef struct {
 typedef struct {
   SPicture*   pRefPicture;
   int32_t     iSrcListIdx;   //idx in  h->spatial_pic[base_did];
-  bool        bSceneLtrFlag;
   unsigned char*        pBestBlockStaticIdc;
 } SRefInfoParam;
 
@@ -133,18 +132,14 @@ class CWelsPreProcess {
   int32_t AnalyzeSpatialPic (sWelsEncCtx* pEncCtx, const int32_t kiDIdx);
   int32_t UpdateSpatialPictures (sWelsEncCtx* pEncCtx, SWelsSvcCodingParam* pParam, const int8_t iCurTid,
                                  const int32_t d_idx);
-  int32_t GetRefFrameInfo (int32_t iRefIdx, bool bCurrentFrameIsSceneLtr, SPicture*& pRefOri);
   void    AnalyzePictureComplexity (sWelsEncCtx* pCtx, SPicture* pCurPicture, SPicture* pRefPicture,
                                     const int32_t kiDependencyId, const bool kbCalculateBGD);
   int32_t UpdateBlockIdcForScreen (uint8_t*  pCurBlockStaticPointer, const SPicture* kpRefPic, const SPicture* kpSrcPic);
 
   void UpdateSrcList (SPicture* pCurPicture, const int32_t kiCurDid, SPicture** pShortRefList,
                       const uint32_t kuiShortRefCount);
-  void UpdateSrcListLosslessScreenRefSelectionWithLtr (SPicture* pCurPicture, const int32_t kiCurDid,
-      const int32_t kuiMarkLongTermPicIdx, SPicture** pLongRefList);
 
  protected:
-  bool GetSceneChangeFlag (ESceneChangeIdc eSceneChangeIdc);
   virtual  ESceneChangeIdc  DetectSceneChange (SPicture* pCurPicture, SPicture* pRefPicture = NULL) = 0;
 
   void InitPixMap (const SPicture* pPicture, SPixMap* pPixMap);
@@ -159,7 +154,6 @@ class CWelsPreProcess {
  private:
   int32_t SingleLayerPreprocess (sWelsEncCtx* pEncCtx, const SSourcePicture* kpSrc, Scaled_Picture* m_sScaledPicture);
 
-  void  BilateralDenoising (SPicture* pSrc, const int32_t iWidth, const int32_t iHeight);
 
   int32_t DownsamplePadding (SPicture* pSrc, SPicture* pDstPic,  int32_t iSrcWidth, int32_t iSrcHeight,
                              int32_t iShrinkWidth, int32_t iShrinkHeight, int32_t iTargetWidth, int32_t iTargetHeight,
@@ -169,10 +163,7 @@ class CWelsPreProcess {
                           bool bCalculateVar, bool bCalculateBGD);
   void    Padding (uint8_t* pSrcY, uint8_t* pSrcU, uint8_t* pSrcV, int32_t iStrideY, int32_t iStrideUV,
                    int32_t iActualWidth, int32_t iPaddingWidth, int32_t iActualHeight, int32_t iPaddingHeight);
-  void    SetRefMbType (sWelsEncCtx* pCtx, uint32_t** pRefMbTypeArray, int32_t iRefPicType);
 
-  int32_t ColorspaceConvert (SWelsSvcCodingParam* pSvcParam, SPicture* pDstPic, const SSourcePicture* kpSrc,
-                             const int32_t kiWidth, const int32_t kiHeight);
   void WelsMoveMemoryWrapper (SWelsSvcCodingParam* pSvcParam, SPicture* pDstPic, const SSourcePicture* kpSrc,
                               const int32_t kiWidth, const int32_t kiHeight);
 
@@ -215,9 +206,6 @@ class CWelsPreProcessScreen : public CWelsPreProcess {
  private:
   SPicture** GetReferenceSrcPicList(int32_t iTargetDid);
 
-  void GetAvailableRefListLosslessScreenRefSelection (SPicture** pSrcPicList, uint8_t iCurTid,
-      const int32_t iClosestLtrFrameNum,
-      SRefInfoParam* pAvailableRefList, int32_t& iAvailableRefNum, int32_t& iAvailableSceneRefNum);
 
   void GetAvailableRefList (SPicture** pSrcPicList, uint8_t iCurTid, const int32_t iClosestLtrFrameNum,
                             SRefInfoParam* pAvailableRefList, int32_t& iAvailableRefNum, int32_t& iAvailableSceneRefNum);

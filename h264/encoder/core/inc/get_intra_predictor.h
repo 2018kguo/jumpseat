@@ -70,8 +70,6 @@ void WelsIChromaPredDcLeft_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStr
 void WelsIChromaPredDcTop_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 void WelsIChromaPredDcNA_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 
-void WelsI16x16ChromaPredVer (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
-void WelsI16x16ChromaPredHor (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 
 void WelsI16x16LumaPredPlane_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
 void WelsI16x16LumaPredDc_c (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
@@ -84,11 +82,6 @@ extern "C" {
 #endif//__cplusplus
 
 #if defined(X86_ASM)
-void WelsFillingPred8to16_mmx (uint8_t* pPred, uint8_t* pValue);
-void WelsFillingPred8x2to16_mmx (uint8_t* pPred, uint8_t* pValue);
-void WelsFillingPred1to16_mmx (uint8_t* pPred, const uint8_t kuiValue);
-void WelsFillingPred8x2to16_sse2 (uint8_t* pPred, uint8_t* pValue);
-void WelsFillingPred1to16_sse2 (uint8_t* pPred, const uint8_t kuiValue);
 
 //for intra-prediction ASM functions
 void WelsI16x16LumaPredDc_sse2 (uint8_t* pPred, uint8_t* pRef, const int32_t kiStride);
