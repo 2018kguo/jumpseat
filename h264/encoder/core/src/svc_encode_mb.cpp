@@ -179,8 +179,6 @@ void WelsEncRecI4x4Y (sWelsEncCtx* pEncCtx, SMB* pCurMb, SMbCache* pMbCache, uin
 
 void WelsEncInterY (SWelsFuncPtrList* pFuncList, SMB* pCurMb, SMbCache* pMbCache) {
   PQuantizationMaxFunc pfQuantizationFour4x4Max         = pFuncList->pfQuantizationFour4x4Max;
-  PSetMemoryZero pfSetMemZeroSize8                      = pFuncList->pfSetMemZeroSize8;
-  PSetMemoryZero pfSetMemZeroSize64                     = pFuncList->pfSetMemZeroSize64;
   PScanFunc pfScan4x4                                   = pFuncList->pfScan4x4;
   PCalculateSingleCtrFunc pfCalculateSingleCtr4x4       = pFuncList->pfCalculateSingleCtr4x4;
   PGetNoneZeroCountFunc pfGetNoneZeroCount              = pFuncList->pfGetNoneZeroCount;
@@ -199,7 +197,7 @@ void WelsEncInterY (SWelsFuncPtrList* pFuncList, SMB* pCurMb, SMbCache* pMbCache
     iSingleCtr8x8[i] = 0;
     for (j = 0; j < 4; j++) {
       if (aMax[ (i << 2) + j] == 0)
-        pfSetMemZeroSize8 (pBlock, 32);
+        memset (pBlock, 0, 32); // jumpseat: constant size, inlined
       else {
         pfScan4x4 (pBlock, pRes);
         if (aMax[ (i << 2) + j] > 1)
@@ -219,7 +217,7 @@ void WelsEncInterY (SWelsFuncPtrList* pFuncList, SMB* pCurMb, SMbCache* pMbCache
 
 
   if (iSingleCtrMb < 6) {  //from JVT-O079
-    pfSetMemZeroSize64 (pRes,  768); // confirmed_safe_unsafe_usage
+    memset (pRes, 0, 768); // jumpseat: constant size, inlined
   } else {
     const uint8_t* kpNoneZeroCountIdx = g_kuiMbCountScan4Idx;
     for (i = 0; i < 4; i++) {
@@ -232,7 +230,7 @@ void WelsEncInterY (SWelsFuncPtrList* pFuncList, SMB* pCurMb, SMbCache* pMbCache
         pfDequantizationFour4x4 (pRes, g_kuiDequantCoeff[uiQp]);
         pCurMb->uiCbp |= 1 << i;
       } else { // set zero for an 8x8 pBlock
-        pfSetMemZeroSize64 (pRes, 128); // confirmed_safe_unsafe_usage
+        memset (pRes, 0, 128); // jumpseat: constant size, inlined
         kpNoneZeroCountIdx += 4;
         pBlock += 64;
       }
@@ -244,8 +242,6 @@ void WelsEncInterY (SWelsFuncPtrList* pFuncList, SMB* pCurMb, SMbCache* pMbCache
 void    WelsEncRecUV (SWelsFuncPtrList* pFuncList, SMB* pCurMb, SMbCache* pMbCache, int16_t* pRes, int32_t iUV) {
   PQuantizationHadamardFunc pfQuantizationHadamard2x2   = pFuncList->pfQuantizationHadamard2x2;
   PQuantizationMaxFunc pfQuantizationFour4x4Max         = pFuncList->pfQuantizationFour4x4Max;
-  PSetMemoryZero pfSetMemZeroSize8                      = pFuncList->pfSetMemZeroSize8;
-  PSetMemoryZero pfSetMemZeroSize64                     = pFuncList->pfSetMemZeroSize64;
   PScanFunc pfScan4x4Ac                                 = pFuncList->pfScan4x4Ac;
   PCalculateSingleCtrFunc pfCalculateSingleCtr4x4       = pFuncList->pfCalculateSingleCtr4x4;
   PGetNoneZeroCountFunc pfGetNoneZeroCount              = pFuncList->pfGetNoneZeroCount;
@@ -267,7 +263,7 @@ void    WelsEncRecUV (SWelsFuncPtrList* pFuncList, SMB* pCurMb, SMbCache* pMbCac
 
   for (j = 0; j < 4; j++) {
     if (aMax[j] == 0)
-      pfSetMemZeroSize8 (pBlock, 32);
+      memset (pBlock, 0, 32); // jumpseat: constant size, inlined
     else {
       pfScan4x4Ac (pBlock, pRes);
       if (kiInterFlag) {
@@ -284,7 +280,7 @@ void    WelsEncRecUV (SWelsFuncPtrList* pFuncList, SMB* pCurMb, SMbCache* pMbCac
   pRes -= 64;
 
   if (iSingleCtr8x8 < 7) { //from JVT-O079
-    pfSetMemZeroSize64 (pRes, 128); // confirmed_safe_unsafe_usage
+    memset (pRes, 0, 128); // jumpseat: constant size, inlined
     ST16 (&pCurMb->pNonZeroCount[16 + uiNoneZeroCountOffset], 0);
     ST16 (&pCurMb->pNonZeroCount[20 + uiNoneZeroCountOffset], 0);
   } else {
@@ -319,7 +315,7 @@ void    WelsRecPskip (SDqLayer* pCurLayer, SWelsFuncPtrList* pFuncList, SMB* pCu
   pFuncList->pfCopy16x16Aligned (pCsMb[0],  *iRecStride++,  pMbCache->pSkipMb,       16);
   pFuncList->pfCopy8x8Aligned (pCsMb[1],    *iRecStride++,  pMbCache->pSkipMb + 256, 8);
   pFuncList->pfCopy8x8Aligned (pCsMb[2],    *iRecStride,    pMbCache->pSkipMb + 320, 8);
-  pFuncList->pfSetMemZeroSize8 (pCurMb->pNonZeroCount,  24);
+  memset (pCurMb->pNonZeroCount, 0, 24); // jumpseat: constant size, inlined
 }
 
 bool WelsTryPYskip (sWelsEncCtx* pEncCtx, SMB* pCurMb, SMbCache* pMbCache) {

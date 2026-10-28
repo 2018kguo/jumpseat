@@ -48,6 +48,11 @@
 #include "WelsFrameWork.h"
 #include "IWelsVP.h"
 #include "common.h"
+#if defined(__SSE2__)
+#include <emmintrin.h>
+#elif defined(__ARM_NEON)
+#include <arm_neon.h>
+#endif
 
 #define HIGH_MOTION_BLOCK_THRESHOLD 320
 #define SCENE_CHANGE_MOTION_RATIO_LARGE_VIDEO   0.85f
@@ -141,6 +146,35 @@ class CSceneChangeDetectorVideo {
   float    m_fSceneChangeMotionRatioMedium;
 };
 
+// jumpseat: the SADs of two horizontally adjacent 8x8 blocks at once (one
+// psadbw / vabd per 16-byte row), for the screen detector's per-block pass.
+static inline void Sad8x8Pair (const uint8_t* pCur, int32_t iCurStride, const uint8_t* pRef, int32_t iRefStride,
+                               int32_t* pSad) {
+#if defined(__SSE2__)
+  __m128i sAcc = _mm_setzero_si128();
+  for (int32_t r = 0; r < 8; r++)
+    sAcc = _mm_add_epi64 (sAcc, _mm_sad_epu8 (_mm_loadu_si128 ((const __m128i*) (pCur + r * iCurStride)),
+                                              _mm_loadu_si128 ((const __m128i*) (pRef + r * iRefStride))));
+  pSad[0] = _mm_cvtsi128_si32 (sAcc);
+  pSad[1] = _mm_extract_epi16 (sAcc, 4); // at most 8 * 8 * 255
+#elif defined(__ARM_NEON)
+  uint16x8_t sAcc = vdupq_n_u16 (0);
+  for (int32_t r = 0; r < 8; r++)
+    sAcc = vpadalq_u8 (sAcc, vabdq_u8 (vld1q_u8 (pCur + r * iCurStride), vld1q_u8 (pRef + r * iRefStride)));
+  const uint64x2_t kSums = vpaddlq_u32 (vpaddlq_u16 (sAcc));
+  pSad[0] = (int32_t)vgetq_lane_u64 (kSums, 0);
+  pSad[1] = (int32_t)vgetq_lane_u64 (kSums, 1);
+#else
+  for (int32_t b = 0; b < 2; b++) {
+    int32_t iSad = 0;
+    for (int32_t r = 0; r < 8; r++)
+      for (int32_t c = 0; c < 8; c++)
+        iSad += WELS_ABS (pCur[r * iCurStride + 8 * b + c] - pRef[r * iRefStride + 8 * b + c]);
+    pSad[b] = iSad;
+  }
+#endif
+}
+
 class CSceneChangeDetectorScreen : public CSceneChangeDetectorVideo {
  public:
   CSceneChangeDetectorScreen (SSceneChangeResult& sParam, int32_t iCpuFlag) : CSceneChangeDetectorVideo (sParam,
@@ -168,11 +202,15 @@ class CSceneChangeDetectorScreen : public CSceneChangeDetectorVideo {
     for (int32_t j = 0; j < sLocalParam.iBlock8x8Height; j++) {
       pRefTmp = pRefY;
       pCurTmp = pCurY;
+      int32_t iPairSad[2] = {0, 0};
       for (int32_t i = 0; i < sLocalParam.iBlock8x8Width; i++) {
         int32_t iBlockPointX = i << 3;
         int32_t iBlockPointY = j << 3;
         uint8_t uiBlockIdcTmp = NO_STATIC;
-        int32_t iSad = m_pfSad (pCurTmp, sLocalParam.iCurStride, pRefTmp, sLocalParam.iRefStride);
+        if (!(i & 1) && i + 1 < sLocalParam.iBlock8x8Width)
+          Sad8x8Pair (pCurTmp, sLocalParam.iCurStride, pRefTmp, sLocalParam.iRefStride, iPairSad);
+        int32_t iSad = (i & 1) ? iPairSad[1] : (i + 1 < sLocalParam.iBlock8x8Width ? iPairSad[0]
+                       : m_pfSad (pCurTmp, sLocalParam.iCurStride, pRefTmp, sLocalParam.iRefStride));
         if (iSad == 0) {
           uiBlockIdcTmp = COLLOCATED_STATIC;
         } else if (bScrollDetectFlag && (!iScrollMvX || !iScrollMvY) && (iBlockPointX + iScrollMvX >= 0)

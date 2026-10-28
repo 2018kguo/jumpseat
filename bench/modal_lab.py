@@ -77,10 +77,11 @@ def main() -> int:
     sb = sandbox()
     sync(sb)
     src = "/openh264" if os.environ.get("LAB_SRC") == "stock" else "/h264"
-    build = f"{MAKE} && export OPENH264={src} JUMPSEAT_EXP={os.environ.get('JUMPSEAT_EXP', '0')} && "
+    env = " ".join(f"{k}='{os.environ[k]}'" for k in ("JUMPSEAT_EXP", "WORKLOADS", "X264", "CRF") if k in os.environ)
+    build = f"{MAKE} && export OPENH264={src} {env} && "
     cmd, args = sys.argv[1], " ".join(f"'{a}'" for a in sys.argv[2:])
     if cmd == "rd":
-        return exec_(sb, build + f"X264='{os.environ.get('X264', '')}' sh /bench/sweep.sh {args} | tee /tmp/sweep.csv | python3 /bench/bdrate.py && echo && cat /tmp/sweep.csv")
+        return exec_(sb, build + f"sh /bench/sweep.sh {args} | tee /tmp/sweep.csv | python3 /bench/bdrate.py && echo && cat /tmp/sweep.csv")
     if cmd == "run":
         return exec_(sb, build + f"sh /bench/run.sh {args}")
     if cmd == "ir":

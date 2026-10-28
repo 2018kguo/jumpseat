@@ -32,6 +32,7 @@
 
 
 #include "ScrollDetection.h"
+#include <string.h>
 #include "ScrollDetectionFuncs.h"
 #include "cpu.h"
 
@@ -88,6 +89,19 @@ void CScrollDetection::ScrollDetectionWithMask (SPixMap* pSrcPixMap, SPixMap* pR
   }
 }
 
+// The rows ScrollDetectionCore searches, compared with the reference.
+static bool RegionUnchanged (SPixMap* pSrcPixMap, SPixMap* pRefPixMap, int32_t iWidth, int32_t iHeight,
+                             int32_t iOffsetX, int32_t iOffsetY) {
+  const int32_t kiMin = WELS_MAX (iOffsetY, 0);
+  const int32_t kiMax = WELS_MIN (iOffsetY + iHeight - 1, pRefPixMap->sRect.iRectHeight - 1);
+  const int32_t kiStride = pRefPixMap->iStride[0];
+  const uint8_t* pSrc = (const uint8_t*)pSrcPixMap->pPixel[0] + iOffsetX;
+  const uint8_t* pRef = (const uint8_t*)pRefPixMap->pPixel[0] + iOffsetX;
+  for (int32_t y = kiMin; y <= kiMax; y++)
+    if (memcmp (pSrc + y * kiStride, pRef + y * kiStride, iWidth)) return false;
+  return true;
+}
+
 void CScrollDetection::ScrollDetectionWithoutMask (SPixMap* pSrcPixMap, SPixMap* pRefPixMap) {
   int32_t iStartX, iStartY, iWidth, iHeight;
 
@@ -105,11 +119,20 @@ void CScrollDetection::ScrollDetectionWithoutMask (SPixMap* pSrcPixMap, SPixMap*
     iWidth /= 2;
     iStartX += iWidth / 2;
 
+    // jumpseat: a region with no changed row can only find a zero scroll.
+    if (RegionUnchanged (pSrcPixMap, pRefPixMap, iWidth, iHeight, iStartX, iStartY)) {
+      m_sScrollDetectionParam.bScrollDetectFlag = false;
+      continue;
+    }
     ScrollDetectionCore (pSrcPixMap, pRefPixMap, iWidth, iHeight, iStartX, iStartY, m_sScrollDetectionParam);
 
     if (m_sScrollDetectionParam.bScrollDetectFlag && m_sScrollDetectionParam.iScrollMvY)
       break;
   }
+  // jumpseat: a zero scroll is no scroll to every reader of the flag (scene
+  // change, complexity and mode decision); clearing it saves their extra SADs.
+  if (!m_sScrollDetectionParam.iScrollMvX && !m_sScrollDetectionParam.iScrollMvY)
+    m_sScrollDetectionParam.bScrollDetectFlag = false;
 }
 
 WELSVP_NAMESPACE_END

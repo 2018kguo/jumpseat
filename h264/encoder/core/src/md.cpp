@@ -752,6 +752,7 @@ void MeRefineFracPixel (sWelsEncCtx* pEncCtx, uint8_t* pMemPredInterMb, SWelsME*
     sParams.iLms[2] = COST_MVD (pMe->pMvdCost, iHalfMvx - 1 - pMe->sMvp.iMvX, iHalfMvy - pMe->sMvp.iMvY);
     sParams.iLms[3] = COST_MVD (pMe->pMvdCost, iHalfMvx + 1 - pMe->sMvp.iMvX, iHalfMvy - pMe->sMvp.iMvY);
   }
+  if (!JumpseatExp (5)) // half-pel only
   MeRefineQuarPixel (pFunc, pMe, pMeRefine, iWidth, iHeight, &sParams, kiStrideEnc);
 
   if (iBestCost > sParams.iBestCost) {

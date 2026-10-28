@@ -381,19 +381,9 @@ int32_t WelsMdI16x16 (SWelsFuncPtrList* pFunc, SDqLayer* pCurDqLayer, SMbCache* 
   if (iAvailCount > 3 && pFunc->sSampleDealingFuncs.pfIntra16x16Combined3) {
     iBestCost = pFunc->sSampleDealingFuncs.pfIntra16x16Combined3 (pDec, iLineSizeDec, pEnc, iLineSizeEnc, &iBestMode,
                 iLambda, pDst/*temp*/);
-    iCurMode = kpAvailMode[3];
-    if (JumpseatExp (3)) {
-      iCurCost = INT_MAX;
-    } else {
-      pFunc->pfGetLumaI16x16Pred[iCurMode] (pDst, pDec, iLineSizeDec);
-      iCurCost = pFunc->sSampleDealingFuncs.pfMdCost[BLOCK_16x16] (pDst, 16, pEnc, iLineSizeEnc) + iLambda * 4 ;
-    }
-    if (iCurCost < iBestCost) {
-      iBestMode = iCurMode;
-      iBestCost = iCurCost;
-    } else {
-      pFunc->pfGetLumaI16x16Pred[iBestMode] (pDst, pDec, iLineSizeDec);
-    }
+    // jumpseat: no plane mode. On desktops it saved 0.1% of bits for 3% of
+    // the CPU (animation).
+    pFunc->pfGetLumaI16x16Pred[iBestMode] (pDst, pDec, iLineSizeDec);
     iIdx = 1;
     iBestCost += iLambda;
   } else {
