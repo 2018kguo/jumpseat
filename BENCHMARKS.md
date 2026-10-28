@@ -25,6 +25,22 @@ cores on two). "Stream CPU" counts the X server and the streamer.
 | OpenH264, camera mode (default, BSD) | 0.27 / 0.44 | 1160 / 5589 |
 | OpenH264, screen mode (`JUMPSEAT_OH264=usage=1`) | 0.52 / 0.70 | **627** / 5376 |
 
+## Patched OpenH264 screen mode (`openh264/screen-fme.patch`, the Docker image)
+
+Screen mode finds scrolled content with a hash of every pixel's 8x8 sum
+over the whole reference frame, every frame. The patch runs that only on
+scrolling frames, from running sums, over every 8th column.
+
+| same VM, one ABBA round | stream CPU scroll / type | kbit/s scroll |
+|---|---|---|
+| OpenH264 camera mode | 0.29 / 0.08 | 1186 |
+| OpenH264 screen mode, stock | 0.55 / 0.11 | 632 |
+| OpenH264 screen mode, patched | **0.41** / **0.08** | 644 |
+
+On arm64 (bench/, encode only, 1280x800): scroll 5.35 → 1.8 ms a frame
+and typing 4.9 → 0.85, at the same bitrate and PSNR. x86 gains less
+because stock OpenH264 already has SSE for the sums.
+
 ## What made the difference, and what did not
 
 - **Capture only on change** (XDamage) and through shared memory: 0 CPU idle.
