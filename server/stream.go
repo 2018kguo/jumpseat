@@ -70,6 +70,27 @@ func (v *viewer) text(message any) error {
 	return websocket.Message.Send(v.ws, string(encoded))
 }
 
+// tailProbes: after a frame that fits one packet (a keystroke's), send this
+// many tiny messages 3 ms apart. When the frame's packet is lost, the acks
+// for the packets after it report the loss, and TCP retransmits after about
+// a round trip instead of waiting for its tail-loss timer. With 3% loss
+// (bench/wifi): keystrokes over 150 ms 30 -> 3 in 800, p99 281 -> 93 ms.
+// JUMPSEAT_TAIL sets the count (0: off).
+var tailProbes = envInt("JUMPSEAT_TAIL", 3)
+
+func envInt(name string, fallback int) int {
+	if n, err := strconv.Atoi(os.Getenv(name)); err == nil {
+		return n
+	}
+	return fallback
+}
+
+func (v *viewer) tail() {
+	for i := 1; i <= tailProbes; i++ {
+		time.AfterFunc(time.Duration(3*i)*time.Millisecond, func() { _ = v.text(map[string]string{"t": "n"}) })
+	}
+}
+
 // serve streams to one viewer until it leaves. Each viewer has its own X
 // connection and encoder, so it starts with a keyframe of its own.
 func serve(ws *websocket.Conn, display string) {
@@ -192,6 +213,9 @@ func serve(ws *websocket.Conn, display string) {
 		ts := f.now()
 		f.sent(ts, len(au))
 		err = v.frame(au, key, ts)
+		if err == nil && tailProbes > 0 && len(au) < 1200 {
+			v.tail()
+		}
 		traceFrame(last, grabbed, encoded, time.Now(), len(au))
 		stages.add(grabbed.Sub(last), enc.converted, encoded.Sub(grabbed)-enc.converted, time.Since(encoded), len(au))
 		return err

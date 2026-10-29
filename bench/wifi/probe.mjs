@@ -51,7 +51,8 @@ await quiet(400, 8000);
 send({ t: "b", b: 1, down: true, x: 400, y: 80 }); send({ t: "b", b: 1, down: false, x: 400, y: 80 }); // focus the textarea
 await quiet(300);
 const keys = "the quick brown fox jumps over the lazy dog 0123456789".split("");
-const type = await response((i) => { send({ t: "k", key: keys[i % keys.length], down: true }); send({ t: "k", key: keys[i % keys.length], down: false }); }, 50, 250);
+const nkeys = Number(process.env.KEYS || 50);
+const type = await response((i) => { send({ t: "k", key: keys[i % keys.length], down: true }); send({ t: "k", key: keys[i % keys.length], down: false }); }, nkeys, 250);
 send({ t: "m", x: 640, y: 600 });
 const wheel = await response((i) => send({ t: "w", dx: 0, dy: i % 10 < 5 ? 1 : -1 }), 20, 300);
 await quiet(300);
@@ -66,7 +67,7 @@ const gaps = anim.slice(1).map((t, i) => t - anim[i]);
 const kbps = Math.round(arrivals.slice(a0).reduce((s, a) => s + a[1], 0) * 8 / 6000);
 clearInterval(heartbeat);
 ws.close();
-const summary = (xs) => ({ p50: quantile(xs, 0.5), p90: quantile(xs, 0.9), max: quantile(xs, 1) });
+const summary = (xs) => ({ p50: quantile(xs, 0.5), p90: quantile(xs, 0.9), p95: quantile(xs, 0.95), p99: quantile(xs, 0.99), max: quantile(xs, 1), all: xs.map(Math.round) });
 console.log(JSON.stringify({ label, connect, type: summary(type), wheel: summary(wheel),
   anim: { fps: Math.round(anim.length / 6 * 10) / 10, kbps, gap: summary(gaps), stalls200: gaps.filter((g) => g > 200).length } }));
 process.exit(0);

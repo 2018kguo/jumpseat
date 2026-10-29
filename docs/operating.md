@@ -55,6 +55,7 @@ For measurement and A/B runs; defaults are what the benchmarks measured.
 | `JUMPSEAT_ENCODER_FPS` | The frame rate the rate control budgets for (default 60). |
 | `JUMPSEAT_LINK_KBPS` | Put a slow, deep-buffered link in front of the viewer, for testing flow control. |
 | `JUMPSEAT_FLOW=off` | Turn flow control off. |
+| `JUMPSEAT_TAIL` | Tiny messages sent after a keystroke-sized frame so a lost packet is retransmitted after a round trip, not TCP's tail timer (default 3, 0 off). |
 
 ## Limits
 

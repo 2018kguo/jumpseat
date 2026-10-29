@@ -63,6 +63,7 @@ costs frames, not seconds of input lag.
 | `cursor` | `png` (base64), `x`, `y` (hotspot) | The screen's cursor image, when it changes. |
 | `p` | `x`, `y` | The pointer moved. |
 | `c` | `text` | The desktop's clipboard changed. |
+| `n` | | Nothing: sent after a small frame so TCP notices a lost packet sooner. |
 
 ### Viewer to server
 

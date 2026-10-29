@@ -161,4 +161,8 @@ Flow control now widens its slack by the round trips' spread (p90 - p10)
 and caps only behind a standing queue (the fastest of the last 10 round
 trips 50 ms above the floor): 4.7-4.9 Mbit/s at 60 fps. With loss the cap
 is TCP's own ceiling (about 2.5-3.5 Mbit/s at 3% loss here); typing pays
-one retransmit for each lost packet, the tail of its p90.
+one retransmit for each lost packet. A keystroke's frame is one packet,
+and when it is the last one sent TCP finds its loss only by a timer: three
+tiny messages after each small frame (`JUMPSEAT_TAIL`) let the acks after it
+report the loss. At 3% loss, 800 keystrokes each way, ABBA on one sandbox:
+over 150 ms 30 -> 3, p95 82 -> 74, p99 281 -> 93 ms, p50 44 either way.
