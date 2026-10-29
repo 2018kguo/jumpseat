@@ -56,6 +56,10 @@ func TestLinkSpeedFromRepeatedHolds(t *testing.T) {
 	f.epoch = time.Now().Add(-10 * time.Second)
 	now := f.now()
 	f.holds = []int64{now - 300, now - 200, now - 100}
+	f.rtts = []rttSample{{at: now - 5000, rtt: 20}} // the floor; then a queue stands
+	for i := 0; i < queueSamples; i++ {
+		f.rtts = append(f.rtts, rttSample{at: now - 500 + int64(i)*50, rtt: 300})
+	}
 	for i := 0; i < 6; i++ {
 		f.delivered = append(f.delivered, delivery{at: now - 500 + int64(i)*100, bytes: 12_500})
 	}
@@ -71,5 +75,51 @@ func TestARouteThatSlowsBecomesTheNewFloor(t *testing.T) {
 	f.ack(f.now() - 150)
 	if got := f.minRTT(); got != 150 {
 		t.Fatalf("round trip floor %d ms, want the recent 150", got)
+	}
+}
+
+// A wifi link: 30 ms round trips that vary by +-40 ms with nothing queued.
+func jitteryRTTs(now int64) []rttSample {
+	var rtts []rttSample
+	for i := 0; i < 60; i++ {
+		rtts = append(rtts, rttSample{at: now - 3000 + int64(i)*50, rtt: 30 + int64((i*37)%80)})
+	}
+	return rtts
+}
+
+func TestJitterIsNotQueueing(t *testing.T) {
+	f := newFlow()
+	f.epoch = time.Now().Add(-10 * time.Second)
+	now := f.now()
+	f.acking = true
+	f.rtts = jitteryRTTs(now)
+	f.sent(now-180, 1000) // late by the jitter, not by a queue
+	if f.behind() {
+		t.Fatalf("a frame 180 ms out on a 30 ms link with %d ms of jitter held capture", f.jitter())
+	}
+	f.holds = []int64{now - 300, now - 200, now - 100}
+	for i := 0; i < 6; i++ {
+		f.delivered = append(f.delivered, delivery{at: now - 500 + int64(i)*100, bytes: 1000})
+	}
+	if got := f.linkKbps(); got != 0 {
+		t.Fatalf("jitter capped the link to %d kbit/s", got)
+	}
+}
+
+func TestAStandingQueueStillHolds(t *testing.T) {
+	f := newFlow()
+	f.epoch = time.Now().Add(-10 * time.Second)
+	now := f.now()
+	f.acking = true
+	f.rtts = []rttSample{{at: now - 5000, rtt: 30}}
+	for i := 0; i < jitterSamples; i++ { // every round trip 400 ms: a queue
+		f.rtts = append(f.rtts, rttSample{at: now - 1500 + int64(i)*50, rtt: 400 + int64(i%3)})
+	}
+	f.sent(now-200, 1000)
+	if !f.behind() {
+		t.Fatal("a frame 200 ms out behind a standing queue must hold capture")
+	}
+	if !f.queueing() {
+		t.Fatal("round trips all 370 ms above the floor are a queue")
 	}
 }

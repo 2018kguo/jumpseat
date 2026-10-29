@@ -138,3 +138,27 @@ unchanged (532 kbit/s, 53.79 dB). After animation under the cap, a still
 screen is sharp again in about the time the link takes to carry one
 full-quality frame: 51 dB at 20 frames and 54.5 dB at 40 at 1000 kbit/s,
 54 dB at 80 at 500 kbit/s (uncapped: 5 frames).
+
+## On a bad connection (bench/wifi)
+
+The streamer in a Modal sandbox (`bench/wifi/lab.py`, us-east) and a
+headless viewer (`probe.mjs`: key -> frame, wheel -> frame, animation
+fps and gaps) in a network namespace on a Linux host whose link `netns.sh`
+shapes with netem, both ways on a 30 Mbit/s link:
+
+```sh
+python3 bench/wifi/lab.py                     # URL TOKEN of the kept sandbox
+sudo sh bench/wifi/netns.sh up                # on the Linux host
+sh bench/wifi/run.sh URL TOKEN [profiles]     # clean good bad awful lossy jitter
+sudo sh bench/wifi/netns.sh down
+```
+
+What it found (Oct 2026, 12 ms base round trip): jitter alone read as a
+slow link. A frame late by jitter held capture, the rate it then measured
+was only what it let through, and the cap followed it down: with +-30 ms of
+jitter and no loss, animation fell from 4.9 to 0.4-1.7 Mbit/s at 52 fps.
+Flow control now widens its slack by the round trips' spread (p90 - p10)
+and caps only behind a standing queue (the fastest of the last 10 round
+trips 50 ms above the floor): 4.7-4.9 Mbit/s at 60 fps. With loss the cap
+is TCP's own ceiling (about 2.5-3.5 Mbit/s at 3% loss here); typing pays
+one retransmit for each lost packet, the tail of its p90.

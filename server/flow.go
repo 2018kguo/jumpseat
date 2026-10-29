@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"sync"
 	"time"
 )
@@ -27,6 +28,19 @@ const lostAfter = 2 * time.Second
 // before acks time the link's speed: one stalled page (a busy main thread
 // delays its acks) is not a slow link.
 const limitedHolds = 3
+
+// jitterSamples is how many recent round trips measure the link's jitter
+// (p90 - p10), which widens the slack: on wifi a frame's round trip varies by
+// tens of ms with no queue behind it, and holding capture for that cost
+// frames, then read as a slow link and capped the bitrate (a 30 Mbit/s link
+// with +-30 ms of jitter capped animation to 0.4 Mbit/s). A queue raises
+// every round trip alike, so it does not widen the slack.
+const jitterSamples = 30
+
+// queueSamples is how many of the latest round trips must all stand above
+// the floor before the link counts as the bottleneck: a standing queue, not
+// a late frame or two.
+const queueSamples = 10
 
 // rateWindow is how much limited delivery the link's speed is averaged
 // over: an average, not a per-ack peak, because the browser hands over
@@ -116,6 +130,33 @@ func (f *flow) trim(now int64) {
 	}
 }
 
+// rttQuantile is the q-quantile of the latest n round trips.
+func (f *flow) rttQuantile(n int, q float64) int64 {
+	if len(f.rtts) == 0 {
+		return 0
+	}
+	if n > len(f.rtts) {
+		n = len(f.rtts)
+	}
+	recent := make([]int64, n)
+	for i, sample := range f.rtts[len(f.rtts)-n:] {
+		recent[i] = sample.rtt
+	}
+	slices.Sort(recent)
+	return recent[int(q*float64(n-1))]
+}
+
+// jitter is the spread of the latest round trips.
+func (f *flow) jitter() int64 {
+	return f.rttQuantile(jitterSamples, 0.9) - f.rttQuantile(jitterSamples, 0.1)
+}
+
+// queueing reports whether even the fastest of the latest round trips stands
+// half the slack above the floor.
+func (f *flow) queueing() bool {
+	return len(f.rtts) >= queueSamples && f.rttQuantile(queueSamples, 0)-f.minRTT() > flowSlack.Milliseconds()/2
+}
+
 func (f *flow) minRTT() int64 {
 	low := int64(-1)
 	for _, sample := range f.rtts {
@@ -127,7 +168,7 @@ func (f *flow) minRTT() int64 {
 }
 
 // behind reports whether the oldest unshown frame has waited longer than the
-// link's round trip plus flowSlack.
+// link's round trip plus flowSlack and its jitter.
 func (f *flow) behind() bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
@@ -138,7 +179,7 @@ func (f *flow) behind() bool {
 	for len(f.inFlight) > 0 && now-f.inFlight[0].ts > lostAfter.Milliseconds() {
 		f.inFlight = f.inFlight[1:]
 	}
-	if len(f.inFlight) == 0 || now-f.inFlight[0].ts <= f.minRTT()+flowSlack.Milliseconds() {
+	if len(f.inFlight) == 0 || now-f.inFlight[0].ts <= f.minRTT()+flowSlack.Milliseconds()+f.jitter() {
 		return false
 	}
 	if len(f.holds) == 0 || f.holds[len(f.holds)-1] != now {
@@ -148,12 +189,13 @@ func (f *flow) behind() bool {
 }
 
 // linkKbps is what the link carried while it kept holding capture back over
-// the last rateWindow, or 0 when it has not been the bottleneck.
+// the last rateWindow with a queue standing, or 0 when it has not been the
+// bottleneck.
 func (f *flow) linkKbps() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.trim(f.now())
-	if f.off || len(f.holds) < limitedHolds || len(f.delivered) < 5 {
+	if f.off || len(f.holds) < limitedHolds || len(f.delivered) < 5 || !f.queueing() {
 		return 0
 	}
 	span := f.delivered[len(f.delivered)-1].at - f.delivered[0].at
