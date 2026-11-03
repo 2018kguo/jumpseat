@@ -123,3 +123,26 @@ func TestAStandingQueueStillHolds(t *testing.T) {
 		t.Fatal("round trips all 370 ms above the floor are a queue")
 	}
 }
+
+// A viewer that stops acking while frames go out is stalled (and dropped by
+// the hub); one that is only slow, or has nothing out, is not.
+func TestAStalledViewerIsNoticed(t *testing.T) {
+	f := newFlow()
+	f.epoch = time.Now().Add(-20 * time.Second)
+	now := f.now()
+	f.sent(now-10_000, 1000)
+	f.ack(now - 10_000)
+	f.lastAck = now - 10_000
+	if f.stalled() {
+		t.Fatal("nothing out since the last ack: idle, not stalled")
+	}
+	f.sent(now-1000, 1000)
+	f.lastAck = now - 1500
+	if f.stalled() {
+		t.Fatal("1.5 s without an ack is a slow viewer, not a stalled one")
+	}
+	f.lastAck = now - 6000
+	if !f.stalled() {
+		t.Fatal("6 s of frames with no ack is stalled")
+	}
+}

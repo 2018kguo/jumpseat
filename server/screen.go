@@ -108,9 +108,18 @@ func (s *screen) resize(w, h int) error {
 		}
 		mode = made.Mode
 		if err := randr.AddOutputModeChecked(s.conn, s.output, mode).Check(); err != nil {
+			randr.DestroyMode(s.conn, mode)
 			return err
 		}
 	}
+	// A resize that fails partway takes its new mode with it.
+	ok := false
+	defer func() {
+		if !ok && mode != s.initial {
+			randr.DeleteOutputMode(s.conn, s.output, mode)
+			randr.DestroyMode(s.conn, mode)
+		}
+	}()
 	mm := func(px int, per float64) uint32 { return uint32(max(1, math.Round(float64(px)*per))) }
 	setSize := func(w, h int) error {
 		return randr.SetScreenSizeChecked(s.conn, s.root, uint16(w), uint16(h), mm(w, s.mmPerPx[0]), mm(h, s.mmPerPx[1])).Check()
@@ -137,5 +146,6 @@ func (s *screen) resize(w, h int) error {
 	if mode != s.initial {
 		s.custom = mode
 	}
+	ok = true
 	return nil
 }

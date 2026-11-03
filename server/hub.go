@@ -100,10 +100,18 @@ func (h *hub) run() {
 	for {
 		rebuild, err := h.capture()
 		if err != nil {
+			// The viewers are dropped and reconnect; the next one to join
+			// starts a new pipeline.
 			log.Printf("capture: %v", err)
 			for _, v := range h.list() {
 				v.fail()
+				h.leave(v)
 			}
+			if h.done() {
+				return
+			}
+			time.Sleep(time.Second)
+			continue
 		}
 		if !rebuild {
 			return
@@ -126,6 +134,13 @@ func (h *hub) capture() (bool, error) {
 		return false, err
 	}
 	root := xproto.Setup(conn).DefaultScreen(conn).Root
+	// Hear size changes before reading the size, so none falls between.
+	// Without RandR the screen keeps its size: nothing to follow.
+	if randr.Init(conn) == nil {
+		if _, err := randr.QueryVersion(conn, 1, 3).Reply(); err == nil {
+			randr.SelectInput(conn, root, randr.NotifyMaskScreenChange)
+		}
+	}
 	geometry, err := xproto.GetGeometry(conn, xproto.Drawable(root)).Reply()
 	if err != nil {
 		return false, err
@@ -172,12 +187,6 @@ func (h *hub) capture() (bool, error) {
 		return false, err
 	}
 	damage.Create(conn, dmg, xproto.Drawable(root), damage.ReportLevelNonEmpty)
-	// Without RandR the screen keeps its size: nothing to follow.
-	if randr.Init(conn) == nil {
-		if _, err := randr.QueryVersion(conn, 1, 3).Reply(); err == nil {
-			randr.SelectInput(conn, root, randr.NotifyMaskScreenChange)
-		}
-	}
 
 	start := time.Now()
 	var last time.Time
@@ -187,6 +196,7 @@ func (h *hub) capture() (bool, error) {
 	// Viewers that have not had a keyframe of this encoder: they get the
 	// size first and no frame before the keyframe.
 	waiting := map[*viewer]bool{}
+	greeted := map[*viewer]bool{}
 	capKbps, encoded := 0, false
 	grab := func() error {
 		if wait := interval - time.Since(last); wait > 0 {
@@ -212,7 +222,7 @@ func (h *hub) capture() (bool, error) {
 		}
 		encoded = true
 		for _, v := range h.list() {
-			if waiting[v] && !key {
+			if !greeted[v] || (waiting[v] && !key) {
 				continue
 			}
 			delete(waiting, v)
@@ -229,7 +239,6 @@ func (h *hub) capture() (bool, error) {
 		return nil
 	}
 	// greet tells viewers new to this encoder its size, and keyframes them.
-	greeted := map[*viewer]bool{}
 	greet := func() error {
 		fresh := false
 		current := h.list()
@@ -253,11 +262,15 @@ func (h *hub) capture() (bool, error) {
 		// A new encoder's first frame is a keyframe; the viewers already
 		// watching decode it like any other.
 		if encoded {
-			enc.close()
-			if enc, err = newEncoder(width, height, budgetFPS); err != nil {
+			next, err := newEncoder(width, height, budgetFPS)
+			if err != nil {
 				return err
 			}
-			capKbps, encoded = 0, false
+			enc.close()
+			enc, encoded = next, false
+			if capKbps > 0 {
+				enc.setMaxKbps(capKbps)
+			}
 		}
 		return grab()
 	}
@@ -320,6 +333,10 @@ var errResized = errors.New("screen resized")
 
 func (h *hub) behind() bool {
 	for _, v := range h.list() {
+		if v.f.stalled() {
+			v.fail()
+			continue
+		}
 		if v.f.behind() {
 			return true
 		}

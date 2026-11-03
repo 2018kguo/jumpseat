@@ -24,6 +24,11 @@ const rttWindow = 10 * time.Second
 // come.
 const lostAfter = 2 * time.Second
 
+// stallAfter is when a viewer that acks no frame while frames are out is
+// dropped (a sleeping laptop, a dead socket): the viewers share capture, and
+// one that stopped reading must not pace the rest.
+const stallAfter = 5 * time.Second
+
 // limitedHolds is how many times capture must have waited within rateWindow
 // before acks time the link's speed: one stalled page (a busy main thread
 // delays its acks) is not a slow link.
@@ -75,6 +80,8 @@ type flow struct {
 	delivered []delivery
 	holds     []int64 // when capture waited, within rateWindow
 	acking    bool
+	lastAck   int64 // ms on the flow's clock
+	lastSent  int64
 	acked     chan struct{}
 	off       bool // JUMPSEAT_FLOW=off, for A/B runs
 }
@@ -87,6 +94,7 @@ func (f *flow) now() int64 { return time.Since(f.epoch).Milliseconds() }
 func (f *flow) sent(ts int64, bytes int) {
 	f.mu.Lock()
 	f.inFlight = append(f.inFlight, sentFrame{ts: ts, bytes: bytes})
+	f.lastSent = ts
 	f.mu.Unlock()
 }
 
@@ -114,6 +122,7 @@ func (f *flow) ack(ts int64) {
 		f.delivered = append(f.delivered, delivery{at: now, bytes: bytes})
 	}
 	f.acking = true
+	f.lastAck = now
 	f.mu.Unlock()
 	select {
 	case f.acked <- struct{}{}:
@@ -165,6 +174,13 @@ func (f *flow) minRTT() int64 {
 		}
 	}
 	return low
+}
+
+// stalled reports whether frames have gone out with no ack for stallAfter.
+func (f *flow) stalled() bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	return f.acking && !f.off && f.lastSent > f.lastAck && f.now()-f.lastAck > stallAfter.Milliseconds()
 }
 
 // behind reports whether the oldest unshown frame has waited longer than the

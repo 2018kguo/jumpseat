@@ -6,6 +6,7 @@ import (
 	"encoding/base64"
 	"encoding/binary"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"image"
 	"image/png"
@@ -38,6 +39,9 @@ type viewer struct {
 	gone     chan struct{}
 	goneOnce sync.Once
 	mu       sync.Mutex
+	// out is what the writer sends, in order. Frames come from the shared
+	// pipeline, which must never wait on one viewer's socket.
+	out chan any
 	// link, when set, is the benchmarks' slow link: messages queue without
 	// bound and leave at its rate, like a router with a deep buffer.
 	link *slowLink
@@ -48,6 +52,47 @@ func (v *viewer) fail() { v.goneOnce.Do(func() { close(v.gone) }) }
 // A viewer that cannot take a frame this fast is dropped, not waited on.
 const viewerWrite = 10 * time.Second
 
+// viewerQueue is how many messages may wait for a viewer's socket. Flow
+// control keeps a healthy viewer's queue to a few frames; one that fills it
+// has stopped reading, and is dropped instead of holding up the others.
+const viewerQueue = 256
+
+var errViewerBehind = errors.New("viewer stopped reading")
+
+func (v *viewer) send(message any) error {
+	if v.link != nil {
+		return v.link.push(message)
+	}
+	select {
+	case <-v.gone:
+		return errViewerBehind
+	case v.out <- message:
+		return nil
+	default:
+		v.fail()
+		return errViewerBehind
+	}
+}
+
+// write sends the queue until the viewer is gone.
+func (v *viewer) write() {
+	for {
+		select {
+		case <-v.gone:
+			return
+		case message := <-v.out:
+			v.mu.Lock()
+			_ = v.ws.SetWriteDeadline(time.Now().Add(viewerWrite))
+			err := websocket.Message.Send(v.ws, message)
+			v.mu.Unlock()
+			if err != nil {
+				v.fail()
+				return
+			}
+		}
+	}
+}
+
 // frame sends one access unit stamped with ts, the id its ack carries back.
 func (v *viewer) frame(au []byte, key bool, ts int64) error {
 	message := make([]byte, 9, 9+len(au))
@@ -55,24 +100,12 @@ func (v *viewer) frame(au []byte, key bool, ts int64) error {
 		message[0] = 1
 	}
 	binary.BigEndian.PutUint64(message[1:], uint64(ts))
-	if v.link != nil {
-		return v.link.push(append(message, au...))
-	}
-	v.mu.Lock()
-	defer v.mu.Unlock()
-	_ = v.ws.SetWriteDeadline(time.Now().Add(viewerWrite))
-	return websocket.Message.Send(v.ws, append(message, au...))
+	return v.send(append(message, au...))
 }
 
 func (v *viewer) text(message any) error {
 	encoded, _ := json.Marshal(message)
-	if v.link != nil {
-		return v.link.push(string(encoded))
-	}
-	v.mu.Lock()
-	defer v.mu.Unlock()
-	_ = v.ws.SetWriteDeadline(time.Now().Add(viewerWrite))
-	return websocket.Message.Send(v.ws, string(encoded))
+	return v.send(string(encoded))
 }
 
 // tailProbes: after a frame that fits one packet (a keystroke's), send this
@@ -120,7 +153,9 @@ func serve(ws *websocket.Conn, h *hub) {
 	}
 	root := xproto.Setup(conn).DefaultScreen(conn).Root
 
-	v := &viewer{ws: ws, f: newFlow(), gone: make(chan struct{})}
+	v := &viewer{ws: ws, f: newFlow(), gone: make(chan struct{}), out: make(chan any, viewerQueue)}
+	defer v.fail()
+	go v.write()
 	v.f.acked = h.acked
 	v.f.off = os.Getenv("JUMPSEAT_FLOW") == "off"
 	if kbps, err := strconv.Atoi(os.Getenv("JUMPSEAT_LINK_KBPS")); err == nil && kbps > 0 {
