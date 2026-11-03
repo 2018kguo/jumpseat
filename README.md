@@ -1,37 +1,53 @@
-# jumpseat
+<h1 align="center">jumpseat</h1>
+<p align="center">Watch a computer-use agent's desktop live, and take over when it needs you.</p>
+<p align="center">
+  <a href="#try-it">Try it</a> ·
+  <a href="docs/reference.md">Reference</a> ·
+  <a href="docs/operating.md">Operating</a> ·
+  <a href="bench/README.md">Benchmarks</a>
+</p>
 
-**Your agent flies. You're in the jumpseat.** Watch your computer-use agent
-live, and take the controls when it needs you.
+jumpseat is one Go binary that streams the Linux desktop your agent drives to
+any browser, as H.264 over a single websocket. It runs at 60 fps, costs about
+a third of a core while the screen moves and nothing while it is still, and
+passes through any HTTPS proxy, tunnel or sandbox preview URL: no WebRTC, no
+TURN, no UDP.
 
-One Go binary streams a Linux desktop (the one your agent drives) to any
-browser over a plain websocket: 60 fps at about a third of a core, nothing
-when the screen is still. The agent gets a small API to say what it is
-doing, hand a step to a person (a sign-in, a captcha) and know when the
-person is driving, so the two never fight over the mouse.
+It is built for an agent and a person sharing one desktop. The agent posts
+captions of what it is doing, hands a step it cannot do (a sign-in, a
+captcha) to the person, and checks whether the person is at the keyboard
+before it clicks. The person sees "Your turn", takes over, and hands back.
 
-- **Works where your sandbox runs.** A websocket through any HTTPS proxy or
-  tunnel: no WebRTC, no TURN, no UDP.
-- **Built for agent + human.** Live captions of what the agent is doing,
-  "Your turn: Sign in to LinkedIn", Take over / Done, continue, an input
-  lease so agent clicks wait while you type.
-- **Cheap.** 0 CPU idle, ~0.3 cores at 60 fps, 0.66 Mbit/s scrolling
-  text, and it backs off on slow links instead of piling up lag.
-- **Small.** A websocket, H.264, WebCodecs. The browser client has no
-  dependencies; the encoder is BSD and linked in.
+![The demo viewer in Chrome: the agent opens Wikipedia with captions, hands a step to the person, who takes over, scrolls and picks a section, then the desktop follows the viewer's window to a new size](docs/film.gif)
+
+*A real recording of the demo viewer in Chrome ([e2e/film.mjs](e2e/film.mjs)).
+The "agent" is a script driving the desktop with xdotool and jumpseat's API;
+the person's input goes through the viewer. The white dot is the person's
+pointer, drawn for the recording.*
+
+## How it compares
+
+On one 4-vCPU sandbox (gVisor, no GPU) at 1280×800, against KasmVNC 1.5.0,
+watched from a real browser across the network:
 
 | | jumpseat | KasmVNC |
 |---|---|---|
-| fps | 60 | 24 |
-| bandwidth, scrolling | 0.66 Mbit/s | 14.8 |
-| key → pixel | ~35 ms | 48–73 ms |
-| on a 1 Mbit/s link, while scrolling | ~0.2 s | 1–2 s |
+| frames per second, scrolling or animating | 60 | 24 |
+| bandwidth, scrolling text | 0.66 Mbit/s | 14.8 Mbit/s |
+| key to pixel, p50 | 30–40 ms | 48–73 ms |
+| key to pixel while scrolling on a 1 Mbit/s link, p50 | 117–216 ms¹ | 1.1 s |
+| CPU, X server and streamer, scrolling | ~0.3 cores | 0.38–0.48 |
 
-Its encoder, OpenH264's changed for desktop content, also beats x264
-ultrafast: half the bits scrolling, fewer typing and animating, at the same
-key → pixel and fewer instructions a frame. Details and method in
-[bench/](bench/README.md).
+¹ Measured with the x264 build, which needs twice the bits to scroll.
+
+Its encoder is OpenH264's, changed for desktop content. On recorded desktop
+frames it needs 40% fewer bits than x264 ultrafast to scroll, 26% fewer to
+type and 10% fewer to animate, for fewer instructions a frame. The method,
+the raw numbers and what did not help are in [bench/](bench/README.md).
 
 ## Try it
+
+The demo image runs Xvfb, a window manager, Chromium and jumpseat:
 
 ```sh
 docker build -f docker/Dockerfile -t jumpseat .
@@ -39,9 +55,7 @@ docker run --rm -p 8080:8080 -e JUMPSEAT_TOKEN=secret jumpseat
 open "http://localhost:8080/?token=secret"
 ```
 
-Building from source is in [docs/development.md](docs/development.md).
-
-A desktop with Chromium appears. Make the "agent" talk:
+Then play the agent:
 
 ```sh
 curl -H "Authorization: Bearer secret" -d '{"kind":"acting","text":"Opening LinkedIn"}' localhost:8080/agent/status
@@ -49,58 +63,83 @@ curl -H "Authorization: Bearer secret" -d '{"kind":"handoff","text":"Sign in to 
 curl -H "Authorization: Bearer secret" localhost:8080/agent/lease   # {"driving":false,"answer":""}
 ```
 
+To have the desktop follow the browser window, run the container with
+`-e JUMPSEAT_RESIZE=1` and open `/?token=secret&resize`.
+
 ## Use it
 
 **On the machine with the desktop** (Xvfb or any X server):
 
 ```sh
 jumpseat --listen :8080 --token "$TOKEN" --display :0
-# or behind your own auth: --listen unix:/run/jumpseat/stream.sock
+# or, behind your own proxy and auth:
+jumpseat --listen unix:/run/jumpseat/stream.sock
 ```
 
-**In your app:**
+**In your page**, with the client in [client/](client/jumpseat.ts) (no
+dependencies):
 
 ```ts
-import { connect, supportsStream } from "@2018kguo/jumpseat";
+import { connect, supportsStream } from "./jumpseat";
 
 const view = connect(element, `wss://host/stream?token=${token}`, {
   connected: () => {},
   dropped: () => {},
   status: ({ kind, text }) => {}, // "acting" | "waiting" | "handoff" | "idle"
 });
-view.setControlling(true); // Take over: the user's input reaches the desktop
+view.setControlling(true); // the person's keys, pointer and scrolls reach the desktop
 ```
 
 **From your agent:**
 
-- `POST /agent/status {"kind":"acting","text":"Searching for flights"}`
-  before a step; `{"kind":"handoff","text":"Sign in to LinkedIn"}` to ask
-  the user, then wait for `GET /agent/lease` to report `"answer":"done"`.
-- Before clicking, check `GET /agent/lease`: while `"driving"` is true the
-  user is at the keyboard.
+- Before a step, `POST /agent/status {"kind":"acting","text":"Searching for flights"}`.
+- After it, `GET /agent/wait` returns once the screen has settled, instead
+  of a sleep that hopes it was long enough.
+- For a step only a person can do, post `{"kind":"handoff","text":"Sign in to LinkedIn"}`,
+  then poll `GET /agent/lease` until `answer` is `"done"`.
+- Before clicking, check `GET /agent/lease`: while `driving` is true, the
+  person is at the keyboard.
+- `GET /agent/screenshot` returns the screen as a PNG.
 
-Flags, routes, the wire format and the client API are in
-[docs/reference.md](docs/reference.md); deploying it safely is in
+Every flag, route, message and client option is in
+[docs/reference.md](docs/reference.md). Deploying it safely is in
 [docs/operating.md](docs/operating.md).
 
 ## How it works
 
-XDamage says when the screen changed; the frame comes over MIT-SHM, libyuv
-converts it, and jumpseat's encoder (`h264/`: OpenH264 changed for
-desktops, BSD) or libx264 (`-tags x264`, GPL) encodes it in process. The browser decodes
-with WebCodecs onto a canvas and acks each frame; the server stops capturing
-while too much is unshown and caps the bitrate to what the link carries.
-Input goes back on the same socket and into X through XTest, with keys
-placed at the right keymap level so other keyboard layouts type what they
-show.
+XDamage says when the screen changed. The frame comes over MIT-SHM, libyuv
+converts it, and the encoder in [h264/](h264/README.md) encodes it in
+process. All viewers share that one capture and encoder; each new viewer
+starts with a keyframe of its own. The browser decodes each frame with
+WebCodecs as it arrives and acks it, and the server holds capture while
+frames go unshown and caps the bitrate to what the link carries, so a slow
+link drops frames instead of building up seconds of lag.
+
+The person's input comes back on the same socket and goes into X through
+XTest, with keys placed at the right keymap level so other keyboard layouts
+type what they show. Trackpad scrolling arrives pixel by pixel on an Xvfb
+with scroll axes on its XTest pointer, which the demo image builds; any
+other X server gets wheel clicks.
+
+The desktop streams at whatever size the X screen is, and starts over when
+RandR changes it. With `--resize` the viewer asks for its window's size.
+That is off by default, because an agent clicks at coordinates taken from
+the size it last saw.
 
 ## Status
 
-Early. X11 only, one 1280×800 screen, each viewer its own encoder. Not yet:
-audio, Wayland, per-window streaming, a shared encoder for many viewers.
+Early. X11 only, one screen. No audio,
+clipboard images, file transfer, Wayland or per-window streaming yet.
+Viewers share one encoder, so the slowest link sets the pace for all of
+them.
+
+Several pieces follow [voxl](https://github.com/tembo/voxl), a desktop
+streamer for the browser with the same transport: `/agent/wait`, the shared
+encoder, RandR resizing, and the Xvfb scroll patch, which is voxl's own.
 
 ## License
 
-MIT for jumpseat; the encoder in `h264/` is BSD 2-clause (OpenH264). The
-optional `-tags x264` build links libx264, which is GPL. See
+MIT for jumpseat. The encoder in `h264/` is BSD 2-clause (OpenH264). The Xvfb
+patch in `docker/patches/` is voxl's, MIT ([its license](docker/patches/LICENSE-voxl)).
+The optional `-tags x264` build links libx264, which is GPL. See
 [LICENSE](LICENSE).

@@ -2,16 +2,26 @@
 
 ## Layout
 
-- `server/`: the Go binary. Capture (`stream.go`), input (`input.go`), flow
-  control (`flow.go`), the agent API (`status.go`), the encoder bindings
-  (`encoder_openh264.go`; `encoder.go` with `-tags x264`) and the demo page
-  (`web/`, embedded).
+- `server/`: the Go binary.
+  - `hub.go`: the one capture and encoder every viewer shares, rebuilt when
+    the screen changes size.
+  - `stream.go`: one viewer's socket (frames, cursor, pointer, clipboard,
+    the agent's status) and the MIT-SHM grab.
+  - `flow.go`: acks, holding capture, the link's speed.
+  - `input.go`, `scroll.go`: the viewer's input through XTest.
+  - `screen.go`: RandR resizing (`--resize`).
+  - `status.go`, `wait.go`, `screenshot.go`: the agent API.
+  - `encoder_openh264.go`, or `encoder.go` with `-tags x264`: the encoder
+    bindings.
+  - `web/`: the demo page, embedded.
 - `h264/`: the encoder, OpenH264's changed for desktops. Its
   [README](../h264/README.md) lists every change from upstream.
 - `client/`: the browser client, `@2018kguo/jumpseat`, no dependencies.
 - `bench/`: the encoder lab and the [measurements](../bench/README.md).
-- `e2e/`: a real browser against the demo container.
-- `docker/`: the demo image (Xvfb, openbox, Chromium, jumpseat).
+- `e2e/`: a real browser against the demo container, and `film.mjs`, which
+  records the README's film.
+- `docker/`: the demo image: Xvfb with the scroll patch, openbox, the
+  wallpaper, Chromium, jumpseat.
 
 ## Build and test
 
@@ -36,14 +46,22 @@ Go's build cache does not hash the encoder library: after changing `h264/`,
 or the old encoder links silently.
 
 The end-to-end check opens the demo in Chrome (Playwright's bundled
-Chromium has no H.264 decoder) and covers the stream, the agent API and
-taking over:
+Chromium has no H.264 decoder). It covers the stream, the agent API, taking
+over, two viewers at once, smooth scrolling and touch, and with
+`JUMPSEAT_RESIZE=1` the desktop following the window:
 
 ```sh
 docker run -d --name jumpseat-test -p 18080:8080 -e JUMPSEAT_TOKEN=secret jumpseat
 (cd e2e && bun install && bun run test)
 docker rm -f jumpseat-test
+
+docker run -d --name jumpseat-test -p 18080:8080 -e JUMPSEAT_TOKEN=secret -e JUMPSEAT_RESIZE=1 jumpseat
+(cd e2e && JUMPSEAT_RESIZE=1 bun run test)
+docker rm -f jumpseat-test
 ```
+
+[e2e/film.mjs](../e2e/film.mjs) records the README's film the same way; its
+header has the ffmpeg steps.
 
 ## Changing the encoder
 

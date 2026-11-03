@@ -39,3 +39,11 @@ jobs:
         run: bun install && bun run test
       - if: failure()
         run: docker logs jumpseat-test | tail -50
+      - name: the desktop follows the window (--resize)
+        run: |
+          docker rm -f jumpseat-test
+          docker run -d --name jumpseat-test -p 18080:8080 -e JUMPSEAT_TOKEN=secret -e JUMPSEAT_RESIZE=1 jumpseat
+          for i in $(seq 60); do curl -sf "localhost:18080/?token=secret" >/dev/null && break; sleep 1; done
+          cd e2e && JUMPSEAT_RESIZE=1 bun run test
+      - if: failure()
+        run: docker logs jumpseat-test | tail -50
