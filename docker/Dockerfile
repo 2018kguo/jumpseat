@@ -17,10 +17,21 @@ COPY server server
 COPY --from=client /out/jumpseat.js server/web/jumpseat.js
 RUN cd server && go test ./... && go build -ldflags='-s -w' -o /jumpseat .
 
+# The wallpaper, rendered here so the runtime image needs no SVG renderer.
+FROM debian:bookworm-slim AS desktop
+RUN apt-get update && apt-get install -y --no-install-recommends librsvg2-bin fonts-dejavu-core
+COPY docker/desktop/wallpaper.svg /wallpaper.svg
+RUN rsvg-convert /wallpaper.svg -o /wallpaper.png
+
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
       xvfb openbox chromium xdotool xclip procps libyuv0 fonts-dejavu-core ca-certificates \
+      hsetroot x11-utils \
     && rm -rf /var/lib/apt/lists/*
+COPY --from=desktop /wallpaper.png /usr/share/jumpseat/wallpaper.png
+COPY docker/desktop/themerc /usr/share/themes/jumpseat/openbox-3/themerc
+RUN sed -i 's|<name>Clearlooks</name>|<name>jumpseat</name>|' /etc/xdg/openbox/rc.xml \
+    && grep -q '<name>jumpseat</name>' /etc/xdg/openbox/rc.xml
 COPY --from=server /jumpseat /usr/local/bin/jumpseat
 COPY docker/start.sh /usr/local/bin/start.sh
 EXPOSE 8080

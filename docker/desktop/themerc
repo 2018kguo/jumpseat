@@ -1,0 +1,54 @@
+# jumpseat: flat dark window frames, matching the wallpaper.
+border.width: 1
+padding.width: 6
+padding.height: 4
+window.handle.width: 0
+window.client.padding.width: 0
+window.client.padding.height: 0
+
+window.active.border.color: #1e293b
+window.inactive.border.color: #1e293b
+window.active.title.bg: flat solid
+window.active.title.bg.color: #1e293b
+window.inactive.title.bg: flat solid
+window.inactive.title.bg.color: #0f172a
+window.active.label.bg: parentrelative
+window.inactive.label.bg: parentrelative
+window.active.label.text.color: #e2e8f0
+window.inactive.label.text.color: #64748b
+window.label.text.justify: center
+
+window.active.button.unpressed.bg: parentrelative
+window.active.button.unpressed.image.color: #94a3b8
+window.active.button.hover.bg: flat solid
+window.active.button.hover.bg.color: #334155
+window.active.button.hover.image.color: #f8fafc
+window.active.button.pressed.bg: flat solid
+window.active.button.pressed.bg.color: #475569
+window.active.button.pressed.image.color: #f8fafc
+window.inactive.button.unpressed.bg: parentrelative
+window.inactive.button.unpressed.image.color: #475569
+
+menu.border.width: 1
+menu.border.color: #334155
+menu.items.bg: flat solid
+menu.items.bg.color: #1e293b
+menu.items.text.color: #e2e8f0
+menu.items.disabled.text.color: #64748b
+menu.items.active.bg: flat solid
+menu.items.active.bg.color: #3b5bdb
+menu.items.active.text.color: #ffffff
+menu.title.bg: flat solid
+menu.title.bg.color: #0f172a
+menu.title.text.color: #e2e8f0
+menu.separator.color: #334155
+
+osd.border.width: 1
+osd.border.color: #334155
+osd.bg: flat solid
+osd.bg.color: #1e293b
+osd.label.text.color: #e2e8f0
+osd.hilight.bg: flat solid
+osd.hilight.bg.color: #3b5bdb
+osd.unhilight.bg: flat solid
+osd.unhilight.bg.color: #334155
