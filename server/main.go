@@ -100,6 +100,7 @@ func routes(display, token string) http.Handler {
 	mux.Handle("POST /agent/status", authed(token, http.HandlerFunc(postStatus)))
 	mux.Handle("GET /agent/lease", authed(token, http.HandlerFunc(getLease)))
 	mux.Handle("POST /agent/answer", authed(token, http.HandlerFunc(postAnswer)))
+	mux.Handle("GET /agent/wait", authed(token, getWait(display)))
 	// The demo viewer: static files, no secrets; it asks for the token.
 	web, _ := fs.Sub(webFiles, "web")
 	mux.Handle("GET /", http.FileServerFS(web))

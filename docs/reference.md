@@ -31,11 +31,15 @@ or `?token=T` where a browser cannot set headers (its websocket).
 | `POST /agent/status` | `{"kind": "acting" \| "waiting" \| "handoff" \| "idle", "text": "Opening LinkedIn"}`, shown to every viewer. |
 | `GET /agent/lease` | `{"driving": bool, "lastInputMs": n, "answer": "" \| "done" \| "skip"}`: whether the user is driving (input in the last 5 s), and how they answered a handoff. |
 | `POST /agent/answer` | `{"reply": "done" \| "skip"}`, sent by the viewer's Done / Skip. |
+| `GET /agent/wait` | `{"changed": bool, "timedOut": bool, "waitedMs": n}` once the screen has been still for `idle` ms (default 300, counted from the request), or at the first change with `?change`; `timeout` ms gives up (default 10 000, at most 60 000). |
 
 An agent posts `acting` with a caption before each step. For a step only a
 person can do (a sign-in, a captcha) it posts `handoff`, then polls
 `/agent/lease` until `answer` is `done` or `skip`. Before it clicks or types,
-it checks `driving`: while true, the user is at the keyboard.
+it checks `driving`: while true, the user is at the keyboard. After a step,
+`GET /agent/wait` returns when the page has settled, instead of a sleep;
+XDamage already knows when the screen changes, so it costs no screenshots.
+A blinking caret redraws about twice a second: keep `idle` under 500 ms.
 
 ## Websocket: `GET /stream`
 

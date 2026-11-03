@@ -19,6 +19,7 @@ func TestRoutesNeedTheToken(t *testing.T) {
 	}{
 		{"GET", "/stream", "", http.StatusUnauthorized},
 		{"GET", "/agent/lease", "", http.StatusUnauthorized},
+		{"GET", "/agent/wait", "", http.StatusUnauthorized},
 		{"POST", "/agent/status", "Bearer wrong", http.StatusUnauthorized},
 		{"GET", "/agent/lease", "Bearer secret", http.StatusOK},
 		{"GET", "/", "", http.StatusOK},

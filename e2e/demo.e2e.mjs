@@ -70,5 +70,17 @@ await page.waitForTimeout(500);
 const after = await (await api("GET", "/agent/lease")).json();
 check(after.answer === "done", `Done reaches the agent: ${JSON.stringify(after)}`);
 
+// /agent/wait: XDamage tells the agent when the screen settles or changes.
+const wait = async (query) => (await api("GET", `/agent/wait?${query}`)).json();
+const still = await wait("idle=300&timeout=5000");
+check(!still.timedOut && still.waitedMs < 5000, `a still screen settles: ${JSON.stringify(still)}`);
+const nothing = await wait("change&timeout=400");
+check(nothing.timedOut && !nothing.changed, `no change, no answer before the timeout: ${JSON.stringify(nothing)}`);
+const pending = wait("change&timeout=5000");
+await new Promise((done) => setTimeout(done, 300));
+execFileSync("docker", ["exec", "-e", "DISPLAY=:0", container, "xdotool", "key", "ctrl+l", "type", "jumpseat wait"]);
+const typed = await pending;
+check(typed.changed && !typed.timedOut, `typing on the desktop ends a change wait: ${JSON.stringify(typed)}`);
+
 await browser.close();
 process.exit(failures ? 1 : 0);
