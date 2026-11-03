@@ -17,10 +17,27 @@ COPY server server
 COPY --from=client /out/jumpseat.js server/web/jumpseat.js
 RUN cd server && go test ./... && go build -ldflags='-s -w' -o /jumpseat .
 
+# Debian's Xvfb with scroll axes on its XTest pointer (patch from voxl, MIT),
+# so the streamer can inject pixel-precise scrolling; stock Xvfb gets wheel
+# clicks instead. Only Xvfb is built; the xvfb package below brings its
+# libraries and keymaps.
+FROM debian:bookworm AS xvfb
+RUN sed -i 's/^Types: deb$/Types: deb deb-src/' /etc/apt/sources.list.d/debian.sources \
+    && apt-get update && apt-get build-dep -y xorg-server && apt-get install -y dpkg-dev meson ninja-build
+WORKDIR /src
+RUN apt-get source xorg-server && mv xorg-server-*/ xorg-server
+COPY docker/patches/xorg-server-xtest-scroll.patch /src/
+RUN cd xorg-server && patch -p1 < ../xorg-server-xtest-scroll.patch \
+    && meson setup build --prefix=/usr -Dxorg=false -Dxephyr=false -Dxnest=false \
+         -Dxvfb=true -Dglamor=false -Dudev=false -Dsystemd_logind=false -Ddocs=false -Ddevel-docs=false \
+         -Dxkb_dir=/usr/share/X11/xkb -Dxkb_output_dir=/var/lib/xkb -Dxkb_bin_dir=/usr/bin \
+    && ninja -C build hw/vfb/Xvfb && cp build/hw/vfb/Xvfb /Xvfb
+
 FROM debian:bookworm-slim
 RUN apt-get update && apt-get install -y --no-install-recommends \
       xvfb openbox chromium xdotool xclip procps libyuv0 fonts-dejavu-core ca-certificates \
     && rm -rf /var/lib/apt/lists/*
+COPY --from=xvfb /Xvfb /usr/bin/Xvfb
 COPY --from=server /jumpseat /usr/local/bin/jumpseat
 COPY docker/start.sh /usr/local/bin/start.sh
 EXPOSE 8080

@@ -6,8 +6,12 @@ with the X server your agent drives.
 ## What it needs
 
 - An X server with the MIT-SHM, XDamage, XFixes and XTest extensions. Xvfb
-  has them; [docker/start.sh](../docker/start.sh) starts Xvfb, openbox and
-  Chromium the way the demo image does.
+  has them. For pixel-precise (trackpad) scrolling, Xvfb built with
+  [docker/patches/xorg-server-xtest-scroll.patch](../docker/patches/xorg-server-xtest-scroll.patch)
+  (from voxl, MIT), as the demo image does; any other X server scrolls by
+  wheel clicks (jumpseat logs which as a viewer connects).
+  [docker/start.sh](../docker/start.sh) starts Xvfb, openbox and Chromium
+  the way the demo image does.
 - libyuv at run time. The encoder is linked in; the x264 build also needs
   libx264.
 - A browser with WebCodecs and an H.264 decoder (Chrome, Edge, Safari,

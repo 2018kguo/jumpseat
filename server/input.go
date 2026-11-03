@@ -17,20 +17,22 @@ import (
 
 // input is one viewer message. t is "k" (key; key is KeyboardEvent.key),
 // "m" (pointer move), "b" (button b, 1-3, down or up at x,y), "w" (wheel
-// step, dy < 0 up), "c" (paste text into the VM's clipboard), "r" (release
+// step, dy < 0 up; or sx, sy: desktop pixels, smooth), "c" (paste text into the VM's clipboard), "r" (release
 // every key and button this viewer holds), "a" (frame ts was displayed, see
 // flow) or "h" (heartbeat).
 type input struct {
-	T    string `json:"t"`
-	Key  string `json:"key"`
-	X    int16  `json:"x"`
-	Y    int16  `json:"y"`
-	B    byte   `json:"b"`
-	Down bool   `json:"down"`
-	DY   int    `json:"dy"`
-	DX   int    `json:"dx"`
-	Text string `json:"text"`
-	TS   int64  `json:"ts"`
+	T    string  `json:"t"`
+	Key  string  `json:"key"`
+	X    int16   `json:"x"`
+	Y    int16   `json:"y"`
+	B    byte    `json:"b"`
+	Down bool    `json:"down"`
+	DY   int     `json:"dy"`
+	DX   int     `json:"dx"`
+	SX   float64 `json:"sx"`
+	SY   float64 `json:"sy"`
+	Text string  `json:"text"`
+	TS   int64   `json:"ts"`
 }
 
 func inScreen(x, y int16) bool { return x >= 0 && y >= 0 && x < width && y < height }
@@ -82,17 +84,10 @@ func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, di
 			xtest.FakeInput(k.conn, xproto.MotionNotify, 0, 0, k.root, in.X, in.Y, 0)
 			k.button(in.B, in.Down)
 		case "w":
-			// X wheel buttons: 4 up, 5 down, 6 left, 7 right.
-			for _, step := range [][2]int{{in.DY, 4}, {in.DX, 6}} {
-				if step[0] == 0 {
-					continue
-				}
-				button := byte(step[1])
-				if step[0] > 0 {
-					button++
-				}
-				xtest.FakeInput(k.conn, xproto.ButtonPress, button, 0, k.root, 0, 0, 0)
-				xtest.FakeInput(k.conn, xproto.ButtonRelease, button, 0, k.root, 0, 0, 0)
+			if in.SX != 0 || in.SY != 0 {
+				k.scroll.scroll(k.conn, k.root, in.SX, in.SY)
+			} else {
+				wheelClicks(k.conn, k.root, in.DX, in.DY)
 			}
 		case "c":
 			if len(in.Text) <= maxClipboard {
@@ -126,6 +121,7 @@ type keyboard struct {
 	keys      map[xproto.Keycode]bool
 	buttons   map[byte]bool
 	lastPress time.Time
+	scroll    scroller
 }
 
 // buttonGap is the least time between two button presses reaching X.
@@ -171,7 +167,7 @@ func (k *keyboard) releaseAll() {
 func newKeyboard(conn *xgb.Conn, root xproto.Window, display string) *keyboard {
 	setup := xproto.Setup(conn)
 	count := byte(setup.MaxKeycode - setup.MinKeycode + 1)
-	k := &keyboard{conn: conn, root: root, display: display, codes: map[xproto.Keysym]keyAt{}, keys: map[xproto.Keycode]bool{}, buttons: map[byte]bool{}}
+	k := &keyboard{conn: conn, root: root, display: display, codes: map[xproto.Keysym]keyAt{}, keys: map[xproto.Keycode]bool{}, buttons: map[byte]bool{}, scroll: scroller{smooth: detectSmoothScroll(conn)}}
 	mapping, err := xproto.GetKeyboardMapping(conn, setup.MinKeycode, count).Reply()
 	if err != nil {
 		return k
