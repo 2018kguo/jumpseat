@@ -48,7 +48,7 @@
           captionTimer = setTimeout(() => ($("caption").style.display = "none"), 2500);
         }
       },
-    });
+    }, { resize: new URLSearchParams(location.search).has("resize") });
     const setControlling = (next) => {
       controlling = next;
       view.setControlling(next);

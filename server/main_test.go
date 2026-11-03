@@ -12,7 +12,7 @@ import (
 func TestRoutesNeedTheToken(t *testing.T) {
 	dir := t.TempDir()
 	agentStatusFile, humanInputFile = filepath.Join(dir, "status"), filepath.Join(dir, "input")
-	handler := routes(":0", "secret")
+	handler := routes(newHub(":0"), "secret")
 	for _, c := range []struct {
 		method, path, auth string
 		want               int
@@ -20,6 +20,7 @@ func TestRoutesNeedTheToken(t *testing.T) {
 		{"GET", "/stream", "", http.StatusUnauthorized},
 		{"GET", "/agent/lease", "", http.StatusUnauthorized},
 		{"GET", "/agent/wait", "", http.StatusUnauthorized},
+		{"GET", "/agent/screenshot", "", http.StatusUnauthorized},
 		{"POST", "/agent/status", "Bearer wrong", http.StatusUnauthorized},
 		{"GET", "/agent/lease", "Bearer secret", http.StatusOK},
 		{"GET", "/", "", http.StatusOK},
@@ -40,7 +41,7 @@ func TestRoutesNeedTheToken(t *testing.T) {
 func TestAnswerClearsOnTheNextStatus(t *testing.T) {
 	dir := t.TempDir()
 	agentStatusFile, humanInputFile = filepath.Join(dir, "status"), filepath.Join(dir, "input")
-	handler := routes(":0", "")
+	handler := routes(newHub(":0"), "")
 	do := func(method, path, body string) string {
 		rec := httptest.NewRecorder()
 		handler.ServeHTTP(rec, httptest.NewRequest(method, path, strings.NewReader(body)))

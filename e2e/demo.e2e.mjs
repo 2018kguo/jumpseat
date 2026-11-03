@@ -82,5 +82,63 @@ execFileSync("docker", ["exec", "-e", "DISPLAY=:0", container, "xdotool", "key",
 const typed = await pending;
 check(typed.changed && !typed.timedOut, `typing on the desktop ends a change wait: ${JSON.stringify(typed)}`);
 
+// /agent/screenshot: the screen as a PNG at its own size.
+const shot = await api("GET", "/agent/screenshot");
+const png = new Uint8Array(await shot.arrayBuffer());
+const pngSize = png.length > 24 ? [new DataView(png.buffer).getUint32(16), new DataView(png.buffer).getUint32(20)] : [];
+check(shot.headers.get("content-type") === "image/png" && pngSize.length === 2, `a screenshot is a PNG (${pngSize.join("x")})`);
+
+// The encoder is shared: a second viewer joins with a keyframe of its own
+// while the first keeps streaming.
+const litShare = (p) =>
+  p.evaluate(() => {
+    const canvas = document.querySelector("canvas");
+    const probe = document.createElement("canvas");
+    probe.width = 64;
+    probe.height = 40;
+    const ctx = probe.getContext("2d");
+    ctx.drawImage(canvas, 0, 0, 64, 40);
+    const data = ctx.getImageData(0, 0, 64, 40).data;
+    let lit = 0;
+    for (let i = 0; i < data.length; i += 4) lit += data[i] + data[i + 1] + data[i + 2] > 60 ? 1 : 0;
+    return lit / (data.length / 4);
+  });
+const second = await browser.newPage({ viewport: { width: 900, height: 640 } });
+await second.goto(`${base}/?token=${token}`);
+await second.getByText("Agent in control").waitFor({ timeout: 30000 });
+await second.waitForTimeout(1000);
+execFileSync("docker", ["exec", "-e", "DISPLAY=:0", container, "xdotool", "key", "ctrl+l", "type", "both"]);
+await page.waitForTimeout(1000);
+check((await litShare(second)) > 0.3 && (await litShare(page)) > 0.3, "two viewers stream at once");
+
+// With JUMPSEAT_RESIZE=1 and ?resize the desktop takes the viewer's size.
+if (process.env.JUMPSEAT_RESIZE) {
+  const sized = await browser.newPage({ viewport: { width: 1000, height: 700 } });
+  await sized.goto(`${base}/?token=${token}&resize`);
+  await sized.getByText("Agent in control").waitFor({ timeout: 30000 });
+  const geometry = () =>
+    execFileSync("docker", ["exec", "-e", "DISPLAY=:0", container, "sh", "-c", "xdotool getdisplaygeometry"], { encoding: "utf8" }).trim();
+  let seen = "";
+  for (let i = 0; i < 20 && !/^1000 /.test(seen); i++) {
+    await sized.waitForTimeout(250);
+    seen = geometry();
+  }
+  const box = await sized.evaluate(() => {
+    const c = document.querySelector("canvas");
+    return [c.width, c.height, document.getElementById("screen").getBoundingClientRect().height];
+  });
+  check(/^1000 \d+$/.test(seen) && box[0] === 1000 && Math.abs(box[1] - box[2]) < 2, `the desktop follows the window (X ${seen}, canvas ${box.join("x")})`);
+  await sized.waitForTimeout(1000);
+  check((await litShare(sized)) > 0.3, "the resized desktop streams");
+  await sized.setViewportSize({ width: 800, height: 600 });
+  seen = "";
+  for (let i = 0; i < 20 && !/^800 /.test(seen); i++) {
+    await sized.waitForTimeout(250);
+    seen = geometry();
+  }
+  await sized.waitForTimeout(1000);
+  check(/^800 /.test(seen) && (await sized.evaluate(() => document.querySelector("canvas").width)) === 800 && (await litShare(sized)) > 0.3, `and again when it resizes (X ${seen})`);
+}
+
 await browser.close();
 process.exit(failures ? 1 : 0);

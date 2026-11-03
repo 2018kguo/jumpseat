@@ -19,7 +19,6 @@ import (
 	"time"
 
 	"github.com/jezek/xgb"
-	"github.com/jezek/xgb/damage"
 	"github.com/jezek/xgb/shm"
 	"github.com/jezek/xgb/xfixes"
 	"github.com/jezek/xgb/xproto"
@@ -34,11 +33,17 @@ const maxClipboard = 64 << 10
 // viewer is one websocket: frames, pointer and clipboard messages share it.
 type viewer struct {
 	ws *websocket.Conn
-	mu sync.Mutex
+	f  *flow
+	// gone is closed when a send fails: the viewer is dropped.
+	gone     chan struct{}
+	goneOnce sync.Once
+	mu       sync.Mutex
 	// link, when set, is the benchmarks' slow link: messages queue without
 	// bound and leave at its rate, like a router with a deep buffer.
 	link *slowLink
 }
+
+func (v *viewer) fail() { v.goneOnce.Do(func() { close(v.gone) }) }
 
 // A viewer that cannot take a frame this fast is dropped, not waited on.
 const viewerWrite = 10 * time.Second
@@ -91,66 +96,44 @@ func (v *viewer) tail() {
 	}
 }
 
-// serve streams to one viewer until it leaves. Each viewer has its own X
-// connection and encoder, so it starts with a keyframe of its own.
-func serve(ws *websocket.Conn, display string) {
+// serve is one viewer: the hub sends it frames, and this sends its cursor,
+// pointer, clipboard and the agent's status, and replays its input, on an X
+// connection of its own.
+func serve(ws *websocket.Conn, h *hub) {
 	ws.PayloadType = websocket.BinaryFrame
-	conn, err := xgb.NewConnDisplay(display)
+	conn, err := xgb.NewConnDisplay(h.display)
 	if err != nil {
 		log.Printf("x: %v", err)
 		return
 	}
 	defer conn.Close()
-	for _, init := range []func(*xgb.Conn) error{damage.Init, xfixes.Init, xtest.Init} {
+	for _, init := range []func(*xgb.Conn) error{xfixes.Init, xtest.Init} {
 		if err := init(conn); err != nil {
 			log.Printf("x: %v", err)
 			return
 		}
 	}
-	// DAMAGE and XFIXES answer nothing until the client says its version.
+	// XFIXES answers nothing until the client says its version.
 	if _, err := xfixes.QueryVersion(conn, 5, 0).Reply(); err != nil {
 		log.Printf("x: %v", err)
 		return
 	}
-	if _, err := damage.QueryVersion(conn, 1, 1).Reply(); err != nil {
-		log.Printf("x: %v", err)
-		return
-	}
 	root := xproto.Setup(conn).DefaultScreen(conn).Root
-	read, release, err := grabber(conn, root)
-	if err != nil {
-		log.Printf("x: %v", err)
-		return
-	}
-	defer release()
-	// The rate x264 budgets for: Chromium's 60 Hz, not the pacing cap above
-	// it, so a bitrate cap allots each frame what a real frame gets.
-	budgetFPS := encoderFPS
-	if value, err := strconv.Atoi(os.Getenv("JUMPSEAT_ENCODER_FPS")); err == nil && value > 0 {
-		budgetFPS = value // A/B runs
-	}
-	enc, err := newEncoder(width, height, budgetFPS)
-	if err != nil {
-		log.Print(err)
-		return
-	}
-	defer enc.close()
 
-	v := &viewer{ws: ws}
+	v := &viewer{ws: ws, f: newFlow(), gone: make(chan struct{})}
+	v.f.acked = h.acked
+	v.f.off = os.Getenv("JUMPSEAT_FLOW") == "off"
 	if kbps, err := strconv.Atoi(os.Getenv("JUMPSEAT_LINK_KBPS")); err == nil && kbps > 0 {
 		v.link = newSlowLink(v, kbps)
 		defer v.link.close()
 	}
-	f := newFlow()
-	f.off = os.Getenv("JUMPSEAT_FLOW") == "off"
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
-		readInput(ctx, ws, newKeyboard(conn, root, display), f, display)
+		readInput(ctx, ws, newKeyboard(conn, root, h.display), v.f, h)
 		cancel()
 	}()
 
-	damaged := make(chan struct{}, 1)
 	copied := make(chan struct{}, 1)
 	reshaped := make(chan struct{}, 1)
 	clipboardText := make(chan string, 1)
@@ -160,70 +143,21 @@ func serve(ws *websocket.Conn, display string) {
 			if event == nil && err == nil {
 				return
 			}
-			var ready chan struct{}
 			switch event.(type) {
-			case damage.NotifyEvent:
-				traceDamage()
-				ready = damaged
 			case xfixes.SelectionNotifyEvent:
-				ready = copied
+				wake(copied)
 			case xfixes.CursorNotifyEvent:
-				ready = reshaped
-			default:
-				continue
-			}
-			select {
-			case ready <- struct{}{}:
-			default:
+				wake(reshaped)
 			}
 		}
 	}()
-	dmg, err := damage.NewDamageId(conn)
-	if err != nil {
-		return
-	}
-	damage.Create(conn, dmg, xproto.Drawable(root), damage.ReportLevelNonEmpty)
 	xfixes.SelectCursorInput(conn, root, xfixes.CursorNotifyMaskDisplayCursor)
 	if clipboard, err := xproto.InternAtom(conn, false, 9, "CLIPBOARD").Reply(); err == nil {
 		xfixes.SelectSelectionInput(conn, root, clipboard.Atom, xfixes.SelectionEventMaskSetSelectionOwner)
 	}
 
-	start := time.Now()
-	var last time.Time
-	interval := time.Second / time.Duration(fpsCap())
-	stages := &stageTimes{since: time.Now()}
-	defer stages.flush()
-	grab := func() error {
-		if wait := interval - time.Since(last); wait > 0 {
-			time.Sleep(wait)
-		}
-		// Before the grab: damage that lands during it starts the next frame.
-		damage.Subtract(conn, dmg, 0, 0)
-		last = time.Now()
-		pixels, err := read()
-		if err != nil {
-			return err
-		}
-		grabbed := time.Now()
-		au, key := enc.encode(pixels, width, height, time.Since(start).Milliseconds())
-		encoded := time.Now()
-		if au == nil {
-			return nil
-		}
-		ts := f.now()
-		f.sent(ts, len(au))
-		err = v.frame(au, key, ts)
-		if err == nil && tailProbes > 0 && len(au) < 1200 {
-			v.tail()
-		}
-		traceFrame(last, grabbed, encoded, time.Now(), len(au))
-		stages.add(grabbed.Sub(last), enc.converted, encoded.Sub(grabbed)-enc.converted, time.Since(encoded), len(au))
-		return err
-	}
-
-	if err := grab(); err != nil {
-		return
-	}
+	h.join(v)
+	defer h.leave(v)
 	// The cursor's own image, so the viewer shows an I-beam over text and a
 	// hand over links instead of a fixed arrow (Xvfb draws no cursor into
 	// frames). Sent again whenever it changes.
@@ -250,38 +184,19 @@ func serve(ws *websocket.Conn, display string) {
 	agent := &agentStatusWatch{}
 	statusTick := time.NewTicker(statusPoll)
 	defer statusTick.Stop()
-	// The bitrate follows the link: on a slow one, quality gives way before
-	// frame rate does (fewer frames make each one bigger: a scroll outruns
-	// x264's motion search). 80% leaves room for pointer and ack traffic.
-	adapt := time.NewTicker(500 * time.Millisecond)
-	defer adapt.Stop()
-	capKbps := 0
 	var px, py int16 = -1, -1
-	// A change seen while the viewer is behind waits for its next ack; the
-	// damage keeps accumulating, so that grab takes the newest screen.
-	pending := false
 	for {
 		var err error
 		select {
 		case <-ctx.Done():
 			return
-		case <-damaged:
-			if f.behind() {
-				pending = true
-				continue
-			}
-			pending = false
-			err = grab()
-		case <-f.acked:
-			if pending && !f.behind() {
-				pending = false
-				err = grab()
-			}
+		case <-v.gone:
+			return
 		case <-copied:
 			// Off this loop: a clipboard owner that never answers must not
-			// freeze the stream.
+			// freeze the viewer.
 			go func() {
-				if text := readClipboard(display); text != "" {
+				if text := readClipboard(h.display); text != "" {
 					select {
 					case clipboardText <- text:
 					default:
@@ -292,30 +207,6 @@ func serve(ws *websocket.Conn, display string) {
 			err = v.text(map[string]any{"t": "c", "text": text})
 		case <-reshaped:
 			err = sendCursor()
-		case <-adapt.C:
-			// A capture held for a frame now given up as lost resumes here.
-			if pending && !f.behind() {
-				pending = false
-				if err = grab(); err != nil {
-					return
-				}
-			}
-			target := f.linkKbps() * 8 / 10
-			if target > 0 && target < minCapKbps {
-				target = minCapKbps
-			}
-			if target == 0 && capKbps > 0 {
-				// Under the cap the link is too quick to time: probe upward
-				// (like BBR), lifting the cap once it is past any real link.
-				target = capKbps * 3 / 2
-				if target > maxCapKbps {
-					target = 0
-				}
-			}
-			if target != capKbps && (target == 0 || capKbps == 0 || abs(target-capKbps)*100 > capKbps*15) {
-				capKbps = target
-				enc.setMaxKbps(capKbps)
-			}
 		case <-statusTick.C:
 			if status, changed := agent.changed(); changed {
 				err = v.text(map[string]any{"t": "status", "kind": status.Kind, "text": status.Text})
@@ -336,7 +227,7 @@ func serve(ws *websocket.Conn, display string) {
 
 // grabber reads the root window through MIT-SHM: the X server copies the
 // frame into memory shared with this process, not down the socket.
-func grabber(conn *xgb.Conn, root xproto.Window) (func() ([]byte, error), func(), error) {
+func grabber(conn *xgb.Conn, root xproto.Window, width, height int) (func() ([]byte, error), func(), error) {
 	if err := shm.Init(conn); err != nil {
 		return nil, nil, err
 	}
@@ -360,7 +251,7 @@ func grabber(conn *xgb.Conn, root xproto.Window) (func() ([]byte, error), func()
 		return nil, nil, fmt.Errorf("shm attach: %w", err)
 	}
 	read := func() ([]byte, error) {
-		if _, err := shm.GetImage(conn, xproto.Drawable(root), 0, 0, width, height, ^uint32(0), xproto.ImageFormatZPixmap, seg, 0).Reply(); err != nil {
+		if _, err := shm.GetImage(conn, xproto.Drawable(root), 0, 0, uint16(width), uint16(height), ^uint32(0), xproto.ImageFormatZPixmap, seg, 0).Reply(); err != nil {
 			return nil, err
 		}
 		return mem, nil

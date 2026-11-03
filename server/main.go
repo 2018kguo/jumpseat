@@ -27,7 +27,6 @@ import (
 )
 
 const (
-	width, height = 1280, 800
 	// Above Chromium's 60 Hz on purpose: a 60 cap paced off one grab's start
 	// drops a frame whenever Chromium's lands a little early (57 fps measured;
 	// 60.0 at this cap, same CPU).
@@ -49,6 +48,7 @@ func main() {
 	dir := flag.String("dir", "/run/jumpseat", "directory for the agent status and user-input files")
 	recordTo := flag.String("record", "", "record the next --frames changed frames (raw BGRX) to this file, for bench/, and exit")
 	frames := flag.Int("frames", 300, "how many frames --record writes")
+	resize := flag.Bool("resize", false, "let viewers resize the desktop to their window (RandR; start Xvfb at the largest size to allow). Off by default: an agent's clicks assume the size it saw")
 	flag.Parse()
 	if *recordTo != "" {
 		if err := record(*display, *recordTo, *frames); err != nil {
@@ -86,21 +86,29 @@ func main() {
 		log.Fatal(err)
 	}
 	log.Printf("jumpseat on %s, display %s", *listen, *display)
-	log.Fatal(http.Serve(listener, routes(*display, *token)))
+	h := newHub(*display)
+	if *resize {
+		if h.screen, err = openScreen(*display); err != nil {
+			log.Fatal(err)
+		}
+	}
+	log.Fatal(http.Serve(listener, routes(h, *token)))
 }
 
-func routes(display, token string) http.Handler {
+func routes(h *hub, token string) http.Handler {
+	display := h.display
 	mux := http.NewServeMux()
 	stream := websocket.Server{
 		// The token is the gate; a browser always sends an Origin.
 		Handshake: func(*websocket.Config, *http.Request) error { return nil },
-		Handler:   func(ws *websocket.Conn) { serve(ws, display) },
+		Handler:   func(ws *websocket.Conn) { serve(ws, h) },
 	}
 	mux.Handle("GET /stream", authed(token, stream))
 	mux.Handle("POST /agent/status", authed(token, http.HandlerFunc(postStatus)))
 	mux.Handle("GET /agent/lease", authed(token, http.HandlerFunc(getLease)))
 	mux.Handle("POST /agent/answer", authed(token, http.HandlerFunc(postAnswer)))
 	mux.Handle("GET /agent/wait", authed(token, getWait(display)))
+	mux.Handle("GET /agent/screenshot", authed(token, getScreenshot(display)))
 	// The demo viewer: static files, no secrets; it asks for the token.
 	web, _ := fs.Sub(webFiles, "web")
 	mux.Handle("GET /", http.FileServerFS(web))

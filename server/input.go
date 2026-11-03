@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"log"
 	"os"
 	"os/exec"
 	"strconv"
@@ -18,8 +19,8 @@ import (
 // input is one viewer message. t is "k" (key; key is KeyboardEvent.key),
 // "m" (pointer move), "b" (button b, 1-3, down or up at x,y), "w" (wheel
 // step, dy < 0 up), "c" (paste text into the VM's clipboard), "r" (release
-// every key and button this viewer holds), "a" (frame ts was displayed, see
-// flow) or "h" (heartbeat).
+// every key and button this viewer holds), "z" (resize the desktop to w x h,
+// with --resize), "a" (frame ts was displayed, see flow) or "h" (heartbeat).
 type input struct {
 	T    string `json:"t"`
 	Key  string `json:"key"`
@@ -31,9 +32,9 @@ type input struct {
 	DX   int    `json:"dx"`
 	Text string `json:"text"`
 	TS   int64  `json:"ts"`
+	W    int    `json:"w"`
+	H    int    `json:"h"`
 }
-
-func inScreen(x, y int16) bool { return x >= 0 && y >= 0 && x < width && y < height }
 
 // A viewer that sends nothing for this long is gone (it heartbeats every 5 s):
 // a sleeping laptop must not hold an X connection, shm and an encoder forever.
@@ -41,7 +42,7 @@ const viewerSilence = 20 * time.Second
 
 // readInput replays the viewer's input through XTest: no process per event,
 // so a key press is on screen in one frame.
-func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, display string) {
+func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, h *hub) {
 	// Whatever this viewer still holds is let go when it leaves, so the
 	// agent's next click is not a drag and no key repeats forever.
 	defer k.releaseAll()
@@ -56,7 +57,7 @@ func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, di
 			continue
 		}
 		switch in.T {
-		case "a", "h":
+		case "a", "h", "z":
 		case "r":
 			// The user let go (Stop controlling, or left the view): the
 			// agent need not wait out the lease.
@@ -72,11 +73,11 @@ func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, di
 				traceKey()
 			}
 		case "m":
-			if inScreen(in.X, in.Y) {
+			if h.inScreen(in.X, in.Y) {
 				xtest.FakeInput(k.conn, xproto.MotionNotify, 0, 0, k.root, in.X, in.Y, 0)
 			}
 		case "b":
-			if in.B < 1 || in.B > 3 || !inScreen(in.X, in.Y) {
+			if in.B < 1 || in.B > 3 || !h.inScreen(in.X, in.Y) {
 				continue
 			}
 			xtest.FakeInput(k.conn, xproto.MotionNotify, 0, 0, k.root, in.X, in.Y, 0)
@@ -96,12 +97,19 @@ func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, di
 			}
 		case "c":
 			if len(in.Text) <= maxClipboard {
-				writeClipboard(display, in.Text)
+				writeClipboard(h.display, in.Text)
 			}
 		case "r":
 			k.releaseAll()
 		case "a":
 			f.ack(in.TS)
+			continue
+		case "z":
+			if h.screen != nil {
+				if err := h.screen.resize(in.W, in.H); err != nil {
+					log.Printf("resize: %v", err)
+				}
+			}
 			continue
 		}
 		k.conn.Sync()

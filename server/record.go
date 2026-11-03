@@ -29,7 +29,11 @@ func record(display, path string, n int) error {
 	_, _ = xfixes.QueryVersion(conn, 5, 0).Reply()
 	_, _ = damage.QueryVersion(conn, 1, 1).Reply()
 	root := xproto.Setup(conn).DefaultScreen(conn).Root
-	read, release, err := grabber(conn, root)
+	geometry, err := xproto.GetGeometry(conn, xproto.Drawable(root)).Reply()
+	if err != nil {
+		return err
+	}
+	read, release, err := grabber(conn, root, int(geometry.Width)&^1, int(geometry.Height)&^1)
 	if err != nil {
 		return err
 	}

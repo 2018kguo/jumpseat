@@ -4,8 +4,11 @@
  * taken over. The wire format is in docs/reference.md.
  */
 
+/** The desktop's size until the server says otherwise. */
 export const DESKTOP_WIDTH = 1280;
 export const DESKTOP_HEIGHT = 800;
+
+type Size = { height: number; width: number };
 
 /** What the agent is doing on the desktop, as the VM reports it. */
 export type AgentStatus = {
@@ -23,25 +26,23 @@ type Rect = { height: number; left: number; top: number; width: number };
 /**
  * The desktop pixel under a client point, or null outside the picture. The
  * canvas is letterboxed (object-fit: contain), so the picture is the largest
- * 1280x800 box centered in the element.
+ * box of the desktop's size centered in the element.
  */
 export function desktopPoint(
   rect: Rect,
   clientX: number,
-  clientY: number
+  clientY: number,
+  size: Size = { height: DESKTOP_HEIGHT, width: DESKTOP_WIDTH }
 ): { x: number; y: number } | null {
-  const scale = Math.min(
-    rect.width / DESKTOP_WIDTH,
-    rect.height / DESKTOP_HEIGHT
-  );
+  const scale = Math.min(rect.width / size.width, rect.height / size.height);
   if (scale <= 0) {
     return null;
   }
-  const left = rect.left + (rect.width - DESKTOP_WIDTH * scale) / 2;
-  const top = rect.top + (rect.height - DESKTOP_HEIGHT * scale) / 2;
+  const left = rect.left + (rect.width - size.width * scale) / 2;
+  const top = rect.top + (rect.height - size.height * scale) / 2;
   const x = Math.floor((clientX - left) / scale);
   const y = Math.floor((clientY - top) / scale);
-  return x >= 0 && y >= 0 && x < DESKTOP_WIDTH && y < DESKTOP_HEIGHT
+  return x >= 0 && y >= 0 && x < size.width && y < size.height
     ? { x, y }
     : null;
 }
@@ -78,7 +79,8 @@ type StreamText =
   | { t: "p"; x: number; y: number }
   | { t: "c"; text: string }
   | { t: "status"; kind: AgentStatus["kind"]; text: string }
-  | { t: "cursor"; png: string; x: number; y: number };
+  | { t: "cursor"; png: string; x: number; y: number }
+  | { t: "size"; w: number; h: number };
 
 const STATUS_KINDS = new Set(["idle", "acting", "waiting", "handoff"]);
 
@@ -108,6 +110,9 @@ function parseStreamText(raw: string): StreamText | null {
   }
   if (m.t === "status" && STATUS_KINDS.has(m.kind as string) && str(m.text)) {
     return { t: "status", kind: m.kind as AgentStatus["kind"], text: m.text as string };
+  }
+  if (m.t === "size" && num(m.w) && num(m.h) && (m.w as number) > 0 && (m.h as number) > 0) {
+    return { t: "size", w: m.w as number, h: m.h as number };
   }
   if (m.t === "cursor" && str(m.png) && num(m.x) && num(m.y)) {
     return { t: "cursor", png: m.png as string, x: m.x as number, y: m.y as number };
@@ -158,11 +163,18 @@ export function connectDesktopStream(
     status?: (status: AgentStatus) => void;
     /** The browser cannot decode H.264: the stream stops instead of dropping. */
     unsupported?: () => void;
-  }
+  },
+  /**
+   * resize: ask the desktop to take the element's size, in CSS pixels, as it
+   * changes. The server honors it only with --resize.
+   */
+  options: { resize?: boolean } = {}
 ): DesktopStream {
   const canvas = document.createElement("canvas");
-  canvas.width = DESKTOP_WIDTH;
-  canvas.height = DESKTOP_HEIGHT;
+  // The desktop's size: the server sends it before each new stream's keyframe.
+  const size: Size = { height: DESKTOP_HEIGHT, width: DESKTOP_WIDTH };
+  canvas.width = size.width;
+  canvas.height = size.height;
   canvas.tabIndex = 0;
   canvas.style.cssText =
     "width:100%;height:100%;object-fit:contain;outline:none;display:block";
@@ -219,6 +231,7 @@ export function connectDesktopStream(
       closed = true;
       clearInterval(heartbeat);
       clearTimeout(firstFrame);
+      resizer?.disconnect();
       socket.close();
       on.dropped();
     }
@@ -242,7 +255,14 @@ export function connectDesktopStream(
       if (!message) {
         return;
       }
-      if (message.t === "cursor") {
+      if (message.t === "size") {
+        size.width = message.w;
+        size.height = message.h;
+        canvas.width = size.width;
+        canvas.height = size.height;
+        // The keyframe that follows starts a stream of the new size.
+        configured = false;
+      } else if (message.t === "cursor") {
         const url = `url(data:image/png;base64,${message.png})`;
         cursor = {
           css: `${url} ${message.x} ${message.y}, default`,
@@ -267,11 +287,11 @@ export function connectDesktopStream(
       } else if (message.t === "p") {
         const rect = canvas.getBoundingClientRect();
         const scale = Math.min(
-          rect.width / DESKTOP_WIDTH,
-          rect.height / DESKTOP_HEIGHT
+          rect.width / size.width,
+          rect.height / size.height
         );
-        pointer.style.left = `${(rect.width - DESKTOP_WIDTH * scale) / 2 + (message.x - cursor.x) * scale}px`;
-        pointer.style.top = `${(rect.height - DESKTOP_HEIGHT * scale) / 2 + (message.y - cursor.y) * scale}px`;
+        pointer.style.left = `${(rect.width - size.width * scale) / 2 + (message.x - cursor.x) * scale}px`;
+        pointer.style.top = `${(rect.height - size.height * scale) / 2 + (message.y - cursor.y) * scale}px`;
         // Drawn at the picture's scale, hotspot and all.
         pointer.style.width = `${cursor.width * scale}px`;
         pointer.style.height = `${cursor.height * scale}px`;
@@ -312,10 +332,26 @@ export function connectDesktopStream(
     }
   });
   socket.addEventListener("close", drop);
+  // The desktop follows the element's size, once it has held still a moment.
+  let resizeTimer: ReturnType<typeof setTimeout> | undefined;
+  const askSize = () => {
+    const { width, height } = container.getBoundingClientRect();
+    sendAlways({ t: "z", w: Math.round(width), h: Math.round(height) });
+  };
+  const resizer = options.resize
+    ? new ResizeObserver(() => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(askSize, 200);
+      })
+    : null;
+  resizer?.observe(container);
+  if (resizer) {
+    socket.addEventListener("open", askSize);
+  }
   socket.addEventListener("error", drop);
 
   const at = (event: { clientX: number; clientY: number }) =>
-    desktopPoint(canvas.getBoundingClientRect(), event.clientX, event.clientY);
+    desktopPoint(canvas.getBoundingClientRect(), event.clientX, event.clientY, size);
   canvas.addEventListener("pointermove", (event) => {
     if (event.pointerType === "touch") {
       return;
@@ -340,7 +376,8 @@ export function connectDesktopStream(
         : desktopPoint(
             rect,
             Math.min(Math.max(event.clientX, rect.left), rect.right - 1),
-            Math.min(Math.max(event.clientY, rect.top), rect.bottom - 1)
+            Math.min(Math.max(event.clientY, rect.top), rect.bottom - 1),
+            size
           ));
     if (!point) {
       return;
@@ -448,6 +485,7 @@ export function connectDesktopStream(
       closed = true;
       clearInterval(heartbeat);
       clearTimeout(firstFrame);
+      resizer?.disconnect();
       socket.close();
       if (decoder.state !== "closed") {
         decoder.close();
