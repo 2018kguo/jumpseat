@@ -84,7 +84,7 @@ Text messages, JSON:
 | `k` | `key` (`KeyboardEvent.key`), `down` | A key, pressed at the right keymap level. |
 | `m` | `x`, `y` | Move the pointer. |
 | `b` | `b` (1 left, 2 middle, 3 right), `down`, `x`, `y` | A button. |
-| `w` | `dx`, `dy` (−1, 0, 1) | A wheel step. |
+| `w` | `sx`, `sy` (desktop pixels), or `dx`, `dy` (−1, 0, 1) | A scroll: pixels from a trackpad, wheel or two fingers, or a wheel step. Pixels scroll smoothly on an Xvfb with the [scroll patch](../docker/patches/xorg-server-xtest-scroll.patch) and add up into wheel clicks on any other X server. |
 | `c` | `text` (≤ 64 KiB) | Paste this into the desktop's clipboard. |
 | `r` | | Release every key and button this viewer holds. |
 | `z` | `w`, `h` | Resize the desktop to this size (with `--resize`; otherwise ignored). The server rounds it to a size the screen can take. |
@@ -112,5 +112,5 @@ view.close();
 
 `connect` puts a letterboxed canvas in `element`. While `setControlling` is
 false the viewer only watches, and shows the agent's pointer; while true,
-keys, pointer, wheel and paste go to the desktop. Touch input is not
-forwarded yet.
+keys, pointer, wheel and paste go to the desktop. On a touch screen a tap
+clicks, a long press right-clicks, one finger drags and two fingers scroll.

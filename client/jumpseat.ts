@@ -402,11 +402,12 @@ export function connectDesktopStream(
       if (!controlling) {
         return;
       }
-      send({
-        t: "w",
-        dx: Math.sign(event.deltaX),
-        dy: Math.sign(event.deltaY),
-      });
+      // Desktop pixels, so a trackpad scrolls the desktop pixel by pixel:
+      // lines and pages as Chromium counts them, then the canvas's scale.
+      const unit =
+        (event.deltaMode === 1 ? 40 : event.deltaMode === 2 ? 800 : 1) *
+        desktopPerCssPixel(canvas);
+      send({ t: "w", sx: event.deltaX * unit, sy: event.deltaY * unit });
       event.preventDefault();
     },
     { passive: false }
@@ -509,10 +510,9 @@ export function connectDesktopStream(
 }
 
 // How long a still finger must stay down to right-click, how far it may
-// drift and still be a tap, and how far two fingers move per wheel step.
+// drift and still be a tap.
 const LONG_PRESS_MS = 600;
 const TAP_SLOP_PX = 10;
-const SCROLL_STEP_PX = 40;
 
 /**
  * Touch, so a phone opening the live-view link can act too (selkies'
@@ -537,7 +537,6 @@ function attachTouch(
     null;
   let pressed = false;
   let longPress: ReturnType<typeof setTimeout> | undefined;
-  let scrolled = 0;
   const reset = () => {
     clearTimeout(longPress);
     start = null;
@@ -555,7 +554,6 @@ function attachTouch(
         pressed = false;
       }
       reset();
-      scrolled = 0;
       return;
     }
     const point = view.at(event);
@@ -579,11 +577,13 @@ function attachTouch(
     }
     fingers.set(event.pointerId, { x: event.clientX, y: event.clientY });
     if (fingers.size > 1) {
-      scrolled += last.y - event.clientY;
-      while (Math.abs(scrolled) >= SCROLL_STEP_PX) {
-        view.send({ t: "w", dx: 0, dy: Math.sign(scrolled) });
-        scrolled -= Math.sign(scrolled) * SCROLL_STEP_PX;
-      }
+      // The content follows the fingers.
+      const unit = desktopPerCssPixel(canvas);
+      view.send({
+        t: "w",
+        sx: (last.x - event.clientX) * unit,
+        sy: (last.y - event.clientY) * unit,
+      });
       return;
     }
     if (!start) {
@@ -622,6 +622,12 @@ function attachTouch(
   };
   canvas.addEventListener("pointerup", lift);
   canvas.addEventListener("pointercancel", lift);
+}
+
+/** Desktop pixels per CSS pixel of the letterboxed canvas. */
+function desktopPerCssPixel(canvas: HTMLCanvasElement) {
+  const rect = canvas.getBoundingClientRect();
+  return 1 / Math.min(rect.width / canvas.width, rect.height / canvas.height);
 }
 
 /** connect(container, url, handlers): the same as connectDesktopStream. */

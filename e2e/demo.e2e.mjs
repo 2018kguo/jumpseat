@@ -139,6 +139,29 @@ if (process.env.JUMPSEAT_RESIZE) {
   await sized.waitForTimeout(1000);
   check(/^800 /.test(seen) && (await sized.evaluate(() => document.querySelector("canvas").width)) === 800 && (await litShare(sized)) > 0.3, `and again when it resizes (X ${seen})`);
 }
+// Smooth scrolling: a 30 px trackpad delta scrolls Chromium ~30 px, not a
+// wheel notch. The page reports its scroll and taps in its title.
+const longPage =
+  "data:text/html,<title>y=0</title><body style='height:20000px' onclick=\"document.title='tap '+event.clientX\">" +
+  "<script>onscroll=()=>document.title='y='+Math.round(scrollY)</script>";
+execFileSync("docker", ["exec", "-e", "DISPLAY=:0", container, "xdotool", "key", "ctrl+l", "type", longPage]);
+execFileSync("docker", ["exec", "-e", "DISPLAY=:0", container, "xdotool", "key", "Return"]);
+await page.waitForTimeout(1500);
+await page.getByRole("button", { name: "Take over" }).click();
+await page.mouse.move(640, 500);
+await page.mouse.wheel(0, 30);
+await page.waitForTimeout(1000);
+const scrolledTo = Number(/y=(\d+)/.exec(windowTitle())?.[1] ?? -1);
+check(scrolledTo >= 20 && scrolledTo <= 40, `a 30 px wheel delta scrolls about 30 px (scrollY ${scrolledTo})`);
+
+// Touch: a tap on a phone clicks the desktop.
+const phone = await browser.newPage({ viewport: { width: 1280, height: 852 }, hasTouch: true });
+await phone.goto(`${base}/?token=${token}`);
+await phone.getByText("Agent in control").waitFor({ timeout: 30000 });
+await phone.getByRole("button", { name: "Take over" }).click();
+await phone.touchscreen.tap(640, 500);
+await phone.waitForTimeout(1000);
+check(/^tap \d+/.test(windowTitle()), `a tap clicks the desktop (window: ${windowTitle()})`);
 
 await browser.close();
 process.exit(failures ? 1 : 0);
