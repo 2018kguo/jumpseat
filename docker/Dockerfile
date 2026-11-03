@@ -1,4 +1,5 @@
-# jumpseat demo: a 1280x800 desktop with Chromium, streamed by jumpseat.
+# jumpseat demo: a desktop with Chromium, streamed by jumpseat. 1280x800, or up to
+# 2560x1600 following the viewer with -e JUMPSEAT_RESIZE=1.
 #   docker build -f docker/Dockerfile -t jumpseat .
 #   docker run --rm -p 8080:8080 -e JUMPSEAT_TOKEN=secret jumpseat
 #   open http://localhost:8080/?token=secret

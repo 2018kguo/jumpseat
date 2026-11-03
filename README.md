@@ -7,18 +7,18 @@
   <a href="bench/README.md">Benchmarks</a>
 </p>
 
-jumpseat is one Go binary that streams the Linux desktop your agent drives to
+jumpseat is one Go binary (plus libyuv, xclip and xdotool) that streams the Linux desktop your agent drives to
 any browser, as H.264 over a single websocket. It runs at 60 fps, costs about
 a third of a core while the screen moves and nothing while it is still, and
-passes through any HTTPS proxy, tunnel or sandbox preview URL: no WebRTC, no
-TURN, no UDP.
+works through any HTTPS proxy or tunnel that forwards websockets: no WebRTC,
+no TURN, no UDP.
 
 It is built for an agent and a person sharing one desktop. The agent posts
 captions of what it is doing, hands a step it cannot do (a sign-in, a
 captcha) to the person, and checks whether the person is at the keyboard
 before it clicks. The person sees "Your turn", takes over, and hands back.
 
-![The demo viewer in Chrome: the agent opens Wikipedia with captions, hands a step to the person, who takes over, scrolls and picks a section, then the desktop follows the viewer's window to a new size](docs/film.gif)
+![The demo viewer: captions, a handoff, the person taking over, the desktop resizing](docs/film.gif)
 
 *A real recording of the demo viewer in Chrome ([e2e/film.mjs](e2e/film.mjs)).
 The "agent" is a script driving the desktop with xdotool and jumpseat's API;
@@ -34,8 +34,8 @@ watched from a real browser across the network:
 |---|---|---|
 | frames per second, scrolling or animating | 60 | 24 |
 | bandwidth, scrolling text | 0.66 Mbit/s | 14.8 Mbit/s |
-| key to pixel, p50 | 30–40 ms | 48–73 ms |
-| key to pixel while scrolling on a 1 Mbit/s link, p50 | 117–216 ms¹ | 1.1 s |
+| key → pixel, p50 | 30–40 ms | 48–73 ms |
+| key → pixel while scrolling on a 1 Mbit/s link, p50 | 117–216 ms¹ | 1.1 s |
 | CPU, X server and streamer, scrolling | ~0.3 cores | 0.38–0.48 |
 
 ¹ Measured with the x264 build, which needs twice the bits to scroll.
@@ -58,13 +58,13 @@ open "http://localhost:8080/?token=secret"
 Then play the agent:
 
 ```sh
-curl -H "Authorization: Bearer secret" -d '{"kind":"acting","text":"Opening LinkedIn"}' localhost:8080/agent/status
-curl -H "Authorization: Bearer secret" -d '{"kind":"handoff","text":"Sign in to LinkedIn"}' localhost:8080/agent/status
-curl -H "Authorization: Bearer secret" localhost:8080/agent/lease   # {"driving":false,"answer":""}
+curl -H "Authorization: Bearer secret" -d '{"kind":"acting","text":"Opening the inbox"}' localhost:8080/agent/status
+curl -H "Authorization: Bearer secret" -d '{"kind":"handoff","text":"Sign in to your email"}' localhost:8080/agent/status
+curl -H "Authorization: Bearer secret" localhost:8080/agent/lease   # {"answer":"","driving":false,"lastInputMs":0}
 ```
 
-To have the desktop follow the browser window, run the container with
-`-e JUMPSEAT_RESIZE=1` and open `/?token=secret&resize`.
+To have the desktop follow the browser window (up to 2560×1600), run the
+container with `-e JUMPSEAT_RESIZE=1` and open `/?token=secret&resize`.
 
 ## Use it
 
@@ -82,6 +82,7 @@ dependencies):
 ```ts
 import { connect, supportsStream } from "./jumpseat";
 
+if (!(await supportsStream())) showFallback(); // no WebCodecs H.264 decoder
 const view = connect(element, `wss://host/stream?token=${token}`, {
   connected: () => {},
   dropped: () => {},
@@ -94,8 +95,8 @@ view.setControlling(true); // the person's keys, pointer and scrolls reach the d
 
 - Before a step, `POST /agent/status {"kind":"acting","text":"Searching for flights"}`.
 - After it, `GET /agent/wait` returns once the screen has settled, instead
-  of a sleep that hopes it was long enough.
-- For a step only a person can do, post `{"kind":"handoff","text":"Sign in to LinkedIn"}`,
+  of a fixed sleep.
+- For a step only a person can do, post `{"kind":"handoff","text":"Sign in to your email"}`,
   then poll `GET /agent/lease` until `answer` is `"done"`.
 - Before clicking, check `GET /agent/lease`: while `driving` is true, the
   person is at the keyboard.
@@ -109,8 +110,8 @@ Every flag, route, message and client option is in
 
 XDamage says when the screen changed. The frame comes over MIT-SHM, libyuv
 converts it, and the encoder in [h264/](h264/README.md) encodes it in
-process. All viewers share that one capture and encoder; each new viewer
-starts with a keyframe of its own. The browser decodes each frame with
+process. All viewers share that one capture and encoder; a viewer joining
+restarts the encoder, so it starts on a keyframe. The browser decodes each frame with
 WebCodecs as it arrives and acks it, and the server holds capture while
 frames go unshown and caps the bitrate to what the link carries, so a slow
 link drops frames instead of building up seconds of lag.
@@ -128,10 +129,7 @@ the size it last saw.
 
 ## Status
 
-Early. X11 only, one screen. No audio,
-clipboard images, file transfer, Wayland or per-window streaming yet.
-Viewers share one encoder, so the slowest link sets the pace for all of
-them.
+Early. The limits are listed in [docs/operating.md](docs/operating.md#limits).
 
 Several pieces follow [voxl](https://github.com/tembo/voxl), a desktop
 streamer for the browser with the same transport: `/agent/wait`, the shared

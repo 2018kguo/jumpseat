@@ -15,7 +15,7 @@ jumpseat --record FILE [--frames 300] [--display :0]
 | `--token` | `JUMPSEAT_TOKEN` | none | Bearer token for every route on a TCP listener. |
 | `--display` | | `:0` | The X display to stream and drive. |
 | `--dir` | | `/run/jumpseat` | Where the agent status and user-input files live. |
-| `--resize` | | off | Let viewers resize the desktop to their window, through RandR, up to the size Xvfb started at. Off by default because an agent clicks at coordinates from the size it last saw. |
+| `--resize` | | off | Let viewers resize the desktop to their window, through RandR, up to the size Xvfb started at. Off by default ([why](../README.md#how-it-works)). |
 | `--record` | | off | Write the next `--frames` changed frames as raw BGRX to this file, for [bench/](../bench/README.md), and exit. |
 
 Tuning and measurement knobs are in [operating.md](operating.md#environment).
@@ -29,19 +29,18 @@ or `?token=T` where a browser cannot set headers (its websocket).
 |---|---|
 | `GET /` | The demo viewer page. |
 | `GET /stream` | The websocket below. |
-| `POST /agent/status` | `{"kind": "acting" \| "waiting" \| "handoff" \| "idle", "text": "Opening LinkedIn"}`, shown to every viewer. |
-| `GET /agent/lease` | `{"driving": bool, "lastInputMs": n, "answer": "" \| "done" \| "skip"}`: whether the user is driving (input in the last 5 s), and how they answered a handoff. |
-| `POST /agent/answer` | `{"reply": "done" \| "skip"}`, sent by the viewer's Done / Skip. |
+| `POST /agent/status` | `{"kind": "acting" \| "waiting" \| "handoff" \| "idle", "text": "Opening the inbox"}`, shown to every viewer. |
+| `GET /agent/lease` | `{"driving": bool, "lastInputMs": n, "answer": "" \| "done" \| "skip"}`: whether the user is driving (input in the last 5 s), when they last gave input (Unix ms, 0 if never), and how they answered a handoff. |
+| `POST /agent/answer` | `{"reply": "done" \| "skip"}`. The demo viewer's Done button sends `done`. |
 | `GET /agent/screenshot` | The screen as a PNG, at its current size. |
 | `GET /agent/wait` | `{"changed": bool, "timedOut": bool, "waitedMs": n}` once the screen has been still for `idle` ms (default 300, counted from the request), or at the first change with `?change`; `timeout` ms gives up (default 10 000, at most 60 000). |
 
 An agent posts `acting` with a caption before each step. For a step only a
 person can do (a sign-in, a captcha) it posts `handoff`, then polls
 `/agent/lease` until `answer` is `done` or `skip`. Before it clicks or types,
-it checks `driving`: while true, the user is at the keyboard. After a step,
-`GET /agent/wait` returns when the page has settled, instead of a sleep;
-XDamage already knows when the screen changes, so it costs no screenshots.
-A blinking caret redraws about twice a second: keep `idle` under 500 ms.
+it checks `driving`: while true, the user is at the keyboard. After a step it
+calls `/agent/wait`. A blinking caret redraws about twice a second: keep
+`idle` under 500 ms.
 
 ## Websocket: `GET /stream`
 
@@ -54,13 +53,12 @@ One websocket carries the screen to the viewer and the viewer's input back.
 | Bytes | Field |
 |---|---|
 | 0 | `1` if the frame is a keyframe, else `0` |
-| 1–8 | frame id: big-endian uint64, the server's ms clock |
+| 1–8 | frame id: big-endian uint64, ms since this connection began, echoed back in `a` |
 | 9– | one H.264 access unit, Annex B, constrained baseline (`avc1.42E028`), at the size of the last `size` message |
 
 Every viewer shares one encoder. Each connection starts with a `size`
-message and a keyframe, and so does every change of the screen's size. The viewer acks every frame it
-shows: the server holds capture while too much is unshown, so a slow link
-costs frames, not seconds of input lag.
+message and a keyframe, and so does every change of the screen's size. The
+viewer acks every frame it shows ([flow control](operating.md#resources)).
 
 **Text messages: JSON.** Ignore unknown ones.
 
@@ -84,20 +82,21 @@ Text messages, JSON:
 | `k` | `key` (`KeyboardEvent.key`), `down` | A key, pressed at the right keymap level. |
 | `m` | `x`, `y` | Move the pointer. |
 | `b` | `b` (1 left, 2 middle, 3 right), `down`, `x`, `y` | A button. |
-| `w` | `sx`, `sy` (desktop pixels), or `dx`, `dy` (−1, 0, 1) | A scroll: pixels from a trackpad, wheel or two fingers, or a wheel step. Pixels scroll smoothly on an Xvfb with the [scroll patch](../docker/patches/xorg-server-xtest-scroll.patch) and add up into wheel clicks on any other X server. |
+| `w` | `sx`, `sy` (desktop pixels), or `dx`, `dy` (whole wheel clicks, at most 20 a message; the bundled client sends only `sx`, `sy`) | A scroll: pixels from a trackpad, wheel or two fingers, or a wheel step. Pixels scroll smoothly on an Xvfb with the [scroll patch](../docker/patches/xorg-server-xtest-scroll.patch) and add up into wheel clicks on any other X server. |
 | `c` | `text` (≤ 64 KiB) | Paste this into the desktop's clipboard. |
 | `r` | | Release every key and button this viewer holds. |
 | `z` | `w`, `h` | Resize the desktop to this size (with `--resize`; otherwise ignored). The server rounds it to a size the screen can take. |
 
-Any input from a viewer counts as the user driving.
+Every message except `a`, `h`, `z` and `r` counts as the user driving; `r`
+ends it at once, so the agent need not wait out the 5 s.
 
 ## Browser client
 
-`@2018kguo/jumpseat` ([client/jumpseat.ts](../client/jumpseat.ts)) has no
+[client/jumpseat.ts](../client/jumpseat.ts) has no
 dependencies.
 
 ```ts
-import { connect, supportsStream } from "@2018kguo/jumpseat";
+import { connect, supportsStream } from "./jumpseat"; // or dist/ from `bun run build`
 
 if (!(await supportsStream())) showFallback(); // no WebCodecs H.264 decoder
 const view = connect(element, `wss://host/stream?token=${token}`, {

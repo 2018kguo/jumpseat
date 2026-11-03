@@ -16,7 +16,8 @@
   - `web/`: the demo page, embedded.
 - `h264/`: the encoder, OpenH264's changed for desktops. Its
   [README](../h264/README.md) lists every change from upstream.
-- `client/`: the browser client, `@2018kguo/jumpseat`, no dependencies.
+- `client/`: the browser client, no dependencies. `bun run build` writes
+  `dist/jumpseat.js` and its types.
 - `bench/`: the encoder lab and the [measurements](../bench/README.md).
 - `e2e/`: a real browser against the demo container, and `film.mjs`, which
   records the README's film.
@@ -25,7 +26,8 @@
 
 ## Build and test
 
-The demo image builds and tests everything, and needs only Docker:
+The demo image builds the client, encoder and server and runs the Go tests;
+it needs only Docker:
 
 ```sh
 docker build -f docker/Dockerfile -t jumpseat .
@@ -52,10 +54,12 @@ over, two viewers at once, smooth scrolling and touch, and with
 
 ```sh
 docker run -d --name jumpseat-test -p 18080:8080 -e JUMPSEAT_TOKEN=secret jumpseat
+until curl -sf "localhost:18080/?token=secret" >/dev/null; do sleep 1; done
 (cd e2e && bun install && bun run test)
 docker rm -f jumpseat-test
 
 docker run -d --name jumpseat-test -p 18080:8080 -e JUMPSEAT_TOKEN=secret -e JUMPSEAT_RESIZE=1 jumpseat
+until curl -sf "localhost:18080/?token=secret" >/dev/null; do sleep 1; done
 (cd e2e && JUMPSEAT_RESIZE=1 bun run test)
 docker rm -f jumpseat-test
 ```

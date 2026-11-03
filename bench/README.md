@@ -28,8 +28,8 @@ Two kinds of measurement, for two questions:
 
 ## Live, against x264
 
-The same streamer built on libx264 ultrafast (`-tags x264`, four slice
-threads), ABBA on one VM:
+The same streamer built on libx264 ultrafast (`-tags x264`, x264's automatic
+slice threads), ABBA on one VM:
 
 | | x264 | jumpseat (`h264/`) |
 |---|---|---|
@@ -116,17 +116,23 @@ python3 bench/modal_lab.py ir qp=17 usage=1          # x86: instructions per fra
 python3 bench/modal_lab.py callgrind scroll usage=1  # x86: where an encode's instructions go
 ```
 
-`local.sh` builds `h264/` and runs in the lab container on this machine;
+`local.sh` builds `h264/` and runs in the lab container on this machine.
 `modal_lab.py` keeps an x86 sandbox on Modal and syncs `h264/` and `bench/`
-into it, so a change rebuilds in seconds. Options for `encode_bench`: `enc=1`
-(x264 as the streamer sets it up), `crf`, `xthreads`, `qp`, `kbps` (cap the
-rate as a slow link does), `capat=F` (apply it at frame F: the streamer caps only
-once flow control has measured the link, so its first IDR is never capped), `rest=N`, `perframe=1` (`usage`, `complexity`, `rc`
-and the like only change stock OpenH264, `LAB_SRC=stock`: h264/ forces its
-configuration); `X264_NO_AVX512=1` prices x264's
-AVX-512 kernels. Every encoder change is judged on bits (BD-rate, or output
-identical to the byte for a pure speed-up) and instructions. Put run output
-in the ignored `.bench/`.
+into it, so a change rebuilds in seconds.
+
+| `encode_bench` option | Effect |
+|---|---|
+| `enc=1` | x264, set up as the streamer sets it up |
+| `crf`, `xthreads`, `qp` | x264's CRF and threads; the QP floor |
+| `kbps` | cap the bitrate, as a slow link does |
+| `capat=F` | apply the cap at frame F, as the streamer does once flow control has measured the link (so its first IDR is never capped) |
+| `rest=N` | N still frames after the content, to measure the quality left at rest |
+| `perframe=1` | one line per frame |
+| `usage`, `complexity`, `rc`, … | only change stock OpenH264 (`LAB_SRC=stock`); `h264/` forces its configuration |
+
+`X264_NO_AVX512=1` prices x264's AVX-512 kernels. Every encoder change is
+judged on bits (BD-rate, or output identical to the byte for a pure
+speed-up) and instructions. Put run output in the ignored `.bench/`.
 
 ## Under a bitrate cap
 
@@ -142,7 +148,7 @@ full-quality frame: 51 dB at 20 frames and 54.5 dB at 40 at 1000 kbit/s,
 ## On a bad connection (bench/wifi)
 
 The streamer in a Modal sandbox (`bench/wifi/lab.py`, us-east) and a
-headless viewer (`probe.mjs`: key -> frame, wheel -> frame, animation
+headless viewer (`probe.mjs`: key → frame, wheel → frame, animation
 fps and gaps) in a network namespace on a Linux host whose link `netns.sh`
 shapes with netem, both ways on a 30 Mbit/s link:
 
@@ -155,9 +161,9 @@ sudo sh bench/wifi/netns.sh down
 
 What it found (Oct 2026, 12 ms base round trip): jitter alone read as a
 slow link. A frame late by jitter held capture, the rate it then measured
-was only what it let through, and the cap followed it down: with +-30 ms of
+was only what it let through, and the cap followed it down: with ±30 ms of
 jitter and no loss, animation fell from 4.9 to 0.4-1.7 Mbit/s at 52 fps.
-Flow control now widens its slack by the round trips' spread (p90 - p10)
+Flow control now widens its slack by the round trips' spread (p90 − p10)
 and caps only behind a standing queue (the fastest of the last 10 round
 trips 50 ms above the floor): 4.7-4.9 Mbit/s at 60 fps. With loss the cap
 is TCP's own ceiling (about 2.5-3.5 Mbit/s at 3% loss here); typing pays
@@ -165,4 +171,4 @@ one retransmit for each lost packet. A keystroke's frame is one packet,
 and when it is the last one sent TCP finds its loss only by a timer: three
 tiny messages after each small frame (`JUMPSEAT_TAIL`) let the acks after it
 report the loss. At 3% loss, 800 keystrokes each way, ABBA on one sandbox:
-over 150 ms 30 -> 3, p95 82 -> 74, p99 281 -> 93 ms, p50 44 either way.
+over 150 ms 30 → 3, p95 82 → 74, p99 281 → 93 ms, p50 44 either way.

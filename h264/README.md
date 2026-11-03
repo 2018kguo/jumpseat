@@ -37,11 +37,13 @@ bench output identical to the byte, uncapped and at 1000 kbps):
 - Then whatever nothing referenced any more: functions (the linker's
   `--gc-sections`), statics, asm routines, macros, tables, types and members.
 
-    make -j8        # build/libjumpseat_h264.a; x86-64 needs nasm
+```sh
+make -j8        # build/libjumpseat_h264.a; x86-64 needs nasm
+```
 
-Go's build cache does not hash a library named in cgo LDFLAGS: after
-changing h264/, rebuild the Go side with `go build -a`, or key the cache on
-the library, `CGO_CFLAGS="-DH264_SUM=$(cksum < h264/build/libjumpseat_h264.a | cut -d' ' -f1)"`.
+After changing `h264/`, rebuild the Go side as
+[docs/development.md](../docs/development.md#build-and-test) says: Go's build
+cache does not see the library change.
 
 ## Changes from OpenH264
 
@@ -52,24 +54,29 @@ the library, `CGO_CFLAGS="-DH264_SUM=$(cksum < h264/build/libjumpseat_h264.a | c
   never changed a motion vector on desktop content. We set the cross
   search's threshold directly, on frames where scroll detection found a
   scroll; those frames also keep 8x8 partitions, other frames stay 16x16.
-  Scroll: same bits, 23.3M -> 18.7M instructions a frame on x86.
+  Scroll: same bits, 23.3M → 18.7M instructions a frame on x86.
+  Bit-identical.
 - **Rate-control complexity** (`ComplexityAnalysis.cpp`): no intra estimate
   for blocks unchanged from the reference (their cost is 0 regardless).
+  Bit-identical.
 - **First IDR's QP** (`ratectl.cpp`): with bits to spare, the caller's QP
   floor bounds it, not OpenH264's table (which floored it at 22). Static
-  content keeps its IDR's quality: typing 45 -> 54 dB at QP 17.
+  content keeps its IDR's quality: typing 45 → 54 dB at QP 17. Changes
+  the output.
 - **Scroll detection** (`ScrollDetection.cpp`): regions with no changed
   row are skipped, and a zero scroll is reported as none (every reader
-  treats them alike). Typing: 12.9M -> 10.8M instructions a frame.
+  treats them alike). Typing: 12.9M → 10.8M instructions a frame.
+  Bit-identical.
 - **Scene change** (`SceneChangeDetection.h`): 8x8 SADs two blocks at a
-  time (psadbw / vabd). **Coefficient zeroing** (`svc_encode_mb.cpp`):
-  inline memset, not MMX calls. **No 16x16 plane prediction**
-  (`svc_base_layer_md.cpp`): 0.1% of animation bits for 3% of its CPU.
+  time (psadbw / vabd). Bit-identical.
+- **Coefficient zeroing** (`svc_encode_mb.cpp`): inline memset, not MMX
+  calls. Bit-identical.
+- **No 16x16 plane prediction** (`svc_base_layer_md.cpp`): 0.1% of
+  animation bits for 3% of its CPU. Changes the output.
 - **Low complexity in screen mode** works like x264 ultrafast: integer-pel
   motion (`md.cpp`) and no intra 4x4 in P slices (`svc_base_layer_md.cpp`).
   OpenH264's medium complexity, which kept both, took 8% fewer animation
-  bits for ~30% more of its CPU.
-
+  bits for ~30% more of its CPU. Changes the output.
 - **Motion QP and rest refinement** (`ratectl.cpp`, `wels_preprocess.cpp`,
   `svc_mode_decision.cpp`): x264's CRF rule on a floor: frames whose moving
   content (neither static nor scrolled) costs more than 64 SAD a macroblock
@@ -78,8 +85,6 @@ the library, `CGO_CFLAGS="-DH264_SUM=$(cksum < h264/build/libjumpseat_h264.a | c
   scrolling keep the floor. A static block coded more than 3 QP coarser than
   now is coded again, so what comes to rest sharpens (animation 54 dB at
   rest); OpenH264 refined only above QP 26.
-
-All but the last three leave the output bit-identical on the bench.
 
 Measure every change with bench/ (BD-rate and CPU against x264 on recorded
 desktop frames): `bench/local.sh rd usage=1`, `bench/modal_lab.py rd usage=1`.
