@@ -1,4 +1,4 @@
-// The streamer's x264 (server/encoder.go) for encode_bench: ultrafast,
+// x264 for encode_bench to measure against, set up as a streamer would run it: ultrafast,
 // zerolatency, CRF, constant-rate timestamps, baseline, BT.601 tagged.
 #include <stdint.h>
 #include <stdlib.h>

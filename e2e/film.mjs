@@ -3,9 +3,10 @@
 // person, who takes over and hands it back.
 //   docker run -d --name jumpseat-film -p 18090:8080 -e JUMPSEAT_TOKEN=secret -e JUMPSEAT_RESIZE=1 jumpseat
 //   JUMPSEAT_URL=http://localhost:18090 JUMPSEAT_CONTAINER=jumpseat-film node film.mjs out-dir
-// Writes Chrome's screencast frames and out-dir/frames.txt, then:
-//   ffmpeg -f concat -i out-dir/frames.txt -r 30 -c:v libx264 -crf 20 -pix_fmt yuv420p film.mp4
-//   ffmpeg -i film.mp4 -vf "fps=15,scale=960:-1:flags=lanczos,split[a][b];[a]palettegen=stats_mode=diff[p];[b][p]paletteuse=dither=bayer:bayer_scale=4" docs/film.gif
+// Writes Chrome's screencast frames and out-dir/frames.txt, then, at the
+// screencast's own rate (about 50 fps while things move):
+//   ffmpeg -f concat -i out-dir/frames.txt -vf fps=50 out-dir/f%05d.png
+//   img2webp -lossy -q 80 -m 4 -d 20 -loop 0 out-dir/f*.png -o docs/film.webp
 import { execFileSync } from "node:child_process";
 import { mkdirSync, writeFileSync } from "node:fs";
 
@@ -41,17 +42,18 @@ cdp.on("Page.screencastFrame", ({ data, metadata, sessionId }) => {
   frames.push({ file, at: metadata.timestamp });
   cdp.send("Page.screencastFrameAck", { sessionId }).catch(() => {});
 });
-// The recording has no cursor of its own: draw the person's.
+// The recording has no cursor of its own: draw the person's, an arrow.
 await page.addInitScript(() => {
   addEventListener("DOMContentLoaded", () => {
-    const dot = document.createElement("div");
-    dot.style.cssText =
-      "position:fixed;z-index:9;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:rgba(255,255,255,.9);box-shadow:0 0 0 2px #111;pointer-events:none;display:none";
-    document.body.append(dot);
+    const arrow = document.createElement("div");
+    arrow.style.cssText =
+      "position:fixed;z-index:9;width:20px;height:26px;pointer-events:none;display:none;filter:drop-shadow(0 1px 2px rgba(0,0,0,.45));" +
+      "background:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 26'%3E%3Cpath d='M2 2v19l5-4.5 3.5 7.5 3.2-1.4L10.2 15.4H17z' fill='black' stroke='white' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E\") no-repeat";
+    document.body.append(arrow);
     addEventListener("pointermove", (e) => {
-      dot.style.display = "block";
-      dot.style.left = `${e.clientX}px`;
-      dot.style.top = `${e.clientY}px`;
+      arrow.style.display = "block";
+      arrow.style.left = `${e.clientX - 2}px`;
+      arrow.style.top = `${e.clientY - 2}px`;
     });
   });
 });
@@ -77,9 +79,9 @@ x("key", "Return");
 await settle();
 await pause(1500);
 await say("acting", "Reading the article");
-for (let i = 0; i < 6; i++) {
+for (let i = 0; i < 5; i++) {
   x("click", "5");
-  await pause(120);
+  await pause(260);
 }
 await settle();
 await pause(1200);

@@ -24,12 +24,12 @@ Two kinds of measurement, for two questions:
 | key → pixel while scrolling on a 1 Mbit/s link, p50 / p90 | 117–216 / 464–490 ms¹ | 1.1 / 2.1 s |
 | fidelity vs the lossless screen | 48–51 dB | — |
 
-¹ Measured with the x264 build, which needs twice the bits to scroll.
+¹ Measured with an earlier build on x264, which needs twice the bits to scroll.
 
 ## Live, against x264
 
-The same streamer built on libx264 ultrafast (`-tags x264`, x264's automatic
-slice threads), ABBA on one VM:
+The same streamer built on libx264 ultrafast (x264's automatic slice
+threads; a build option at the time, since removed), ABBA on one VM:
 
 | | x264 | jumpseat (`h264/`) |
 |---|---|---|
@@ -103,6 +103,10 @@ typing only); a sum prefilter on the line search (columns are searched about
 once a frame, so the sums are not shared, and it cost more than it saved).
 
 ## Run it
+
+The lab compares against x264 by linking the system's libx264 (GPL) into
+its own benchmark binary, inside its container. jumpseat itself never links
+it.
 
 Frames come from a real desktop: `jumpseat --record scroll.bgrx --frames 240`
 writes the next 240 changed frames as raw BGRX. Keep them outside the repo

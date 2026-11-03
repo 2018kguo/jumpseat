@@ -16,8 +16,10 @@ xev -root -event randr 2>/dev/null | while read -r line; do
 done &
 openbox &
 # --test-type: no "unsupported command-line flag" bar for --no-sandbox, which
-# a container needs. No sign-in prompt, sync or default-browser nag.
+# a container needs. No sign-in prompt, sync or default-browser nag. Smooth
+# scrolling: an agent's wheel clicks glide instead of jumping.
 chromium --no-sandbox --test-type --disable-dev-shm-usage --no-first-run --no-default-browser-check \
+  --enable-smooth-scrolling \
   --disable-sync --disable-features=ChromeWhatsNewUI,SigninInterceptBubble,ProfileMenuRevamp --start-maximized \
   --user-data-dir=/tmp/chromium "${START_URL:-https://example.com}" >/dev/null 2>&1 &
 exec jumpseat --listen :8080 --dir /tmp/jumpseat $resize

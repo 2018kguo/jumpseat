@@ -11,8 +11,7 @@
   - `input.go`, `scroll.go`: the viewer's input through XTest.
   - `screen.go`: RandR resizing (`--resize`).
   - `status.go`, `wait.go`, `screenshot.go`: the agent API.
-  - `encoder_openh264.go`, or `encoder.go` with `-tags x264`: the encoder
-    bindings.
+  - `encoder_openh264.go`: the encoder bindings.
   - `web/`: the demo page, embedded.
 - `h264/`: the encoder, OpenH264's changed for desktops. Its
   [README](../h264/README.md) lists every change from upstream.

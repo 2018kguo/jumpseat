@@ -1,5 +1,3 @@
-//go:build !x264
-
 package main
 
 /*
@@ -125,7 +123,7 @@ import (
 )
 
 // encoder is OpenH264 (BSD) in screen-content mode behind libyuv's SIMD
-// BGRX->I420 conversion: the permissively licensed alternative to libx264.
+// BGRX->I420 conversion.
 type encoder struct {
 	e         *C.oh264
 	out       []byte

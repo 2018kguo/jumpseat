@@ -9,7 +9,7 @@ COPY client client
 RUN cd client && bun build jumpseat.ts --format=esm --target=browser --outfile /out/jumpseat.js
 
 FROM golang:1.26-bookworm AS server
-RUN apt-get update && apt-get install -y --no-install-recommends nasm libyuv-dev libx264-dev
+RUN apt-get update && apt-get install -y --no-install-recommends nasm libyuv-dev
 # h264/: jumpseat's encoder (OpenH264's, trimmed and tuned for desktops).
 COPY h264 /src/h264
 RUN make -C /src/h264 -j"$(nproc)" -s

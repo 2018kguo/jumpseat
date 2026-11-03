@@ -15,8 +15,7 @@ with the X server your agent drives.
   the way the demo image does.
 - `xclip` (the clipboard) and `xdotool` (typing characters that are not on
   the X keymap, such as "é") on `PATH`.
-- libyuv at run time. The encoder is linked in; the x264 build also needs
-  libx264.
+- libyuv at run time. The encoder is linked in.
 - A browser with WebCodecs and an H.264 decoder (Chrome, Edge, Safari,
   Firefox). Some Linux Chromium builds ship without one: `supportsStream()`
   says so before you connect.
@@ -57,7 +56,6 @@ For measurement and A/B runs; defaults are what the benchmarks measured.
 | `JUMPSEAT_TOKEN` | The token, instead of `--token`. |
 | `JUMPSEAT_TRACE=1` | Log each frame within 300 ms of a key press: when it was damaged, grabbed, encoded and sent, from the key reaching X. |
 | `JUMPSEAT_OH264` | Encoder settings, `key=value,…`: `qp` (the QP floor, default 17), `refs`, `vui` (0 drops the colour-space tags, which are written by default). The rest of the configuration is fixed ([h264/](../h264/README.md)). |
-| `JUMPSEAT_X264` | x264 options for the `-tags x264` build, `key=value:…` (`x264_param_parse`). |
 | `JUMPSEAT_MAX_FPS` | Pacing cap (default 90, above Chromium's 60 so early frames are not dropped). |
 | `JUMPSEAT_ENCODER_FPS` | The frame rate the rate control budgets for (default 60). |
 | `JUMPSEAT_LINK_KBPS` | Put a slow, deep-buffered link in front of the viewer, for testing flow control. |

@@ -4,8 +4,8 @@
 // and know when the user is driving.
 //
 // A frame is captured only when XDamage reports a change, so an idle screen
-// costs nothing; frames go through MIT-SHM, libyuv and OpenH264 (or libx264
-// with -tags x264) in process. See docs/reference.md for the wire format.
+// costs nothing; frames go through MIT-SHM, libyuv and the encoder in h264/
+// in process. See docs/reference.md for the wire format.
 package main
 
 import (

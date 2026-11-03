@@ -18,7 +18,7 @@ captions of what it is doing, hands a step it cannot do (a sign-in, a
 captcha) to the person, and checks whether the person is at the keyboard
 before it clicks. The person sees "Your turn", takes over, and hands back.
 
-![The demo viewer: captions, a handoff, the person taking over, the desktop resizing](docs/film.gif)
+![The demo viewer: captions, a handoff, the person taking over, the desktop resizing](docs/film.webp)
 
 *A real recording of the demo viewer in Chrome ([e2e/film.mjs](e2e/film.mjs)).
 The "agent" is a script driving the desktop with xdotool and jumpseat's API;
@@ -38,7 +38,7 @@ watched from a real browser across the network:
 | key → pixel while scrolling on a 1 Mbit/s link, p50 | 117–216 ms¹ | 1.1 s |
 | CPU, X server and streamer, scrolling | ~0.3 cores | 0.38–0.48 |
 
-¹ Measured with the x264 build, which needs twice the bits to scroll.
+¹ Measured with an earlier build on x264, which needs twice the bits to scroll.
 
 Its encoder is OpenH264's, changed for desktop content. On recorded desktop
 frames it needs 40% fewer bits than x264 ultrafast to scroll, 26% fewer to
@@ -137,7 +137,5 @@ encoder, RandR resizing, and the Xvfb scroll patch, which is voxl's own.
 
 ## License
 
-MIT for jumpseat. The encoder in `h264/` is BSD 2-clause (OpenH264). The Xvfb
-patch in `docker/patches/` is voxl's, MIT ([its license](docker/patches/LICENSE-voxl)).
-The optional `-tags x264` build links libx264, which is GPL. See
-[LICENSE](LICENSE).
+MIT. The encoder in `h264/` is BSD 2-clause (OpenH264's), libyuv is BSD
+3-clause, and the Xvfb patch is voxl's, MIT. Details in [LICENSE](LICENSE).

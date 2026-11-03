@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends nasm libyuv-dev libx264-dev
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends nasm libyuv-dev
       - uses: actions/setup-go@v5
         with:
           go-version-file: server/go.mod
@@ -21,9 +21,6 @@ jobs:
       - name: server, default (h264) build
         working-directory: server
         run: go vet ./... && go test -race ./... && go build -o /dev/null .
-      - name: server, x264 build compiles
-        working-directory: server
-        run: go vet -tags x264 ./... && go build -tags x264 -o /dev/null .
 
   e2e:
     runs-on: ubuntu-24.04

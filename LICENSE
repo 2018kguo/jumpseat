@@ -20,7 +20,6 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 
-h264/ is OpenH264's encoder, changed (BSD-2-Clause; h264/LICENSE). The
-default build links it and libyuv (BSD-3-Clause).
-A build with `-tags x264` links libx264, which is GPL-2.0: such a binary is
-distributed under the GPL.
+h264/ is OpenH264's encoder, changed (BSD-2-Clause; h264/LICENSE). jumpseat
+links it and libyuv (BSD-3-Clause). docker/patches/ holds a patch from voxl
+(MIT; docker/patches/LICENSE-voxl).
