@@ -205,6 +205,10 @@ export function connectDesktopStream(
   let copiedAt = 0;
   const decoder = new VideoDecoder({
     output: (frame) => {
+      if (canvas.width !== frame.displayWidth || canvas.height !== frame.displayHeight) {
+        canvas.width = frame.displayWidth;
+        canvas.height = frame.displayHeight;
+      }
       context?.drawImage(frame, 0, 0);
       // The frame's id (the streamer's ms stamp) back as shown: the streamer
       // holds capture while too much is unshown, so a slow link costs
@@ -256,11 +260,11 @@ export function connectDesktopStream(
         return;
       }
       if (message.t === "size") {
+        // The keyframe that follows starts a stream of the new size. The
+        // canvas changes size when that frame is drawn: resizing it now
+        // would blank the picture until then.
         size.width = message.w;
         size.height = message.h;
-        canvas.width = size.width;
-        canvas.height = size.height;
-        // The keyframe that follows starts a stream of the new size.
         configured = false;
       } else if (message.t === "cursor") {
         const url = `url(data:image/png;base64,${message.png})`;
