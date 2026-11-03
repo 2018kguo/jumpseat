@@ -35,7 +35,8 @@ the viewer meet; keep the directory private to the user jumpseat runs as.
 0 CPU while the screen is still: frames are captured only when XDamage
 reports a change. About 0.3 cores at 60 fps for the X server and jumpseat
 together, 0.66 Mbit/s scrolling text, more for video-like content
-([bench/](../bench/README.md)). Each viewer has its own encoder.
+([bench/](../bench/README.md)). Viewers share one encoder: another viewer
+costs a send, not an encode.
 
 On a slow link the server measures what the link carries, caps the bitrate
 to it, and holds capture while frames are unacknowledged: frames drop, input
@@ -59,5 +60,5 @@ For measurement and A/B runs; defaults are what the benchmarks measured.
 
 ## Limits
 
-X11 only, one 1280×800 screen. No audio, Wayland, per-window streaming or
-shared encoder for many viewers yet.
+X11 only, one screen. No audio, Wayland or per-window streaming yet. All
+viewers share one encoder, so the slowest link sets the pace for everyone.

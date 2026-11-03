@@ -5,7 +5,7 @@ The server, its HTTP and websocket protocol, and the browser client.
 ## Server
 
 ```sh
-jumpseat [--listen unix:/run/jumpseat/stream.sock | host:port] [--token T] [--display :0] [--dir /run/jumpseat]
+jumpseat [--listen unix:/run/jumpseat/stream.sock | host:port] [--token T] [--display :0] [--dir /run/jumpseat] [--resize]
 jumpseat --record FILE [--frames 300] [--display :0]
 ```
 
@@ -15,6 +15,7 @@ jumpseat --record FILE [--frames 300] [--display :0]
 | `--token` | `JUMPSEAT_TOKEN` | none | Bearer token for every route on a TCP listener. |
 | `--display` | | `:0` | The X display to stream and drive. |
 | `--dir` | | `/run/jumpseat` | Where the agent status and user-input files live. |
+| `--resize` | | off | Let viewers resize the desktop to their window, through RandR, up to the size Xvfb started at. Off by default because an agent clicks at coordinates from the size it last saw. |
 | `--record` | | off | Write the next `--frames` changed frames as raw BGRX to this file, for [bench/](../bench/README.md), and exit. |
 
 Tuning and measurement knobs are in [operating.md](operating.md#environment).
@@ -31,6 +32,7 @@ or `?token=T` where a browser cannot set headers (its websocket).
 | `POST /agent/status` | `{"kind": "acting" \| "waiting" \| "handoff" \| "idle", "text": "Opening LinkedIn"}`, shown to every viewer. |
 | `GET /agent/lease` | `{"driving": bool, "lastInputMs": n, "answer": "" \| "done" \| "skip"}`: whether the user is driving (input in the last 5 s), and how they answered a handoff. |
 | `POST /agent/answer` | `{"reply": "done" \| "skip"}`, sent by the viewer's Done / Skip. |
+| `GET /agent/screenshot` | The screen as a PNG, at its current size. |
 | `GET /agent/wait` | `{"changed": bool, "timedOut": bool, "waitedMs": n}` once the screen has been still for `idle` ms (default 300, counted from the request), or at the first change with `?change`; `timeout` ms gives up (default 10 000, at most 60 000). |
 
 An agent posts `acting` with a caption before each step. For a step only a
@@ -53,9 +55,10 @@ One websocket carries the screen to the viewer and the viewer's input back.
 |---|---|
 | 0 | `1` if the frame is a keyframe, else `0` |
 | 1–8 | frame id: big-endian uint64, the server's ms clock |
-| 9– | one H.264 access unit, Annex B, constrained baseline (`avc1.42E028`), 1280×800 |
+| 9– | one H.264 access unit, Annex B, constrained baseline (`avc1.42E028`), at the size of the last `size` message |
 
-Each connection starts with a keyframe. The viewer acks every frame it
+Every viewer shares one encoder. Each connection starts with a `size`
+message and a keyframe, and so does every change of the screen's size. The viewer acks every frame it
 shows: the server holds capture while too much is unshown, so a slow link
 costs frames, not seconds of input lag.
 
@@ -63,6 +66,7 @@ costs frames, not seconds of input lag.
 
 | `t` | Fields | Meaning |
 |---|---|---|
+| `size` | `w`, `h` | The desktop's size. The next frame is a keyframe at that size. |
 | `status` | `kind`, `text` | What the agent is doing: `acting` (caption), `waiting` (on the user), `handoff` (the user's turn), `idle`. |
 | `cursor` | `png` (base64), `x`, `y` (hotspot) | The screen's cursor image, when it changes. |
 | `p` | `x`, `y` | The pointer moved. |
@@ -83,6 +87,7 @@ Text messages, JSON:
 | `w` | `dx`, `dy` (−1, 0, 1) | A wheel step. |
 | `c` | `text` (≤ 64 KiB) | Paste this into the desktop's clipboard. |
 | `r` | | Release every key and button this viewer holds. |
+| `z` | `w`, `h` | Resize the desktop to this size (with `--resize`; otherwise ignored). The server rounds it to a size the screen can take. |
 
 Any input from a viewer counts as the user driving.
 
@@ -100,7 +105,7 @@ const view = connect(element, `wss://host/stream?token=${token}`, {
   dropped: () => {},    // the socket closed; connect again to retry
   status: ({ kind, text }) => {},
   unsupported: () => {}, // the decoder refused the stream
-});
+}, { resize: false });   // true: the desktop takes the element's size (needs --resize)
 view.setControlling(true); // the user's input now reaches the desktop
 view.close();
 ```
