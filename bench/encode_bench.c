@@ -97,6 +97,7 @@ int main(int argc, char **argv) {
   if ((v = opt(argc, argv, "bg", -1)) >= 0) p.bEnableBackgroundDetection = v;
   if ((v = opt(argc, argv, "aq", -1)) >= 0) p.bEnableAdaptiveQuant = v;
   if ((v = opt(argc, argv, "ltr", -1)) >= 0) p.bEnableLongTermReference = v;
+  if ((v = opt(argc, argv, "cabac", -1)) >= 0) p.iEntropyCodingModeFlag = v;
   p.eSpsPpsIdStrategy = CONSTANT_ID;
   p.iSpatialLayerNum = 1; p.iTemporalLayerNum = 1;
   p.sSpatialLayers[0].iVideoWidth = W; p.sSpatialLayers[0].iVideoHeight = H;
