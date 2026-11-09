@@ -210,7 +210,10 @@ func (h *hub) capture() (bool, error) {
 	refine := time.NewTimer(time.Hour)
 	refine.Stop()
 	defer refine.Stop()
-	refines := 0
+	// smallest is the smallest refining frame of this still screen, stuck
+	// how many refining frames since one beat it: refining that has stopped
+	// gaining (the same blocks coded again each frame) ends.
+	refines, smallest, stuck := 0, 0, 0
 	grab := func() error {
 		if wait := interval - time.Since(last); wait > 0 {
 			time.Sleep(wait)
@@ -234,7 +237,14 @@ func (h *hub) capture() (bool, error) {
 			return nil
 		}
 		// An all-skip frame is a few dozen bytes: the picture is done.
-		if len(au) > restDone(width, height) && refines < maxRefines {
+		if refines > 0 {
+			if smallest == 0 || len(au) < smallest {
+				smallest, stuck = len(au), 0
+			} else {
+				stuck++
+			}
+		}
+		if len(au) > restDone(width, height) && refines < maxRefines && stuck < 3 {
 			if refines == 0 {
 				refine.Reset(restDelay) // still yet, or between an animation's frames?
 			} else {
@@ -312,7 +322,7 @@ func (h *hub) capture() (bool, error) {
 		var err error
 		select {
 		case <-damaged:
-			refines = 0
+			refines, smallest, stuck = 0, 0, 0
 			if h.behind() {
 				pending = true
 				continue
