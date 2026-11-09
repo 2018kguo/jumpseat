@@ -8,7 +8,7 @@
 //   keys: enc (0 OpenH264, 1 x264 as the streamer sets it up), crf and
 //         xthreads (x264; 0 = auto, as the streamer runs it),
 //         usage (0 camera, 1 screen), complexity, qp, refs,
-//         scd, bg, aq, ltr, threads, fps, repeat, rest (then encode the last
+//         scd, bg, aq, ltr, cabac (1, as the streamer; 0 CAVLC), threads, fps, repeat, rest (then encode the last
 //         frame that many more times: the quality left once motion stops),
 //         kbps (cap the bitrate as the streamer's flow control does, so the
 //         rate control's capped paths run)
@@ -97,6 +97,7 @@ int main(int argc, char **argv) {
   if ((v = opt(argc, argv, "bg", -1)) >= 0) p.bEnableBackgroundDetection = v;
   if ((v = opt(argc, argv, "aq", -1)) >= 0) p.bEnableAdaptiveQuant = v;
   if ((v = opt(argc, argv, "ltr", -1)) >= 0) p.bEnableLongTermReference = v;
+  p.iEntropyCodingModeFlag = opt(argc, argv, "cabac", 1); // as the streamer; cabac=0 for CAVLC
   p.eSpsPpsIdStrategy = CONSTANT_ID;
   p.iSpatialLayerNum = 1; p.iTemporalLayerNum = 1;
   p.sSpatialLayers[0].iVideoWidth = W; p.sSpatialLayers[0].iVideoHeight = H;

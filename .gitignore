@@ -3,6 +3,8 @@ client/node_modules/
 server/web/jumpseat.js
 e2e/node_modules/
 e2e/bun.lock*
-core
+/core
 core.*
 .bench/
+bench/compare/node_modules/
+bench/compare/package-lock.json

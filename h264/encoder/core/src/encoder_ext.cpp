@@ -1786,6 +1786,8 @@ int32_t WelsInitEncoderExt (sWelsEncCtx** ppCtx, SWelsSvcCodingParam* pCodingPar
     return iRet;
   }
 
+  if (pCodingParam->iEntropyCodingModeFlag)
+    WelsCabacInit (pCtx);
   WelsRcInitModule (pCtx);
 
   pCtx->pVpp = CWelsPreProcess::CreatePreProcess (pCtx);

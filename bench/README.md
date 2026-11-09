@@ -12,7 +12,34 @@ Two kinds of measurement, for two questions:
   frames replayed through jumpseat's encoder (`h264/`) and x264 with the
   same settings, in this directory.
 
-## Live, against KasmVNC 1.5.0 (same VM)
+## Live, against noVNC (bench/compare)
+
+noVNC 1.3.0 with x11vnc 0.9.16 (Debian's packages, run as noVNC's docs run
+them) and jumpseat, one at a time on the same 4-vCPU sandbox, the same Xvfb
+and Chromium, alternating ABBA. A real Chrome on a laptop opens each viewer
+across the internet ([compare/probe.mjs](compare/probe.mjs)) and counts what
+it paints; the page ([compare/page.html](compare/page.html)) scrolls text
+4 px a frame, animates text over half the screen, or sits still while keys
+flip a marker. Medians of two rounds, Nov 2026:
+
+| | jumpseat | noVNC |
+|---|---|---|
+| fps painted, scrolling / animating | **61 / 60** | 17 / 20 |
+| bandwidth, scrolling / animating | **0.64 / 13.1 Mbit/s** | 28.2 / 20.8 Mbit/s |
+| CPU (X server + server), scrolling / animating | **0.55 / 0.52 cores** | 0.58 / 0.61 |
+| CPU, typing on a still page | **0.08 cores** | 0.11 |
+| key → pixel in the viewer, p50: still / scrolling / animating | **42 / 85 / 82 ms** | 65 / 157 / 145 ms |
+
+Key → pixel here is the person's view: from the key press in the viewer
+across the network and back, to the first painted frame that shows it.
+
+```sh
+python3 bench/compare/lab.py              # the sandbox; prints URL TOKEN
+cd bench/compare && npm i && node probe.mjs 10 2
+python3 bench/compare/lab.py stop
+```
+
+## Live, against KasmVNC 1.5.0 (same VM, an earlier harness, Oct 2026)
 
 | | jumpseat | KasmVNC |
 |---|---|---|
@@ -53,25 +80,27 @@ network round trip.
 ## The encoder, against x264
 
 Recorded 1280×800 frames (scroll, a CSS animation over half the screen,
-typing), x86. Bits: BD-rate, the average bitrate difference at equal PSNR
-over the quality range both encoders cover. CPU: instructions per frame
-under callgrind (wall time on a shared VM varies ~30%), against x264
-ultrafast on one thread.
+typing), x86, CABAC. Bits: BD-rate, the average bitrate difference at equal
+PSNR over the quality range both encoders cover. CPU: CPU time per frame
+against x264 ultrafast on one thread, the median of three alternating runs
+(callgrind's instruction counts, steadier, ran before CABAC: 0.90x scroll,
+0.68x typing, 0.90x animation; CABAC costs 4–9% more encode time).
 
 | | bits vs x264 | CPU vs x264 |
 |---|---|---|
-| scrolling text | **−40%** | **0.90x** |
-| typing | **−26%** | **0.68x** |
-| animation | **−10%** | **0.90x** |
+| scrolling text | **−61%** | **0.80x** |
+| typing | **−34%** | **0.67x** |
+| animation | **−36%** | **0.91x** |
 
 At the streamer's settings (QP floor 17 against x264 crf 25), and once the
-motion stops (`rest=60`: the quality left on screen):
+motion stops (`rest=60`: the quality left on screen; CABAC codes the same
+picture, so its PSNR is CAVLC's):
 
 | | jumpseat kbit/s, dB, at rest | x264 kbit/s, dB, at rest |
 |---|---|---|
-| scrolling text | 849, 53.1, 53.3 | 1206, 47.6, 50.8 |
-| typing | 542, 53.8, 53.6 | 640, 50.4, 51.7 |
-| animation | 3471, 50.5, 54.2 | 3750, 50.1, 54.1 |
+| scrolling text | 644, 53.1, 53.3 | 1179, 48.0, 50.8 |
+| typing | 529, 53.8, 53.6 | 619, 50.4, 51.7 |
+| animation | 2593, 50.5, 54.2 | 3657, 50.2, 54.1 |
 
 [`h264/README.md`](../h264/README.md) lists each change from OpenH264. Stock
 OpenH264's screen mode scrolled at 1.6x x264's CPU, and its first frame was
@@ -91,6 +120,29 @@ blurrier than the QP asked for (typing 45 dB where jumpseat gets 54).
   link, key → pixel while scrolling 1.1 s → ~0.2 s at p50.
 - **Pacing cap above 60 fps**: a 60 cap dropped frames whenever Chromium's
   landed early (57 → 60.0 fps).
+- **Refine once still**: the encoder sharpens what it coded coarsely in
+  motion or under a cap only on frames it is given, and capture stopped
+  with the last change. Now the still screen is encoded again until a frame
+  comes out with nothing to code (a few dozen bytes, at most 60). The last
+  frame of an animation left on screen: 42.3 → 45.0 dB 100 ms after it
+  stops, measured against the lossless screen in the viewer
+  ([e2e/fidelity.mjs](../e2e/fidelity.mjs)); idle CPU unchanged.
+- **CABAC** (High profile) in place of CAVLC, Nov 2026: the same pictures
+  for a quarter fewer bits scrolling and animating, measured on arm64 (this
+  lab on Apple silicon, `bench/local.sh`; the x86 tables above are with CABAC):
+
+  | | CAVLC kbit/s | CABAC kbit/s | BD-rate vs x264, CAVLC → CABAC | encode ms/frame |
+  |---|---|---|---|---|
+  | scrolling text | 849 | **650** (−23%) | −41% → **−57%** | 1.22 → 1.28 |
+  | animation | 3471 | **2591** (−25%) | −12% → **−35%** | 1.83 → 1.99 |
+  | typing | 542 | 537 (−1%) | −28% → −29% | 0.67 → 0.69 |
+
+  PSNR is unchanged (animation +0.06 dB). Under a 1 Mbit/s cap
+  (`kbps=1000 capat=1`) the bits saved go to quality: animation 35.9 → 41.0
+  dB, scrolling the same picture in 561 kbit/s instead of 730. Typing barely moves: its stream is
+  nearly all the first IDR (−5%), and on almost-empty frames CABAC's skip
+  flags cost a few dozen bytes more than CAVLC's skip runs. ms/frame: means
+  of six alternating runs on one machine.
 - **The encoder** (`h264/README.md`): screen mode's scroll search without
   its per-pixel index, the first frame at the QP asked for, x264's CRF rule
   for content in motion with refinement once it stops.
@@ -130,6 +182,7 @@ into it, so a change rebuilds in seconds.
 | `crf`, `xthreads`, `qp` | x264's CRF and threads; the QP floor |
 | `kbps` | cap the bitrate, as a slow link does |
 | `capat=F` | apply the cap at frame F, as the streamer does once flow control has measured the link (so its first IDR is never capped) |
+| `cabac=0` | CAVLC (constrained baseline) instead of the streamer's CABAC |
 | `rest=N` | N still frames after the content, to measure the quality left at rest |
 | `perframe=1` | one line per frame |
 | `usage`, `complexity`, `rc`, … | only change stock OpenH264 (`LAB_SRC=stock`); `h264/` forces its configuration |

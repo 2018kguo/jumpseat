@@ -21,7 +21,8 @@ import (
 // step, dy < 0 up; or sx, sy: desktop pixels, smooth), "c" (paste text into
 // the VM's clipboard), "r" (release every key and button this viewer holds),
 // "z" (resize the desktop to w x h, with --resize), "a" (frame ts was
-// displayed, see flow) or "h" (heartbeat).
+// displayed, see flow), "v" (the viewer's page was hidden or shown) or "h"
+// (heartbeat).
 type input struct {
 	T    string  `json:"t"`
 	Key  string  `json:"key"`
@@ -37,21 +38,34 @@ type input struct {
 	TS   int64   `json:"ts"`
 	W    int     `json:"w"`
 	H    int     `json:"h"`
+	// Hidden: "v", the page is in a background tab or minimized.
+	Hidden bool `json:"hidden"`
 }
 
 // A viewer that sends nothing for this long is gone (it heartbeats every 5 s):
 // a sleeping laptop must not hold an X connection, shm and an encoder forever.
 const viewerSilence = 20 * time.Second
 
+// A hidden page's timers may run once a minute (Chrome's intensive
+// throttling), so its heartbeats come that rarely; it holds no encoder.
+const hiddenSilence = 3 * time.Minute
+
 // readInput replays the viewer's input through XTest: no process per event,
 // so a key press is on screen in one frame.
-func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, h *hub) {
+// show(false) stops streaming to a hidden page and show(true) starts again
+// with a keyframe: nobody encodes for a background tab.
+func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, h *hub, show func(bool)) {
 	// Whatever this viewer still holds is let go when it leaves, so the
 	// agent's next click is not a drag and no key repeats forever.
 	defer k.releaseAll()
+	hidden := false
 	for ctx.Err() == nil {
 		var raw []byte
-		_ = ws.SetReadDeadline(time.Now().Add(viewerSilence))
+		silence := viewerSilence
+		if hidden {
+			silence = hiddenSilence
+		}
+		_ = ws.SetReadDeadline(time.Now().Add(silence))
 		if err := websocket.Message.Receive(ws, &raw); err != nil {
 			return
 		}
@@ -60,7 +74,7 @@ func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, h 
 			continue
 		}
 		switch in.T {
-		case "a", "h", "z":
+		case "a", "h", "z", "v":
 		case "r":
 			// The user let go (Stop controlling, or left the view): the
 			// agent need not wait out the lease.
@@ -99,6 +113,12 @@ func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, h 
 			k.releaseAll()
 		case "a":
 			f.ack(in.TS)
+			continue
+		case "v":
+			if in.Hidden != hidden {
+				hidden = in.Hidden
+				show(!hidden)
+			}
 			continue
 		case "z":
 			if h.screen != nil {

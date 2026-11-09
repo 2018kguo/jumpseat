@@ -87,6 +87,7 @@ func main() {
 	}
 	log.Printf("jumpseat on %s, display %s", *listen, *display)
 	h := newHub(*display)
+	go primeScrolls(*display)
 	if *resize {
 		if h.screen, err = openScreen(*display); err != nil {
 			log.Fatal(err)

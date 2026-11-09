@@ -53,7 +53,14 @@ func wake(c chan struct{}) {
 
 func (h *hub) join(v *viewer) {
 	h.mu.Lock()
+	select {
+	case <-v.gone:
+		h.mu.Unlock()
+		return
+	default:
+	}
 	h.viewers[v] = true
+	v.joined.Store(true)
 	if !h.running {
 		h.running = true
 		go h.run()
@@ -198,6 +205,16 @@ func (h *hub) capture() (bool, error) {
 	waiting := map[*viewer]bool{}
 	greeted := map[*viewer]bool{}
 	capKbps, encoded := 0, false
+	// Once the screen is still, the encoder sharpens what it coded coarsely
+	// in motion or under a cap, but only on frames it is given: refine feeds
+	// it the still screen until a frame comes out with nothing left to code.
+	refine := time.NewTimer(time.Hour)
+	refine.Stop()
+	defer refine.Stop()
+	// smallest is the smallest refining frame of this still screen, stuck
+	// how many refining frames since one beat it: refining that has stopped
+	// gaining (the same blocks coded again each frame) ends.
+	refines, smallest, stuck := 0, 0, 0
 	grab := func() error {
 		if wait := interval - time.Since(last); wait > 0 {
 			time.Sleep(wait)
@@ -219,6 +236,21 @@ func (h *hub) capture() (bool, error) {
 		encodedAt := time.Now()
 		if au == nil {
 			return nil
+		}
+		// An all-skip frame is a few dozen bytes: the picture is done.
+		if refines > 0 {
+			if smallest == 0 || len(au) < smallest {
+				smallest, stuck = len(au), 0
+			} else {
+				stuck++
+			}
+		}
+		if len(au) > restDone(width, height) && refines < maxRefines && stuck < 3 {
+			if refines == 0 {
+				refine.Reset(restDelay) // still yet, or between an animation's frames?
+			} else {
+				refine.Reset(interval)
+			}
 		}
 		encoded = true
 		for _, v := range h.list() {
@@ -249,7 +281,7 @@ func (h *hub) capture() (bool, error) {
 			}
 		}
 		for _, v := range current {
-			if !greeted[v] {
+			if v.joined.Swap(false) || !greeted[v] {
 				greeted[v], waiting[v], fresh = true, true, true
 				if v.text(map[string]any{"t": "size", "w": width, "h": height}) != nil {
 					v.fail()
@@ -268,6 +300,7 @@ func (h *hub) capture() (bool, error) {
 			}
 			enc.close()
 			enc, encoded = next, false
+			refines, smallest, stuck = 0, 0, 0 // the new keyframe refines too
 			if capKbps > 0 {
 				enc.setMaxKbps(capKbps)
 			}
@@ -291,11 +324,19 @@ func (h *hub) capture() (bool, error) {
 		var err error
 		select {
 		case <-damaged:
+			refines, smallest, stuck = 0, 0, 0
 			if h.behind() {
 				pending = true
 				continue
 			}
 			pending = false
+			err = grab()
+		case <-refine.C:
+			refines++
+			if h.behind() {
+				pending = true
+				continue
+			}
 			err = grab()
 		case <-h.acked:
 			if pending && !h.behind() {
@@ -326,6 +367,21 @@ func (h *hub) capture() (bool, error) {
 			return false, nil
 		}
 	}
+}
+
+// restDelay: this long without a change and the screen is still (an
+// animation's frames are 16 ms apart). maxRefines bounds refining one still
+// screen.
+const (
+	restDelay  = 100 * time.Millisecond
+	maxRefines = 60
+)
+
+// restDone is the size under which a frame changed nothing on screen, so a
+// still screen needs no more refining: an all-skip frame is headers plus a
+// skip flag a macroblock (61 bytes at 1280x800 with CABAC, 36 with CAVLC).
+func restDone(width, height int) int {
+	return 32 + width*height/(256*64)
 }
 
 // errResized: the screen changed size under a grab; start over at the new one.

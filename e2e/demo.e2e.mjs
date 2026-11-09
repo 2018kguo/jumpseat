@@ -46,6 +46,17 @@ const painted = await page.evaluate(() => {
 });
 check(painted > 0.3, `the desktop streams (${Math.round(painted * 100)}% of the picture lit)`);
 
+// An agent's first scroll in a fresh Chromium: three wheel clicks from
+// xdotool scroll three notches (Chromium dropped the first one as a baseline
+// until jumpseat primed it).
+const scrollPage = "data:text/html,<title>y=0</title><body style='height:20000px'><script>onscroll=()=>document.title='y='+Math.round(scrollY)</script>";
+execFileSync("docker", ["exec", "-e", "DISPLAY=:0", container, "xdotool", "key", "ctrl+l", "type", scrollPage]);
+execFileSync("docker", ["exec", "-e", "DISPLAY=:0", container, "xdotool", "key", "Return"]);
+await page.waitForTimeout(1500);
+execFileSync("docker", ["exec", "-e", "DISPLAY=:0", container, "xdotool", "mousemove", "640", "500", "click", "--repeat", "3", "5"]);
+await page.waitForTimeout(1000);
+check(windowTitle().startsWith("y=360 "), `an agent's first three wheel clicks scroll three notches (${windowTitle()})`);
+
 await api("POST", "/agent/status", { kind: "acting", text: "Opening example.com" });
 check(await page.getByText("Opening example.com").waitFor({ timeout: 3000 }).then(() => true, () => false), "the agent's caption shows");
 await api("POST", "/agent/status", { kind: "handoff", text: "Sign in to the demo" });

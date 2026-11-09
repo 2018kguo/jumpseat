@@ -136,8 +136,8 @@ export function canDecodeDesktop(): boolean {
   return typeof window !== "undefined" && "VideoDecoder" in window;
 }
 
-/** The codec the server sends: H.264 constrained baseline. */
-export const STREAM_CODEC = "avc1.42E028";
+/** The codec the server sends: H.264 High profile (CABAC, no B-frames). */
+export const STREAM_CODEC = "avc1.640029";
 
 /**
  * Whether this browser decodes the stream: WebCodecs exists and has an H.264
@@ -251,7 +251,7 @@ export function connectDesktopStream(
     }
   };
   const heartbeat = setInterval(() => sendAlways({ t: "h" }), HEARTBEAT_MS);
-  const firstFrame = setTimeout(drop, FIRST_FRAME_MS);
+  let firstFrame = setTimeout(drop, FIRST_FRAME_MS);
 
   socket.addEventListener("message", (event) => {
     if (typeof event.data === "string") {
@@ -484,6 +484,23 @@ export function connectDesktopStream(
     event.preventDefault();
   };
   document.addEventListener("paste", onPaste);
+  // A background tab gets no frames: the server stops encoding for it and
+  // sends a keyframe when it is shown again.
+  const onVisibility = () => {
+    sendAlways({ t: "v", hidden: document.hidden });
+    // No frames come while hidden: the first-frame watchdog waits until shown.
+    clearTimeout(firstFrame);
+    if (!document.hidden && !connected && !closed) {
+      firstFrame = setTimeout(drop, FIRST_FRAME_MS);
+    }
+  };
+  document.addEventListener("visibilitychange", onVisibility);
+  // A page opened in a background tab says so as soon as it can.
+  socket.addEventListener("open", () => {
+    if (document.hidden) {
+      onVisibility();
+    }
+  });
 
   return {
     close() {
@@ -496,6 +513,7 @@ export function connectDesktopStream(
         decoder.close();
       }
       document.removeEventListener("paste", onPaste);
+      document.removeEventListener("visibilitychange", onVisibility);
       canvas.remove();
       pointer.remove();
     },

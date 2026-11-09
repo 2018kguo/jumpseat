@@ -1,0 +1,44 @@
+<!doctype html>
+<!-- The compare bench's workloads, picked by the URL's hash. A 40 px marker
+     at the top left flips between black and white on each key press, so the
+     probe can see a key reach the screen. #scroll scrolls text 4 px a frame,
+     #anim animates text on a canvas over half the screen, #type sits still. -->
+<title>bench</title>
+<style>
+  body { margin: 0; font: 15px/1.5 sans-serif; color: #222; background: #fbfbf8; }
+  #m { position: fixed; left: 0; top: 0; width: 40px; height: 40px; background: #000; z-index: 2; }
+  p { margin: 0 0 0 60px; max-width: 1100px; }
+  canvas { position: fixed; left: 60px; top: 60px; z-index: 1; }
+</style>
+<div id="m"></div>
+<div id="text"></div>
+<canvas id="c" width="1100" height="380" hidden></canvas>
+<script>
+  const words = "the quick brown fox jumps over the lazy dog while a desktop streams to a browser".split(" ");
+  let html = "";
+  for (let i = 0; i < 1500; i++) {
+    let line = `${i}: `;
+    for (let j = 0; j < 16; j++) line += words[(i * 7 + j * 3) % words.length] + " ";
+    html += `<p>${line}</p>`;
+  }
+  document.getElementById("text").innerHTML = html;
+  const m = document.getElementById("m");
+  addEventListener("keydown", (e) => { m.style.background = m.style.background === "rgb(255, 255, 255)" ? "#000" : "#fff"; e.preventDefault(); });
+  const mode = location.hash.slice(1);
+  if (mode === "scroll") {
+    (function f() { scrollBy(0, 4); if (scrollY > 30000) scrollTo(0, 0); requestAnimationFrame(f); })();
+  }
+  if (mode === "anim") {
+    const c = document.getElementById("c"), x = c.getContext("2d");
+    c.hidden = false;
+    x.font = "18px monospace";
+    (function f(t) {
+      x.fillStyle = "#fff"; x.fillRect(0, 0, 1100, 380);
+      for (let i = 0; i < 18; i++) {
+        x.fillStyle = `hsl(${(t / 8 + i * 20) % 360},70%,40%)`;
+        x.fillText(`frame ${Math.round(t)} row ${i} lorem ipsum dolor sit amet consectetur`, (t / 6 + i * 37) % 300, 20 + i * 20);
+      }
+      requestAnimationFrame(f);
+    })(0);
+  }
+</script>

@@ -54,7 +54,7 @@ One websocket carries the screen to the viewer and the viewer's input back.
 |---|---|
 | 0 | `1` if the frame is a keyframe, else `0` |
 | 1–8 | frame id: big-endian uint64, ms since this connection began, echoed back in `a` |
-| 9– | one H.264 access unit, Annex B, constrained baseline (`avc1.42E028`), at the size of the last `size` message |
+| 9– | one H.264 access unit, Annex B, High profile (`avc1.640029`: CABAC, no B-frames; `JUMPSEAT_OH264=cabac=0` sends constrained baseline instead, for a client that sets its own codec string), at the size of the last `size` message |
 
 Every viewer shares one encoder. Each connection starts with a `size`
 message and a keyframe, and so does every change of the screen's size. The
@@ -85,9 +85,10 @@ Text messages, JSON:
 | `w` | `sx`, `sy` (desktop pixels), or `dx`, `dy` (whole wheel clicks, at most 20 a message; the bundled client sends only `sx`, `sy`) | A scroll: pixels from a trackpad, wheel or two fingers, or a wheel step. Pixels scroll smoothly on an Xvfb with the [scroll patch](../docker/patches/xorg-server-xtest-scroll.patch) and add up into wheel clicks on any other X server. |
 | `c` | `text` (≤ 64 KiB) | Paste this into the desktop's clipboard. |
 | `r` | | Release every key and button this viewer holds. |
+| `v` | `hidden` | The page was hidden (a background tab, minimized) or shown again. A hidden viewer gets no frames, so nothing is encoded for it; shown, it gets a keyframe. While hidden, it may be silent for 3 minutes. |
 | `z` | `w`, `h` | Resize the desktop to this size (with `--resize`; otherwise ignored). The server rounds it to a size the screen can take. |
 
-Every message except `a`, `h`, `z` and `r` counts as the user driving; `r`
+Every message except `a`, `h`, `z`, `v` and `r` counts as the user driving; `r`
 ends it at once, so the agent need not wait out the 5 s.
 
 ## Browser client

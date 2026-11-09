@@ -27,31 +27,34 @@ pointer, drawn for the recording.*
 
 ## How it compares
 
-On one 4-vCPU sandbox (gVisor, no GPU) at 1280×800, against KasmVNC 1.5.0,
-watched from a real browser across the network:
+On one 4-vCPU sandbox (gVisor, no GPU) at 1280×800, against noVNC (x11vnc),
+watched from a real Chrome across the internet, the two alternating on the
+same machine ([bench/compare](bench/README.md#live-against-novnc-benchcompare)):
 
-| | jumpseat | KasmVNC |
+| | jumpseat | noVNC |
 |---|---|---|
-| frames per second, scrolling or animating | 60 | 24 |
-| bandwidth, scrolling text | 0.66 Mbit/s | 14.8 Mbit/s |
-| key → pixel, p50 | 30–40 ms | 48–73 ms |
-| key → pixel while scrolling on a 1 Mbit/s link, p50 | 117–216 ms¹ | 1.1 s |
-| CPU, X server and streamer, scrolling | ~0.3 cores | 0.38–0.48 |
+| frames per second, scrolling / animating | **61 / 60** | 17 / 20 |
+| bandwidth, scrolling text | **0.64 Mbit/s** | 28 Mbit/s |
+| key → pixel in the viewer, p50, still / scrolling | **42 / 85 ms** | 65 / 157 ms |
+| CPU, X server and streamer, scrolling | **0.55 cores** | 0.58 |
 
-¹ Measured with an earlier build on x264, which needs twice the bits to scroll.
+KasmVNC 1.5.0, measured on the same kind of machine with an earlier
+harness, painted 24 fps at 14.8 Mbit/s scrolling.
 
 Its encoder is OpenH264's, changed for desktop content. On recorded desktop
-frames it needs 40% fewer bits than x264 ultrafast to scroll, 26% fewer to
-type and 10% fewer to animate, for fewer instructions a frame. The method,
-the raw numbers and what did not help are in [bench/](bench/README.md).
+frames it needs 61% fewer bits than x264 ultrafast to scroll, 36% fewer to
+animate and 34% fewer to type at equal quality, for about 0.7–0.9x x264's CPU.
+The method, the raw numbers and what did not help are in
+[bench/](bench/README.md).
 
 ## Try it
 
-The demo image runs Xvfb, a window manager, Chromium and jumpseat:
+[A recorded session](https://kguo.dev/jumpseat/) plays in your
+browser through jumpseat's own client. To run it, the demo image has Xvfb, a
+window manager, Chromium and jumpseat (amd64 and arm64):
 
 ```sh
-docker build -f docker/Dockerfile -t jumpseat .
-docker run --rm -p 8080:8080 -e JUMPSEAT_TOKEN=secret jumpseat
+docker run --rm -p 8080:8080 -e JUMPSEAT_TOKEN=secret ghcr.io/2018kguo/jumpseat
 open "http://localhost:8080/?token=secret"
 ```
 
@@ -66,9 +69,15 @@ curl -H "Authorization: Bearer secret" localhost:8080/agent/lease   # {"answer":
 To have the desktop follow the browser window (up to 2560×1600), run the
 container with `-e JUMPSEAT_RESIZE=1` and open `/?token=secret&resize`.
 
+Or let Claude drive it: [examples/computer_use.py](examples/computer_use.py)
+gives Claude the desktop, captions what it does, and hands you the steps it
+should not do itself.
+
 ## Use it
 
-**On the machine with the desktop** (Xvfb or any X server):
+**On the machine with the desktop** (Xvfb or any X server). Each
+[release](https://github.com/2018kguo/jumpseat/releases) has Linux binaries
+for amd64 and arm64, which need libyuv (`apt install libyuv0`):
 
 ```sh
 jumpseat --listen :8080 --token "$TOKEN" --display :0
@@ -76,11 +85,11 @@ jumpseat --listen :8080 --token "$TOKEN" --display :0
 jumpseat --listen unix:/run/jumpseat/stream.sock
 ```
 
-**In your page**, with the client in [client/](client/jumpseat.ts) (no
-dependencies):
+**In your page**, with the client (`npm i @2018kguo/jumpseat`, no
+dependencies; the source is [client/jumpseat.ts](client/jumpseat.ts)):
 
 ```ts
-import { connect, supportsStream } from "./jumpseat";
+import { connect, supportsStream } from "@2018kguo/jumpseat";
 
 if (!(await supportsStream())) showFallback(); // no WebCodecs H.264 decoder
 const view = connect(element, `wss://host/stream?token=${token}`, {
@@ -114,7 +123,8 @@ process. All viewers share that one capture and encoder; a viewer joining
 restarts the encoder, so it starts on a keyframe. The browser decodes each frame with
 WebCodecs as it arrives and acks it, and the server holds capture while
 frames go unshown and caps the bitrate to what the link carries, so a slow
-link drops frames instead of building up seconds of lag.
+link drops frames instead of building up seconds of lag. A viewer whose tab
+is hidden gets nothing, so nothing is encoded for it.
 
 The person's input comes back on the same socket and goes into X through
 XTest, with keys placed at the right keymap level so other keyboard layouts

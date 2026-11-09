@@ -191,6 +191,7 @@ typedef struct TagWelsEncCtx {
   //related to Statistics
 
   int32_t iEncoderError;
+  SStateCtx sWelsCabacContexts[4][WELS_QP_MAX + 1][WELS_CONTEXT_COUNT];
   int64_t            uiLastTimestamp;
   uint8_t*           pDynamicBsBuffer[MAX_THREADS_NUM];
 } sWelsEncCtx/*, *PWelsEncCtx*/;

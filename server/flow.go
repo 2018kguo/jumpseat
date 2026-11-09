@@ -176,6 +176,14 @@ func (f *flow) minRTT() int64 {
 	return low
 }
 
+// resume starts over after the viewer was hidden: no frame was out to ack
+// meanwhile, so the time since its last ack is not a stall.
+func (f *flow) resume() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.lastAck, f.inFlight = f.now(), nil
+}
+
 // stalled reports whether frames have gone out with no ack for stallAfter.
 func (f *flow) stalled() bool {
 	f.mu.Lock()
