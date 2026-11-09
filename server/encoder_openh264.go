@@ -19,7 +19,7 @@ typedef struct {
 // encoder fixes the rest (h264/README.md): screen content, low complexity,
 // quality-mode rate control, one thread, one slice.
 typedef struct {
-	int qp, refs, vui;
+	int qp, refs, vui, cabac;
 } oh_opts;
 
 static oh264 *open_encoder(int w, int h, int fps, oh_opts o) {
@@ -36,6 +36,9 @@ static oh264 *open_encoder(int w, int h, int fps, oh_opts o) {
 	p.iRCMode = RC_QUALITY_MODE; p.iTargetBitrate = 50000000; p.iMaxBitrate = UNSPECIFIED_BIT_RATE;
 	p.iMinQp = qp; p.iMaxQp = 51;
 	p.bEnableFrameSkip = 0; p.uiIntraPeriod = 0; p.iMultipleThreadIdc = 1;
+	// CABAC (High profile): a quarter fewer bits scrolling and animating
+	// than CAVLC at the same picture, for ~5% more encode CPU (bench/).
+	p.iEntropyCodingModeFlag = o.cabac != 0;
 	if (o.refs >= 0) p.iNumRefFrame = o.refs;
 	// libyuv's ARGBToI420 is BT.601, limited range: say so (as encoder.go).
 	p.sSpatialLayers[0].bVideoSignalTypePresent = o.vui != 0;
@@ -137,15 +140,15 @@ type encoder struct {
 const openH264QP = 17
 
 func newEncoder(width, height, fps int) (*encoder, error) {
-	opts := C.oh_opts{qp: openH264QP, refs: -1, vui: -1}
-	// JUMPSEAT_OH264 ("qp=24,refs=1") overrides them for the A/B harness.
+	opts := C.oh_opts{qp: openH264QP, refs: -1, vui: -1, cabac: 1}
+	// JUMPSEAT_OH264 ("qp=24,refs=1,cabac=0") overrides them for the A/B harness.
 	for _, pair := range strings.Split(os.Getenv("JUMPSEAT_OH264"), ",") {
 		key, value, _ := strings.Cut(pair, "=")
 		n, err := strconv.Atoi(value)
 		if err != nil {
 			continue
 		}
-		field := map[string]*C.int{"qp": &opts.qp, "refs": &opts.refs, "vui": &opts.vui}[key]
+		field := map[string]*C.int{"qp": &opts.qp, "refs": &opts.refs, "vui": &opts.vui, "cabac": &opts.cabac}[key]
 		if field != nil {
 			*field = C.int(n)
 		}

@@ -6,7 +6,8 @@ upstream: changes here are ordinary commits.
 
 It encodes one configuration, the streamer's, and the parameters force it
 (`param_svc.h`): screen content at low complexity, quality-mode rate control,
-CAVLC, no deblocking, one thread, one slice, one spatial and temporal layer,
+CABAC (High profile; CAVLC behind `iEntropyCodingModeFlag = 0`), no
+deblocking, one thread, one slice, one spatial and temporal layer,
 constant SPS/PPS ids, no LTR, background detection, adaptive quantization or
 frame skipping. `SetOption` takes the data format, bitrate and max bitrate.
 
@@ -23,7 +24,7 @@ bench output identical to the byte, uncapped and at 1000 kbps):
   test streams.
 - Other configurations: camera mode and its preprocessing (downsampling,
   denoising, rotation, background detection, adaptive quantization), medium
-  and high complexity, the other four rate-control modes, CABAC, deblocking,
+  and high complexity, the other four rate-control modes, deblocking,
   SPS/PPS id strategies, LTR and temporal-layer reference strategies, SVC
   enhancement layers and prefix NALs, threads and the task manager,
   multi-slice and size-limited (dynamic) slicing.
@@ -77,6 +78,16 @@ cache does not see the library change.
   motion (`md.cpp`) and no intra 4x4 in P slices (`svc_base_layer_md.cpp`).
   OpenH264's medium complexity, which kept both, took 8% fewer animation
   bits for ~30% more of its CPU. Changes the output.
+- **CABAC, back** (`set_mb_syn_cabac.cpp`, `svc_set_mb_syn_cabac.cpp`, from
+  upstream unchanged; slice loops in `svc_encode_slice.cpp`): it had been
+  removed with the configurations nothing ran; now it is the one that runs.
+  Same pictures as CAVLC (scroll and typing to the byte in PSNR; animation's
+  rate control lands 0.06 dB higher), bits on arm64: scroll 849 → 650 kbit/s
+  (−23%), animation 3471 → 2591 (−25%), typing 542 → 537 (−1%: a typing
+  stream is almost all its first IDR, −5%, and CABAC's per-macroblock skip
+  flags cost a few dozen bytes more than CAVLC's skip runs on near-empty
+  frames). Encode CPU +4–9%. BD-rate against x264 ultrafast (CAVLC):
+  scroll −41 → −57%, animation −12 → −35%, typing −28 → −29%.
 - **Motion QP and rest refinement** (`ratectl.cpp`, `wels_preprocess.cpp`,
   `svc_mode_decision.cpp`): x264's CRF rule on a floor: frames whose moving
   content (neither static nor scrolled) costs more than 64 SAD a macroblock

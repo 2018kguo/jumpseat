@@ -98,6 +98,22 @@ blurrier than the QP asked for (typing 45 dB where jumpseat gets 54).
   frame of an animation left on screen: 42.3 → 45.0 dB 100 ms after it
   stops, measured against the lossless screen in the viewer
   ([e2e/fidelity.mjs](../e2e/fidelity.mjs)); idle CPU unchanged.
+- **CABAC** (High profile) in place of CAVLC, Nov 2026: the same pictures
+  for a quarter fewer bits scrolling and animating, measured on arm64 (this
+  lab on Apple silicon, `bench/local.sh`; the x86 tables above predate it):
+
+  | | CAVLC kbit/s | CABAC kbit/s | BD-rate vs x264, CAVLC → CABAC | encode ms/frame |
+  |---|---|---|---|---|
+  | scrolling text | 849 | **650** (−23%) | −41% → **−57%** | 1.22 → 1.28 |
+  | animation | 3471 | **2591** (−25%) | −12% → **−35%** | 1.83 → 1.99 |
+  | typing | 542 | 537 (−1%) | −28% → −29% | 0.67 → 0.69 |
+
+  PSNR is unchanged (animation +0.06 dB). Under a 1 Mbit/s cap
+  (`kbps=1000 capat=1`) the bits saved go to quality: animation 35.9 → 41.0
+  dB, scrolling the same picture in 561 kbit/s instead of 730. Typing barely moves: its stream is
+  nearly all the first IDR (−5%), and on almost-empty frames CABAC's skip
+  flags cost a few dozen bytes more than CAVLC's skip runs. ms/frame: means
+  of six alternating runs on one machine.
 - **The encoder** (`h264/README.md`): screen mode's scroll search without
   its per-pixel index, the first frame at the QP asked for, x264's CRF rule
   for content in motion with refinement once it stops.
@@ -137,6 +153,7 @@ into it, so a change rebuilds in seconds.
 | `crf`, `xthreads`, `qp` | x264's CRF and threads; the QP floor |
 | `kbps` | cap the bitrate, as a slow link does |
 | `capat=F` | apply the cap at frame F, as the streamer does once flow control has measured the link (so its first IDR is never capped) |
+| `cabac=0` | CAVLC (constrained baseline) instead of the streamer's CABAC |
 | `rest=N` | N still frames after the content, to measure the quality left at rest |
 | `perframe=1` | one line per frame |
 | `usage`, `complexity`, `rc`, … | only change stock OpenH264 (`LAB_SRC=stock`); `h264/` forces its configuration |
