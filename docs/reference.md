@@ -54,7 +54,7 @@ One websocket carries the screen to the viewer and the viewer's input back.
 |---|---|
 | 0 | `1` if the frame is a keyframe, else `0` |
 | 1–8 | frame id: big-endian uint64, ms since this connection began, echoed back in `a` |
-| 9– | one H.264 access unit, Annex B, constrained baseline (`avc1.42E028`), at the size of the last `size` message |
+| 9– | one H.264 access unit, Annex B, High profile (`avc1.640029`: CABAC, no B-frames; `JUMPSEAT_OH264=cabac=0` sends constrained baseline instead, for a client that sets its own codec string), at the size of the last `size` message |
 
 Every viewer shares one encoder. Each connection starts with a `size`
 message and a keyframe, and so does every change of the screen's size. The

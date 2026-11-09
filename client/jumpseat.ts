@@ -136,8 +136,8 @@ export function canDecodeDesktop(): boolean {
   return typeof window !== "undefined" && "VideoDecoder" in window;
 }
 
-/** The codec the server sends: H.264 constrained baseline. */
-export const STREAM_CODEC = "avc1.42E028";
+/** The codec the server sends: H.264 High profile (CABAC, no B-frames). */
+export const STREAM_CODEC = "avc1.640029";
 
 /**
  * Whether this browser decodes the stream: WebCodecs exists and has an H.264
