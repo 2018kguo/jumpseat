@@ -6,3 +6,5 @@ e2e/bun.lock*
 /core
 core.*
 .bench/
+bench/compare/node_modules/
+bench/compare/package-lock.json
