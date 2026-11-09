@@ -198,6 +198,13 @@ func (h *hub) capture() (bool, error) {
 	waiting := map[*viewer]bool{}
 	greeted := map[*viewer]bool{}
 	capKbps, encoded := 0, false
+	// Once the screen is still, the encoder sharpens what it coded coarsely
+	// in motion or under a cap, but only on frames it is given: refine feeds
+	// it the still screen until a frame comes out with nothing left to code.
+	refine := time.NewTimer(time.Hour)
+	refine.Stop()
+	defer refine.Stop()
+	refines := 0
 	grab := func() error {
 		if wait := interval - time.Since(last); wait > 0 {
 			time.Sleep(wait)
@@ -219,6 +226,10 @@ func (h *hub) capture() (bool, error) {
 		encodedAt := time.Now()
 		if au == nil {
 			return nil
+		}
+		// An all-skip frame is a few dozen bytes: the picture is done.
+		if len(au) > restDone && refines < maxRefines {
+			refine.Reset(interval)
 		}
 		encoded = true
 		for _, v := range h.list() {
@@ -291,11 +302,19 @@ func (h *hub) capture() (bool, error) {
 		var err error
 		select {
 		case <-damaged:
+			refines = 0
 			if h.behind() {
 				pending = true
 				continue
 			}
 			pending = false
+			err = grab()
+		case <-refine.C:
+			refines++
+			if h.behind() {
+				pending = true
+				continue
+			}
 			err = grab()
 		case <-h.acked:
 			if pending && !h.behind() {
@@ -327,6 +346,10 @@ func (h *hub) capture() (bool, error) {
 		}
 	}
 }
+
+// restDone: a frame this small changed nothing on screen, so a still screen
+// needs no more refining. maxRefines bounds refining one still screen.
+const restDone, maxRefines = 64, 60
 
 // errResized: the screen changed size under a grab; start over at the new one.
 var errResized = errors.New("screen resized")

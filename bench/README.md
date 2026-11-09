@@ -91,6 +91,13 @@ blurrier than the QP asked for (typing 45 dB where jumpseat gets 54).
   link, key → pixel while scrolling 1.1 s → ~0.2 s at p50.
 - **Pacing cap above 60 fps**: a 60 cap dropped frames whenever Chromium's
   landed early (57 → 60.0 fps).
+- **Refine once still**: the encoder sharpens what it coded coarsely in
+  motion or under a cap only on frames it is given, and capture stopped
+  with the last change. Now the still screen is encoded again until a frame
+  comes out with nothing to code (a few dozen bytes, at most 60). The last
+  frame of an animation left on screen: 42.3 → 45.0 dB 100 ms after it
+  stops, measured against the lossless screen in the viewer
+  ([e2e/fidelity.mjs](../e2e/fidelity.mjs)); idle CPU unchanged.
 - **The encoder** (`h264/README.md`): screen mode's scroll search without
   its per-pixel index, the first frame at the QP asked for, x264's CRF rule
   for content in motion with refinement once it stops.

@@ -209,3 +209,54 @@ func rawRequest(conn *xgb.Conn, request []byte, reply bool) ([]byte, error) {
 	}
 	return cookie.Reply()
 }
+
+// primeScrolls keeps an agent's first scroll in a window from being lost.
+// Chromium takes the first scroll valuator it sees after the pointer enters
+// one of its windows as a baseline, so a wheel click from xdotool (which the
+// patched Xvfb turns into scroll axis motion) scrolled nothing right after a
+// mousemove. Whenever the pointer crosses into or out of a top-level window,
+// this sends a zero step, which becomes that baseline instead. A viewer's own
+// scrolls are primed per gesture (scroller); this is for agents, which drive
+// X directly. Nothing runs while the pointer stays put.
+func primeScrolls(display string) {
+	conn, err := xgb.NewConnDisplay(display)
+	if err != nil {
+		log.Printf("scroll priming: %v", err)
+		return
+	}
+	defer conn.Close()
+	if err := xtest.Init(conn); err != nil {
+		return
+	}
+	smooth, _ := querySmoothScroll(conn)
+	if smooth == nil {
+		return // wheel clicks only: nothing to prime
+	}
+	root := xproto.Setup(conn).DefaultScreen(conn).Root
+	watch := func(w xproto.Window) {
+		xproto.ChangeWindowAttributes(conn, w, xproto.CwEventMask,
+			[]uint32{xproto.EventMaskEnterWindow | xproto.EventMaskLeaveWindow})
+	}
+	xproto.ChangeWindowAttributes(conn, root, xproto.CwEventMask, []uint32{xproto.EventMaskSubstructureNotify})
+	if tree, err := xproto.QueryTree(conn, root).Reply(); err == nil {
+		for _, w := range tree.Children {
+			watch(w)
+		}
+	}
+	for {
+		ev, err := conn.WaitForEvent()
+		if ev == nil && err == nil {
+			return // connection closed
+		}
+		switch e := ev.(type) {
+		case xproto.CreateNotifyEvent:
+			watch(e.Window)
+		case xproto.MapNotifyEvent:
+			// A window that opens under the pointer gets no crossing until
+			// the pointer moves: prime once it is likely listening.
+			time.AfterFunc(500*time.Millisecond, func() { smooth.send(conn, 0, 0) })
+		case xproto.EnterNotifyEvent, xproto.LeaveNotifyEvent:
+			smooth.send(conn, 0, 0)
+		}
+	}
+}
