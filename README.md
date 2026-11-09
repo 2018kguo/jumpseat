@@ -49,7 +49,7 @@ The method, the raw numbers and what did not help are in
 
 ## Try it
 
-[A recorded session](https://2018kguo.github.io/jumpseat/) plays in your
+[A recorded session](https://kguo.dev/jumpseat/) plays in your
 browser through jumpseat's own client. To run it, the demo image has Xvfb, a
 window manager, Chromium and jumpseat (amd64 and arm64):
 
