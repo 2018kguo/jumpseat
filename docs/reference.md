@@ -85,9 +85,10 @@ Text messages, JSON:
 | `w` | `sx`, `sy` (desktop pixels), or `dx`, `dy` (whole wheel clicks, at most 20 a message; the bundled client sends only `sx`, `sy`) | A scroll: pixels from a trackpad, wheel or two fingers, or a wheel step. Pixels scroll smoothly on an Xvfb with the [scroll patch](../docker/patches/xorg-server-xtest-scroll.patch) and add up into wheel clicks on any other X server. |
 | `c` | `text` (≤ 64 KiB) | Paste this into the desktop's clipboard. |
 | `r` | | Release every key and button this viewer holds. |
+| `v` | `hidden` | The page was hidden (a background tab, minimized) or shown again. A hidden viewer gets no frames, so nothing is encoded for it; shown, it gets a keyframe. While hidden, it may be silent for 3 minutes. |
 | `z` | `w`, `h` | Resize the desktop to this size (with `--resize`; otherwise ignored). The server rounds it to a size the screen can take. |
 
-Every message except `a`, `h`, `z` and `r` counts as the user driving; `r`
+Every message except `a`, `h`, `z`, `v` and `r` counts as the user driving; `r`
 ends it at once, so the agent need not wait out the 5 s.
 
 ## Browser client

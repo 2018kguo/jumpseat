@@ -53,6 +53,12 @@ func wake(c chan struct{}) {
 
 func (h *hub) join(v *viewer) {
 	h.mu.Lock()
+	select {
+	case <-v.gone:
+		h.mu.Unlock()
+		return
+	default:
+	}
 	h.viewers[v] = true
 	if !h.running {
 		h.running = true
@@ -229,7 +235,11 @@ func (h *hub) capture() (bool, error) {
 		}
 		// An all-skip frame is a few dozen bytes: the picture is done.
 		if len(au) > restDone && refines < maxRefines {
-			refine.Reset(interval)
+			if refines == 0 {
+				refine.Reset(restDelay) // still yet, or between an animation's frames?
+			} else {
+				refine.Reset(interval)
+			}
 		}
 		encoded = true
 		for _, v := range h.list() {
@@ -347,9 +357,15 @@ func (h *hub) capture() (bool, error) {
 	}
 }
 
-// restDone: a frame this small changed nothing on screen, so a still screen
-// needs no more refining. maxRefines bounds refining one still screen.
-const restDone, maxRefines = 64, 60
+// restDelay: this long without a change and the screen is still (an
+// animation's frames are 16 ms apart). restDone: a frame this small changed
+// nothing on screen, so it needs no more refining. maxRefines bounds
+// refining one still screen.
+const (
+	restDelay  = 100 * time.Millisecond
+	restDone   = 64
+	maxRefines = 60
+)
 
 // errResized: the screen changed size under a grab; start over at the new one.
 var errResized = errors.New("screen resized")

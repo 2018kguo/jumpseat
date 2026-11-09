@@ -484,6 +484,13 @@ export function connectDesktopStream(
     event.preventDefault();
   };
   document.addEventListener("paste", onPaste);
+  // A background tab gets no frames: the server stops encoding for it and
+  // sends a keyframe when it is shown again.
+  const onVisibility = () => {
+    clearTimeout(firstFrame);
+    sendAlways({ t: "v", hidden: document.hidden });
+  };
+  document.addEventListener("visibilitychange", onVisibility);
 
   return {
     close() {
@@ -496,6 +503,7 @@ export function connectDesktopStream(
         decoder.close();
       }
       document.removeEventListener("paste", onPaste);
+      document.removeEventListener("visibilitychange", onVisibility);
       canvas.remove();
       pointer.remove();
     },

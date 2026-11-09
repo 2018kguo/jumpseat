@@ -165,7 +165,14 @@ func serve(ws *websocket.Conn, h *hub) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
-		readInput(ctx, ws, newKeyboard(conn, root, h.display), v.f, h)
+		readInput(ctx, ws, newKeyboard(conn, root, h.display), v.f, h, func(shown bool) {
+			if shown {
+				v.f.resume()
+				h.join(v)
+			} else {
+				h.leave(v)
+			}
+		})
 		cancel()
 	}()
 
@@ -192,7 +199,8 @@ func serve(ws *websocket.Conn, h *hub) {
 	}
 
 	h.join(v)
-	defer h.leave(v)
+	// Gone before it leaves: a late "v" from the input reader cannot join it again.
+	defer func() { v.fail(); h.leave(v) }()
 	// The cursor's own image, so the viewer shows an I-beam over text and a
 	// hand over links instead of a fixed arrow (Xvfb draws no cursor into
 	// frames). Sent again whenever it changes.
