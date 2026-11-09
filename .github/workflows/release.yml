@@ -1,0 +1,43 @@
+name: release
+on:
+  push:
+    tags: ['v*']
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - { arch: amd64, runner: ubuntu-24.04 }
+          - { arch: arm64, runner: ubuntu-24.04-arm }
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - name: image
+        run: |
+          docker build -f docker/Dockerfile -t ghcr.io/${{ github.repository }}:${{ github.ref_name }}-${{ matrix.arch }} .
+          docker push ghcr.io/${{ github.repository }}:${{ github.ref_name }}-${{ matrix.arch }}
+      - name: binary (needs libyuv at runtime, e.g. Debian's libyuv0)
+        run: |
+          docker build -f docker/Dockerfile --target bin -o out .
+          tar -C out -czf jumpseat-linux-${{ matrix.arch }}.tar.gz jumpseat
+          gh release view ${{ github.ref_name }} >/dev/null 2>&1 || gh release create ${{ github.ref_name }} --generate-notes || true
+          gh release upload ${{ github.ref_name }} jumpseat-linux-${{ matrix.arch }}.tar.gz --clobber
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+  manifest:
+    needs: build
+    runs-on: ubuntu-24.04
+    steps:
+      - run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+      - run: |
+          i=ghcr.io/${{ github.repository }}
+          docker buildx imagetools create -t $i:${{ github.ref_name }} -t $i:latest \
+            $i:${{ github.ref_name }}-amd64 $i:${{ github.ref_name }}-arm64

@@ -18,6 +18,10 @@ COPY server server
 COPY --from=client /out/jumpseat.js server/web/jumpseat.js
 RUN cd server && go test ./... && go build -ldflags='-s -w' -o /jumpseat .
 
+# The bare binary, for releases: docker build --target bin -o out .
+FROM scratch AS bin
+COPY --from=server /jumpseat /jumpseat
+
 # The wallpaper, rendered here so the runtime image needs no SVG renderer.
 FROM debian:bookworm-slim AS desktop
 RUN apt-get update && apt-get install -y --no-install-recommends librsvg2-bin fonts-dejavu-core
