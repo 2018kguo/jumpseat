@@ -61,7 +61,11 @@ func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, h 
 	hidden := false
 	for ctx.Err() == nil {
 		var raw []byte
-		_ = ws.SetReadDeadline(time.Now().Add(map[bool]time.Duration{false: viewerSilence, true: hiddenSilence}[hidden]))
+		silence := viewerSilence
+		if hidden {
+			silence = hiddenSilence
+		}
+		_ = ws.SetReadDeadline(time.Now().Add(silence))
 		if err := websocket.Message.Receive(ws, &raw); err != nil {
 			return
 		}

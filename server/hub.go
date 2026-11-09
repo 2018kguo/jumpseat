@@ -60,6 +60,7 @@ func (h *hub) join(v *viewer) {
 	default:
 	}
 	h.viewers[v] = true
+	v.joined.Store(true)
 	if !h.running {
 		h.running = true
 		go h.run()
@@ -280,7 +281,7 @@ func (h *hub) capture() (bool, error) {
 			}
 		}
 		for _, v := range current {
-			if !greeted[v] {
+			if v.joined.Swap(false) || !greeted[v] {
 				greeted[v], waiting[v], fresh = true, true, true
 				if v.text(map[string]any{"t": "size", "w": width, "h": height}) != nil {
 					v.fail()
@@ -299,6 +300,7 @@ func (h *hub) capture() (bool, error) {
 			}
 			enc.close()
 			enc, encoded = next, false
+			refines, smallest, stuck = 0, 0, 0 // the new keyframe refines too
 			if capKbps > 0 {
 				enc.setMaxKbps(capKbps)
 			}

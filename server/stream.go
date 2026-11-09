@@ -17,6 +17,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/jezek/xgb"
@@ -45,6 +46,9 @@ type viewer struct {
 	// link, when set, is the benchmarks' slow link: messages queue without
 	// bound and leave at its rate, like a router with a deep buffer.
 	link *slowLink
+	// joined: (re)joined the hub since the pipeline last greeted it; a viewer
+	// shown again after hiding missed frames and needs a keyframe.
+	joined atomic.Bool
 }
 
 func (v *viewer) fail() { v.goneOnce.Do(func() { close(v.gone) }) }
@@ -162,6 +166,10 @@ func serve(ws *websocket.Conn, h *hub) {
 		v.link = newSlowLink(v, kbps)
 		defer v.link.close()
 	}
+	// Joined before the input reader starts, so a hide it reads leaves after.
+	h.join(v)
+	// Gone before it leaves: a late "v" from the input reader cannot join it again.
+	defer func() { v.fail(); h.leave(v) }()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
@@ -198,9 +206,6 @@ func serve(ws *websocket.Conn, h *hub) {
 		xfixes.SelectSelectionInput(conn, root, clipboard.Atom, xfixes.SelectionEventMaskSetSelectionOwner)
 	}
 
-	h.join(v)
-	// Gone before it leaves: a late "v" from the input reader cannot join it again.
-	defer func() { v.fail(); h.leave(v) }()
 	// The cursor's own image, so the viewer shows an I-beam over text and a
 	// hand over links instead of a fixed arrow (Xvfb draws no cursor into
 	// frames). Sent again whenever it changes.

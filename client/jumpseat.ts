@@ -251,7 +251,7 @@ export function connectDesktopStream(
     }
   };
   const heartbeat = setInterval(() => sendAlways({ t: "h" }), HEARTBEAT_MS);
-  const firstFrame = setTimeout(drop, FIRST_FRAME_MS);
+  let firstFrame = setTimeout(drop, FIRST_FRAME_MS);
 
   socket.addEventListener("message", (event) => {
     if (typeof event.data === "string") {
@@ -487,10 +487,20 @@ export function connectDesktopStream(
   // A background tab gets no frames: the server stops encoding for it and
   // sends a keyframe when it is shown again.
   const onVisibility = () => {
-    clearTimeout(firstFrame);
     sendAlways({ t: "v", hidden: document.hidden });
+    // No frames come while hidden: the first-frame watchdog waits until shown.
+    clearTimeout(firstFrame);
+    if (!document.hidden && !connected && !closed) {
+      firstFrame = setTimeout(drop, FIRST_FRAME_MS);
+    }
   };
   document.addEventListener("visibilitychange", onVisibility);
+  // A page opened in a background tab says so as soon as it can.
+  socket.addEventListener("open", () => {
+    if (document.hidden) {
+      onVisibility();
+    }
+  });
 
   return {
     close() {
