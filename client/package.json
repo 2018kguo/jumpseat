@@ -2,13 +2,38 @@
   "name": "@2018kguo/jumpseat",
   "version": "0.1.0",
   "description": "Watch and take over a computer-use agent's desktop: the browser client for jumpseat (H.264 over a websocket, WebCodecs).",
+  "keywords": [
+    "computer-use",
+    "ai-agents",
+    "remote-desktop",
+    "webcodecs",
+    "h264",
+    "websocket",
+    "human-in-the-loop"
+  ],
+  "homepage": "https://github.com/2018kguo/jumpseat#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/2018kguo/jumpseat.git",
+    "directory": "client"
+  },
+  "license": "MIT",
   "type": "module",
   "main": "dist/jumpseat.js",
   "types": "dist/jumpseat.d.ts",
-  "files": ["dist"],
+  "exports": {
+    ".": {
+      "types": "./dist/jumpseat.d.ts",
+      "default": "./dist/jumpseat.js"
+    }
+  },
+  "sideEffects": false,
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "scripts": {
     "build": "bun build jumpseat.ts --format=esm --target=browser --outfile dist/jumpseat.js && bunx tsc jumpseat.ts --declaration --emitDeclarationOnly --target es2022 --lib es2022,dom --outDir dist",
     "build:demo": "bun build jumpseat.ts --format=esm --target=browser --outfile ../server/web/jumpseat.js"
-  },
-  "license": "MIT"
+  }
 }

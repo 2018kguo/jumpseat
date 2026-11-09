@@ -3,7 +3,8 @@
 // person, who takes over and hands it back.
 //   docker run -d --name jumpseat-film -p 18090:8080 -e JUMPSEAT_TOKEN=secret -e JUMPSEAT_RESIZE=1 jumpseat
 //   JUMPSEAT_URL=http://localhost:18090 JUMPSEAT_CONTAINER=jumpseat-film node film.mjs out-dir
-// Writes Chrome's screencast frames and out-dir/frames.txt, then, at the
+// Writes Chrome's screencast frames, out-dir/frames.txt and the stream the
+// viewer received (out-dir/stream.bin, for docs/demo's replay), then, at the
 // screencast's own rate (about 50 fps while things move):
 //   ffmpeg -f concat -i out-dir/frames.txt -vf fps=50 out-dir/f%05d.png
 //   img2webp -lossy -q 80 -m 4 -d 20 -loop 0 out-dir/f*.png -o docs/film.webp
@@ -41,6 +42,14 @@ cdp.on("Page.screencastFrame", ({ data, metadata, sessionId }) => {
   writeFileSync(`${out}/${file}`, Buffer.from(data, "base64"));
   frames.push({ file, at: metadata.timestamp });
   cdp.send("Page.screencastFrameAck", { sessionId }).catch(() => {});
+});
+// Every websocket message the viewer receives, timed: docs/demo replays them
+// through the real client. Records: u32 ms, u8 binary, u32 length, payload.
+await cdp.send("Network.enable");
+const stream = [];
+cdp.on("Network.webSocketFrameReceived", ({ timestamp, response }) => {
+  const binary = response.opcode === 2;
+  stream.push({ at: timestamp, binary, data: binary ? Buffer.from(response.payloadData, "base64") : Buffer.from(response.payloadData) });
 });
 // The recording has no cursor of its own: draw the person's, an arrow.
 await page.addInitScript(() => {
@@ -132,6 +141,14 @@ frames.forEach((frame, i) => {
 });
 list.push(`file ${frames.at(-1).file}`);
 writeFileSync(`${out}/frames.txt`, `${list.join("\n")}\n`);
+const records = stream.map(({ at, binary, data }) => {
+  const head = Buffer.alloc(9);
+  head.writeUInt32LE(Math.round((at - stream[0].at) * 1000), 0);
+  head.writeUInt8(binary ? 1 : 0, 4);
+  head.writeUInt32LE(data.length, 5);
+  return Buffer.concat([head, data]);
+});
+writeFileSync(`${out}/stream.bin`, Buffer.concat(records));
 console.log(`${frames.length} frames, ${(frames.at(-1).at - frames[0].at).toFixed(1)} s`);
 await context.close();
 await browser.close();
