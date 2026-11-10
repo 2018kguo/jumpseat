@@ -213,7 +213,9 @@ func (h *hub) capture() (bool, error) {
 	defer refine.Stop()
 	// smallest is the smallest refining frame of this still screen, stuck
 	// how many refining frames since one beat it: refining that has stopped
-	// gaining (the same blocks coded again each frame) ends.
+	// gaining ends. It stops gaining on blocks whose chroma the QP cannot
+	// code exactly: the encoder's static check compares chroma with the
+	// reconstruction, so they are coded again each frame (bench/README.md).
 	refines, smallest, stuck := 0, 0, 0
 	grab := func() error {
 		if wait := interval - time.Since(last); wait > 0 {

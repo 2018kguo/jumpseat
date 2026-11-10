@@ -127,6 +127,14 @@ blurrier than the QP asked for (typing 45 dB where jumpseat gets 54).
   frame of an animation left on screen: 42.3 → 45.0 dB 100 ms after it
   stops, measured against the lossless screen in the viewer
   ([e2e/fidelity.mjs](../e2e/fidelity.mjs)); idle CPU unchanged.
+  Some still screens never come out empty, on x86 and arm64 alike: the
+  static-block check compares chroma with the reconstruction, not the
+  reference's source, so a block whose chroma the QP cannot code exactly is
+  coded again every frame (anim at rest: 257 bytes a frame, forever). The
+  streamer stops after 3 frames that gain nothing. Comparing with the source
+  instead settles to 43 bytes, but costs BD-rate in motion (anim −35.1% →
+  −33.2%) and 0.5 dB at rest; same-QP refinement until a block codes clean
+  does not converge either (luma cycles too).
 - **CABAC** (High profile) in place of CAVLC, Nov 2026: the same pictures
   for a quarter fewer bits scrolling and animating, measured on arm64 (this
   lab on Apple silicon, `bench/local.sh`; the x86 tables above are with CABAC):
