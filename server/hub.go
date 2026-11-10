@@ -3,9 +3,7 @@ package main
 import (
 	"errors"
 	"log"
-	"os"
 	"slices"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -160,13 +158,7 @@ func (h *hub) capture() (bool, error) {
 		return false, err
 	}
 	defer release()
-	// The rate the encoder budgets for: Chromium's 60 Hz, not the pacing
-	// cap above it, so a bitrate cap allots each frame what a real frame gets.
-	budgetFPS := encoderFPS
-	if value, err := strconv.Atoi(os.Getenv("JUMPSEAT_ENCODER_FPS")); err == nil && value > 0 {
-		budgetFPS = value // A/B runs
-	}
-	enc, err := newEncoder(width, height, budgetFPS)
+	enc, err := newEncoder(width, height)
 	if err != nil {
 		return false, err
 	}
@@ -197,7 +189,7 @@ func (h *hub) capture() (bool, error) {
 
 	start := time.Now()
 	var last time.Time
-	interval := time.Second / time.Duration(fpsCap())
+	interval := time.Second / maxFPS
 	stages := &stageTimes{since: time.Now()}
 	defer stages.flush()
 	// Viewers that have not had a keyframe of this encoder: they get the
@@ -213,7 +205,9 @@ func (h *hub) capture() (bool, error) {
 	defer refine.Stop()
 	// smallest is the smallest refining frame of this still screen, stuck
 	// how many refining frames since one beat it: refining that has stopped
-	// gaining (the same blocks coded again each frame) ends.
+	// gaining ends. It stops gaining on blocks whose chroma the QP cannot
+	// code exactly: the encoder's static check compares chroma with the
+	// reconstruction, so they are coded again each frame (bench/README.md).
 	refines, smallest, stuck := 0, 0, 0
 	grab := func() error {
 		if wait := interval - time.Since(last); wait > 0 {
@@ -294,7 +288,7 @@ func (h *hub) capture() (bool, error) {
 		// A new encoder's first frame is a keyframe; the viewers already
 		// watching decode it like any other.
 		if encoded {
-			next, err := newEncoder(width, height, budgetFPS)
+			next, err := newEncoder(width, height)
 			if err != nil {
 				return err
 			}
@@ -379,7 +373,7 @@ const (
 
 // restDone is the size under which a frame changed nothing on screen, so a
 // still screen needs no more refining: an all-skip frame is headers plus a
-// skip flag a macroblock (61 bytes at 1280x800 with CABAC, 36 with CAVLC).
+// skip flag a macroblock (61 bytes at 1280x800).
 func restDone(width, height int) int {
 	return 32 + width*height/(256*64)
 }

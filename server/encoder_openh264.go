@@ -15,14 +15,9 @@ typedef struct {
 	uint8_t *i420;
 } oh264;
 
-// Tunables, each -1 for the encoder's own default (JUMPSEAT_OH264). The
-// encoder fixes the rest (h264/README.md): screen content, low complexity,
-// quality-mode rate control, one thread, one slice.
-typedef struct {
-	int qp, refs, vui, cabac;
-} oh_opts;
-
-static oh264 *open_encoder(int w, int h, int fps, oh_opts o) {
+// The encoder fixes the rest (h264/README.md): screen content, low
+// complexity, quality-mode rate control, one thread, one slice.
+static oh264 *open_encoder(int w, int h, int fps, int qp) {
 	oh264 *e = calloc(1, sizeof(oh264));
 	if (WelsCreateSVCEncoder(&e->enc) != 0) return 0;
 	SEncParamExt p;
@@ -32,16 +27,13 @@ static oh264 *open_encoder(int w, int h, int fps, oh_opts o) {
 	// Quality-led rate control with no bitrate pressure, so frames go at
 	// o.qp the way x264's crf does; set_max_kbps adds the pressure on a slow
 	// link (the QP may rise up to 51).
-	int qp = o.qp;
 	p.iRCMode = RC_QUALITY_MODE; p.iTargetBitrate = 50000000; p.iMaxBitrate = UNSPECIFIED_BIT_RATE;
 	p.iMinQp = qp; p.iMaxQp = 51;
 	p.bEnableFrameSkip = 0; p.uiIntraPeriod = 0; p.iMultipleThreadIdc = 1;
-	// CABAC (High profile): a quarter fewer bits scrolling and animating
-	// than CAVLC at the same picture, for ~5% more encode CPU (bench/).
-	p.iEntropyCodingModeFlag = o.cabac != 0;
-	if (o.refs >= 0) p.iNumRefFrame = o.refs;
-	// libyuv's ARGBToI420 is BT.601, limited range: say so (as encoder.go).
-	p.sSpatialLayers[0].bVideoSignalTypePresent = o.vui != 0;
+	// CABAC (High profile), the encoder's only entropy coder.
+	p.iEntropyCodingModeFlag = 1;
+	// libyuv's ARGBToI420 is BT.601, limited range: say so.
+	p.sSpatialLayers[0].bVideoSignalTypePresent = true;
 	p.sSpatialLayers[0].bFullRange = false;
 	p.sSpatialLayers[0].bColorDescriptionPresent = true;
 	// SMPTE 170M, as x264 writes it: BT.470BG's transfer is gamma 2.8, and
@@ -118,9 +110,6 @@ import "C"
 
 import (
 	"errors"
-	"os"
-	"strconv"
-	"strings"
 	"time"
 	"unsafe"
 )
@@ -139,21 +128,13 @@ type encoder struct {
 // and less CPU than x264 ultrafast on desktop content.
 const openH264QP = 17
 
-func newEncoder(width, height, fps int) (*encoder, error) {
-	opts := C.oh_opts{qp: openH264QP, refs: -1, vui: -1, cabac: 1}
-	// JUMPSEAT_OH264 ("qp=24,refs=1,cabac=0") overrides them for the A/B harness.
-	for _, pair := range strings.Split(os.Getenv("JUMPSEAT_OH264"), ",") {
-		key, value, _ := strings.Cut(pair, "=")
-		n, err := strconv.Atoi(value)
-		if err != nil {
-			continue
-		}
-		field := map[string]*C.int{"qp": &opts.qp, "refs": &opts.refs, "vui": &opts.vui, "cabac": &opts.cabac}[key]
-		if field != nil {
-			*field = C.int(n)
-		}
-	}
-	e := C.open_encoder(C.int(width), C.int(height), C.int(fps), opts)
+// encoderFPS is the frame rate the rate control budgets for: Chromium's
+// 60 Hz, not the pacing cap above it, so a bitrate cap allots each frame
+// what a real frame gets.
+const encoderFPS = 60
+
+func newEncoder(width, height int) (*encoder, error) {
+	e := C.open_encoder(C.int(width), C.int(height), encoderFPS, openH264QP)
 	if e == nil {
 		return nil, errors.New("openh264 did not open")
 	}

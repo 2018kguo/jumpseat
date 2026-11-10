@@ -53,7 +53,6 @@
 #define PARA_SET_TYPE_SUBSETSPS         1
 #define PARA_SET_TYPE_PPS               2
 
-#define MAX_VERTICAL_MV_RANGE           1024  //TODO, for allocate enough memory for transpose
 #define MAX_FRAME_RATE                  60      // maximal frame rate to support
 #define MIN_FRAME_RATE                  1       // minimal frame rate need support
 
@@ -153,7 +152,6 @@ enum {
   ENC_RETURN_CORRECTED = 0x08, //unexpected value but corrected by encoder
   ENC_RETURN_INVALIDINPUT = 0x10, //invalid input
   ENC_RETURN_MEMOVERFLOWFOUND = 0x20,
-  ENC_RETURN_VLCOVERFLOWFOUND = 0x40,
   ENC_RETURN_KNOWN_ISSUE = 0x80
 };
 //TODO: need to complete the return checking in encoder and fill in more types if needed

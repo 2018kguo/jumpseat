@@ -44,6 +44,7 @@
 #include "svc_base_layer_md.h"
 #include "svc_encode_mb.h"
 #include "svc_set_mb_syn.h"
+#include "set_mb_syn_cabac.h"
 #include "decode_mb_aux.h"
 #include "svc_mode_decision.h"
 
@@ -242,7 +243,7 @@ void WelsSliceHeaderWrite (sWelsEncCtx* pCtx, SBitStringAux* pBs, SDqLayer* pCur
     WriteRefPicMarking (pBs, pSliceHeader, pNalHead);
   }
 
-  if (pPps->bEntropyCodingModeFlag && pSliceHeader->eSliceType  != I_SLICE) {
+  if (pSliceHeader->eSliceType  != I_SLICE) {
     BsWriteUE (pBs, pSlice->iCabacInitIdc);
   }
   BsWriteSE (pBs, pSliceHeader->iSliceQpDelta);       /* pSlice qp delta */
@@ -345,10 +346,6 @@ void OutputPMbWithoutConstructCsRsNoCopy (sWelsEncCtx* pCtx, SDqLayer* pDq, SSli
   }
 }
 
-void UpdateQpForOverflow (SMB* pCurMb, uint8_t kuiChromaQpIndexOffset) {
-  pCurMb->uiLumaQp += DELTA_QP;
-  pCurMb->uiChromaQp = g_kuiChromaQpTable[CLIP3_QP_0_51 (pCurMb->uiLumaQp + kuiChromaQpIndexOffset)];
-}
 // for intra non-dynamic pSlice
 //encapsulate two kinds of reconstruction:
 //first. store base or highest Dependency Layer with only one quality (without CS RS reconstruction)
@@ -364,38 +361,23 @@ int32_t WelsISliceMdEnc (sWelsEncCtx* pEncCtx, SSlice* pSlice) { //pMd + encodin
   const int32_t kiTotalNumMb    = pCurLayer->iMbWidth * pCurLayer->iMbHeight;
   int32_t iCurMbIdx             = 0, iNumMbCoded = 0;
   const int32_t kiSliceIdx      = pSlice->iSliceIdx;
-  const uint8_t kuiChromaQpIndexOffset = pCurLayer->sLayerInfo.pPpsP->uiChromaQpIndexOffset;
 
   SWelsMD sMd;
   int32_t iEncReturn = ENC_RETURN_SUCCESS;
-  SDynamicSlicingStack sDss;
-  const bool kbCabac = pEncCtx->pSvcParam->iEntropyCodingModeFlag != 0;
-  if (kbCabac) {
-    WelsInitSliceCabac (pEncCtx, pSlice);
-    sDss.pRestoreBuffer = NULL;
-    sDss.iStartPos = sDss.iCurrentPos = 0;
-  }
+  WelsInitSliceCabac (pEncCtx, pSlice);
   for (; ;) {
-    if (!kbCabac)
-      pEncCtx->pFuncList->pfStashMBStatus (&sDss, pSlice, 0);
     iCurMbIdx = iNextMbIdx;
     pCurMb = &pMbList[ iCurMbIdx ];
 
     WelsRcMbInitGom (pEncCtx, pCurMb, pSlice);
     WelsMdIntraInit (pEncCtx, pCurMb, pMbCache, kiSliceFirstMbXY);
 
-TRY_REENCODING:
     sMd.iLambda = g_kiQpCostTable[pCurMb->uiLumaQp];
     WelsMdIntraMb (pEncCtx, &sMd, pCurMb, pMbCache);
     UpdateNonZeroCountCache (pCurMb, pMbCache);
 
 
-    iEncReturn = pEncCtx->pFuncList->pfWelsSpatialWriteMbSyn (pEncCtx, pSlice, pCurMb);
-    if (!kbCabac && (iEncReturn == ENC_RETURN_VLCOVERFLOWFOUND) && (pCurMb->uiLumaQp < 50)) {
-      pEncCtx->pFuncList->pfStashPopMBStatus (&sDss, pSlice);
-      UpdateQpForOverflow (pCurMb, kuiChromaQpIndexOffset);
-      goto TRY_REENCODING;
-    }
+    iEncReturn = WelsSpatialWriteMbSynCabac (pEncCtx, pSlice, pCurMb);
     if (ENC_RETURN_SUCCESS != iEncReturn)
       return iEncReturn;
 
@@ -820,7 +802,8 @@ int32_t WelsCodeOneSlice (sWelsEncCtx* pEncCtx, SSlice* pCurSlice, const int32_t
   if (ENC_RETURN_SUCCESS != iEncReturn)
     return iEncReturn;
 
-  WelsWriteSliceEndSyn (pCurSlice, pEncCtx->pSvcParam->iEntropyCodingModeFlag != 0);
+  WelsCabacEncodeFlush (&pCurSlice->sCabacCtx);
+  pBs->pCurBuf = WelsCabacEncodeGetPtr (&pCurSlice->sCabacCtx);
 
   return ENC_RETURN_SUCCESS;
 }
@@ -842,7 +825,6 @@ inline void WelsInitInterMDStruc (const SMB* pCurMb, uint16_t* pMvdCostTable, co
 // for inter non-dynamic pSlice
 int32_t WelsMdInterMbLoop (sWelsEncCtx* pEncCtx, SSlice* pSlice, void* pWelsMd, const int32_t kiSliceFirstMbXY) {
   SWelsMD* pMd          = (SWelsMD*)pWelsMd;
-  SBitStringAux* pBs    = pSlice->pSliceBsa;
   SDqLayer* pCurLayer   = pEncCtx->pCurDqLayer;
   SMbCache* pMbCache    = &pSlice->sMbCacheInfo;
   SMB* pMbList          = pCurLayer->sMbDataP;
@@ -854,19 +836,9 @@ int32_t WelsMdInterMbLoop (sWelsEncCtx* pEncCtx, SSlice* pSlice, void* pWelsMd, 
   const int32_t kiMvdInterTableStride = pEncCtx->iMvdCostTableStride;
   uint16_t* pMvdCostTable = &pEncCtx->pMvdCostTable[pEncCtx->iMvdCostTableSize];
   const int32_t kiSliceIdx = pSlice->iSliceIdx;
-  const uint8_t kuiChromaQpIndexOffset = pCurLayer->sLayerInfo.pPpsP->uiChromaQpIndexOffset;
   int32_t iEncReturn = ENC_RETURN_SUCCESS;
-  SDynamicSlicingStack sDss;
-  const bool kbCabac = pEncCtx->pSvcParam->iEntropyCodingModeFlag != 0;
-  if (kbCabac) {
-    WelsInitSliceCabac (pEncCtx, pSlice);
-    sDss.pRestoreBuffer = NULL;
-    sDss.iStartPos = sDss.iCurrentPos = 0;
-  }
-  pSlice->iMbSkipRun = 0;
+  WelsInitSliceCabac (pEncCtx, pSlice);
   for (;;) {
-    if (!kbCabac)
-      pEncCtx->pFuncList->pfStashMBStatus (&sDss, pSlice, pSlice->iMbSkipRun);
     //point to current pMb
     iCurMbIdx = iNextMbIdx;
     pCurMb = &pMbList[ iCurMbIdx ];
@@ -879,7 +851,6 @@ int32_t WelsMdInterMbLoop (sWelsEncCtx* pEncCtx, SSlice* pSlice, void* pWelsMd, 
     WelsMdIntraInit (pEncCtx, pCurMb, pMbCache, kiSliceFirstMbXY);
     WelsMdInterInit (pEncCtx, pSlice, pCurMb, kiSliceFirstMbXY);
 
-TRY_REENCODING:
     WelsInitInterMDStruc (pCurMb, pMvdCostTable, kiMvdInterTableStride, pMd);
     pEncCtx->pFuncList->pfInterMd (pEncCtx, pMd, pSlice, pCurMb, pMbCache);
     //mb_qp
@@ -895,12 +866,7 @@ TRY_REENCODING:
 
     //step (6): begin to write bit stream; if the pSlice size is controlled, the writing may be skipped
 
-    iEncReturn = pEncCtx->pFuncList->pfWelsSpatialWriteMbSyn (pEncCtx, pSlice, pCurMb);
-    if (!kbCabac && iEncReturn == ENC_RETURN_VLCOVERFLOWFOUND && (pCurMb->uiLumaQp < 50)) {
-      pSlice->iMbSkipRun = pEncCtx->pFuncList->pfStashPopMBStatus (&sDss, pSlice);
-      UpdateQpForOverflow (pCurMb, kuiChromaQpIndexOffset);
-      goto TRY_REENCODING;
-    }
+    iEncReturn = WelsSpatialWriteMbSynCabac (pEncCtx, pSlice, pCurMb);
     if (ENC_RETURN_SUCCESS != iEncReturn)
       return iEncReturn;
 
@@ -920,10 +886,6 @@ TRY_REENCODING:
     if (iNextMbIdx == -1 || iNextMbIdx >= kiTotalNumMb || iNumMbCoded >= kiTotalNumMb) {
       break;
     }
-  }
-
-  if (pSlice->iMbSkipRun) {
-    BsWriteUE (pBs, pSlice->iMbSkipRun);
   }
 
   return iEncReturn;

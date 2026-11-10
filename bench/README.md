@@ -88,9 +88,12 @@ against x264 ultrafast on one thread, the median of three alternating runs
 
 | | bits vs x264 | CPU vs x264 |
 |---|---|---|
-| scrolling text | **−61%** | **0.80x** |
-| typing | **−34%** | **0.67x** |
-| animation | **−36%** | **0.91x** |
+| scrolling text | **−61%** | **0.80x** (0.92x) |
+| typing | **−34%** | **0.67x** (0.73x) |
+| animation | **−36%** | **0.91x** (1.01x) |
+
+In parentheses: the same measurement on another sandbox, Nov 10 (the
+encoder no slower, by `ab`; how much x264 gains varies by host).
 
 At the streamer's settings (QP floor 17 against x264 crf 25), and once the
 motion stops (`rest=60`: the quality left on screen; CABAC codes the same
@@ -127,6 +130,14 @@ blurrier than the QP asked for (typing 45 dB where jumpseat gets 54).
   frame of an animation left on screen: 42.3 → 45.0 dB 100 ms after it
   stops, measured against the lossless screen in the viewer
   ([e2e/fidelity.mjs](../e2e/fidelity.mjs)); idle CPU unchanged.
+  Some still screens never come out empty, on x86 and arm64 alike: the
+  static-block check compares chroma with the reconstruction, not the
+  reference's source, so a block whose chroma the QP cannot code exactly is
+  coded again every frame (anim at rest: 257 bytes a frame, forever). The
+  streamer stops after 3 frames that gain nothing. Comparing with the source
+  instead settles to 43 bytes, but costs BD-rate in motion (anim −35.1% →
+  −33.2%) and 0.5 dB at rest; same-QP refinement until a block codes clean
+  does not converge either (luma cycles too).
 - **CABAC** (High profile) in place of CAVLC, Nov 2026: the same pictures
   for a quarter fewer bits scrolling and animating, measured on arm64 (this
   lab on Apple silicon, `bench/local.sh`; the x86 tables above are with CABAC):
@@ -168,6 +179,8 @@ writes the next 240 changed frames as raw BGRX. Keep them outside the repo
 docker build -t jumpseat-bench bench    # once: compilers, nasm, x264, FFmpeg's decoder
 bench/local.sh run usage=1              # one point per workload: ms/frame, kbit/s, PSNR
 bench/local.sh rd usage=1               # BD-rate against x264 (sweep.sh + bdrate.py)
+bench/local.sh ab main usage=1          # the encoder at a git ref vs the working tree: time, same output?
+python3 bench/modal_lab.py ab main usage=1           # the same on x86
 python3 bench/modal_lab.py ir qp=17 usage=1          # x86: instructions per frame, ours vs x264
 python3 bench/modal_lab.py callgrind scroll usage=1  # x86: where an encode's instructions go
 ```
@@ -182,7 +195,6 @@ into it, so a change rebuilds in seconds.
 | `crf`, `xthreads`, `qp` | x264's CRF and threads; the QP floor |
 | `kbps` | cap the bitrate, as a slow link does |
 | `capat=F` | apply the cap at frame F, as the streamer does once flow control has measured the link (so its first IDR is never capped) |
-| `cabac=0` | CAVLC (constrained baseline) instead of the streamer's CABAC |
 | `rest=N` | N still frames after the content, to measure the quality left at rest |
 | `perframe=1` | one line per frame |
 | `usage`, `complexity`, `rc`, … | only change stock OpenH264 (`LAB_SRC=stock`); `h264/` forces its configuration |

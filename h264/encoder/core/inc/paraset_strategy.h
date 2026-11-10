@@ -76,8 +76,7 @@ class IWelsParametersetStrategy {
                             SSubsetSps* pSubsetSps,
                             uint32_t kuiPpsId,
                             const bool kbDeblockingFilterPresentFlag,
-                            const bool kbUsingSubsetSps,
-                            const bool kbEntropyCodingModeFlag) = 0;
+                            const bool kbUsingSubsetSps) = 0;
 
   virtual  void SetUseSubsetFlag (const uint32_t iPpsId, const bool bUseSubsetSps) = 0;
 
@@ -128,8 +127,7 @@ class  CWelsParametersetIdConstant : public IWelsParametersetStrategy {
                             SSubsetSps* pSubsetSps,
                             uint32_t kuiPpsId,
                             const bool kbDeblockingFilterPresentFlag,
-                            const bool kbUsingSubsetSps,
-                            const bool kbEntropyCodingModeFlag);
+                            const bool kbUsingSubsetSps);
 
   virtual void SetUseSubsetFlag (const uint32_t iPpsId, const bool bUseSubsetSps);
 

@@ -138,8 +138,7 @@ int32_t WelsInitPps (SWelsPPS* pPps,
                      SSubsetSps* pSubsetSps,
                      const uint32_t kuiPpsId,
                      const bool kbDeblockingFilterPresentFlag,
-                     const bool kbUsingSubsetSps,
-                     const bool kbEntropyCodingModeFlag);
+                     const bool kbUsingSubsetSps);
 
 int32_t WelsCheckRefFrameLimitationNumRefFirst (SLogContext* pLogCtx, SWelsSvcCodingParam* pParam);
 int32_t WelsCheckRefFrameLimitationLevelIdcFirst (SLogContext* pLogCtx, SWelsSvcCodingParam* pParam);

@@ -31,7 +31,7 @@
  *
  * \file    svc_set_mb_syn.h
  *
- * \brief   Seting all syntax elements of mb and encoding residual with cavlc and cabac
+ * \brief   Seting all syntax elements of mb and encoding residual with cabac
  *
  * \date    2009.8.12 Created
  *
@@ -46,20 +46,18 @@
 #include "encoder_context.h"
 #include "md.h"
 #include "slice.h"
-#include "set_mb_syn_cavlc.h"
 
 namespace WelsEnc {
 
-int32_t WelsWriteMbResidual (SWelsFuncPtrList* pFuncList, SMbCache* sMbCacheInfo, SMB* pCurMb, SBitStringAux* pBs);
+enum ECtxBlockCat {
+  LUMA_DC     = 0,
+  LUMA_AC     = 1,
+  LUMA_4x4    = 2,
+  CHROMA_DC   = 3,
+  CHROMA_AC   = 4
+};
 
-void WelsSpatialWriteSubMbPred (sWelsEncCtx* pEncCtx, SSlice* pSlice, SMB* pCurMb);
-
-void WelsSpatialWriteMbPred (sWelsEncCtx* pEncCtx, SSlice* pSlice, SMB* pCurMb);
-void WelsWriteSliceEndSyn(SSlice *pSlice,bool bEntropyCodingModeFlag);
-//for Base Layer CAVLC writing
-int32_t WelsSpatialWriteMbSyn (sWelsEncCtx* Ctx, SSlice* pSlice, SMB* pCurMb);
-int32_t GetBsPosCavlc(SSlice *pSlice);
-//for CABAC writing
+// jumpseat: CABAC is the only entropy coder (CAVLC removed).
 void WelsInitSliceCabac(sWelsEncCtx* pEncCtx,SSlice* pSlice);
 void WelsCabacInit(void *pCtx);
 int32_t WelsSpatialWriteMbSynCabac (sWelsEncCtx* pCtx, SSlice* pSlice, SMB* pCurMb);

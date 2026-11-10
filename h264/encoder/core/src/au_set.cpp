@@ -260,31 +260,22 @@ int32_t WelsWriteSpsSyntax (SWelsSPS* pSps, SBitStringAux* pBitStringAux, int32_
 
   BsWriteBits (pLocalBitStringAux, 8, pSps->uiProfileIdc);
 
-  BsWriteOneBit (pLocalBitStringAux, pSps->bConstraintSet0Flag);        // bConstraintSet0Flag
-  BsWriteOneBit (pLocalBitStringAux, pSps->bConstraintSet1Flag);        // bConstraintSet1Flag
+  // jumpseat: High profile always (CABAC, CAVLC removed): constraint_set0/1 (baseline, main) never set
+  BsWriteOneBit (pLocalBitStringAux, 0);                                // bConstraintSet0Flag
+  BsWriteOneBit (pLocalBitStringAux, 0);                                // bConstraintSet1Flag
   BsWriteOneBit (pLocalBitStringAux, pSps->bConstraintSet2Flag);        // bConstraintSet2Flag
-  BsWriteOneBit (pLocalBitStringAux, pSps->bConstraintSet3Flag);        // bConstraintSet3Flag
-  if (PRO_HIGH == pSps->uiProfileIdc || PRO_EXTENDED == pSps->uiProfileIdc ||
-      PRO_MAIN == pSps->uiProfileIdc) {
-    BsWriteOneBit (pLocalBitStringAux, 1);        // bConstraintSet4Flag: If profile_idc is equal to 77, 88, or 100, constraint_set4_flag equal to 1 indicates that the value of frame_mbs_only_flag is equal to 1. constraint_set4_flag equal to 0 indicates that the value of frame_mbs_only_flag may or may not be equal to 1.
-    BsWriteOneBit (pLocalBitStringAux, 1);        // bConstraintSet5Flag: If profile_idc is equal to 77, 88, or 100, constraint_set5_flag equal to 1 indicates that B slice types are not present in the coded video sequence. constraint_set5_flag equal to 0 indicates that B slice types may or may not be present in the coded video sequence.
-    BsWriteBits (pLocalBitStringAux, 2, 0);                               // reserved_zero_2bits, equal to 0
-  } else {
-    BsWriteBits (pLocalBitStringAux, 4, 0);                               // reserved_zero_4bits, equal to 0
-  }
+  BsWriteOneBit (pLocalBitStringAux, 0);                                // bConstraintSet3Flag
+  BsWriteOneBit (pLocalBitStringAux, 1);        // bConstraintSet4Flag: If profile_idc is equal to 77, 88, or 100, constraint_set4_flag equal to 1 indicates that the value of frame_mbs_only_flag is equal to 1. constraint_set4_flag equal to 0 indicates that the value of frame_mbs_only_flag may or may not be equal to 1.
+  BsWriteOneBit (pLocalBitStringAux, 1);        // bConstraintSet5Flag: If profile_idc is equal to 77, 88, or 100, constraint_set5_flag equal to 1 indicates that B slice types are not present in the coded video sequence. constraint_set5_flag equal to 0 indicates that B slice types may or may not be present in the coded video sequence.
+  BsWriteBits (pLocalBitStringAux, 2, 0);                               // reserved_zero_2bits, equal to 0
   BsWriteBits (pLocalBitStringAux, 8, pSps->iLevelIdc);                 // iLevelIdc
   BsWriteUE (pLocalBitStringAux, pSps->uiSpsId + pSpsIdDelta[pSps->uiSpsId]);        // seq_parameter_set_id
 
-  if (PRO_SCALABLE_BASELINE == pSps->uiProfileIdc || PRO_SCALABLE_HIGH == pSps->uiProfileIdc ||
-      PRO_HIGH == pSps->uiProfileIdc || PRO_HIGH10 == pSps->uiProfileIdc ||
-      PRO_HIGH422 == pSps->uiProfileIdc || PRO_HIGH444 == pSps->uiProfileIdc ||
-      PRO_CAVLC444 == pSps->uiProfileIdc || 44 == pSps->uiProfileIdc) {
-    BsWriteUE (pLocalBitStringAux, 1);  //uiChromaFormatIdc, now should be 1
-    BsWriteUE (pLocalBitStringAux, 0); //uiBitDepthLuma
-    BsWriteUE (pLocalBitStringAux, 0); //uiBitDepthChroma
-    BsWriteOneBit (pLocalBitStringAux, 0); //qpprime_y_zero_transform_bypass_flag
-    BsWriteOneBit (pLocalBitStringAux, 0); //seq_scaling_matrix_present_flag
-  }
+  BsWriteUE (pLocalBitStringAux, 1);  //uiChromaFormatIdc, now should be 1
+  BsWriteUE (pLocalBitStringAux, 0); //uiBitDepthLuma
+  BsWriteUE (pLocalBitStringAux, 0); //uiBitDepthChroma
+  BsWriteOneBit (pLocalBitStringAux, 0); //qpprime_y_zero_transform_bypass_flag
+  BsWriteOneBit (pLocalBitStringAux, 0); //seq_scaling_matrix_present_flag
 
   BsWriteUE (pLocalBitStringAux, pSps->uiLog2MaxFrameNum - 4);  // log2_max_frame_num_minus4
   BsWriteUE (pLocalBitStringAux, pSps->uiPocType);              // pic_order_cnt_type
@@ -402,7 +393,7 @@ int32_t WelsWritePpsSyntax (SWelsPPS* pPps, SBitStringAux* pBitStringAux,
   BsWriteUE (pLocalBitStringAux, pPps->iPpsId + pParametersetStrategy->GetPpsIdOffset (pPps->iPpsId));
   BsWriteUE (pLocalBitStringAux, pPps->iSpsId + pParametersetStrategy->GetSpsIdOffset (pPps->iPpsId, pPps->iSpsId));
 
-  BsWriteOneBit (pLocalBitStringAux, pPps->bEntropyCodingModeFlag);
+  BsWriteOneBit (pLocalBitStringAux, true); // jumpseat: entropy_coding_mode_flag, CABAC only (CAVLC removed)
   BsWriteOneBit (pLocalBitStringAux, false/*pPps->bPicOrderPresentFlag*/);
 
   BsWriteUE (pLocalBitStringAux, 0/*pPps->uiNumSliceGroups - 1*/);
@@ -466,26 +457,12 @@ int32_t WelsInitSps (SWelsSPS* pSps, SSpatialLayerConfig* pLayerParam, SSpatialL
   } else {
     pSps->bFrameCroppingFlag = false;
   }
-  pSps->uiProfileIdc = pLayerParam->uiProfileIdc ? pLayerParam->uiProfileIdc : PRO_BASELINE;
-  if (pLayerParam->uiProfileIdc == PRO_BASELINE) {
-    pSps->bConstraintSet0Flag = true;
-  }
-  if (pLayerParam->uiProfileIdc <= PRO_MAIN) {
-    pSps->bConstraintSet1Flag = true;
-  }
+  pSps->uiProfileIdc = PRO_HIGH; // jumpseat: CABAC only (CAVLC and the baseline profile removed)
   if ((kiDlayerCount > 1) && bSVCBaselayer) {
     pSps->bConstraintSet2Flag = true;
   }
 
   ELevelIdc uiLevel = WelsGetLevelIdc (pSps, pLayerParamInternal->fOutputFrameRate, pLayerParam->iSpatialBitrate);
-  //update level
-  //for Scalable Baseline, Scalable High, and Scalable High Intra profiles.If level_idc is equal to 9, the indicated level is level 1b.
-  //for the Baseline, Constrained Baseline, Main, and Extended profiles,If level_idc is equal to 11 and constraint_set3_flag is equal to 1, the indicated level is level 1b.
-  if ((uiLevel == LEVEL_1_B) &&
-      ((pSps->uiProfileIdc == PRO_BASELINE) || (pSps->uiProfileIdc == PRO_MAIN) || (pSps->uiProfileIdc == PRO_EXTENDED))) {
-    uiLevel = LEVEL_1_1;
-    pSps->bConstraintSet3Flag = true;
-  }
   if ((pLayerParam->uiLevelIdc == LEVEL_UNKNOWN) || (pLayerParam->uiLevelIdc < uiLevel)) {
     pLayerParam->uiLevelIdc = uiLevel;
   }
@@ -544,8 +521,7 @@ int32_t WelsInitPps (SWelsPPS* pPps,
                      SSubsetSps* pSubsetSps,
                      const uint32_t kuiPpsId,
                      const bool kbDeblockingFilterPresentFlag,
-                     const bool kbUsingSubsetSps,
-                     const bool kbEntropyCodingModeFlag) {
+                     const bool kbUsingSubsetSps) {
   SWelsSPS* pUsedSps = NULL;
   if (pPps == NULL || (pSps == NULL && pSubsetSps == NULL))
     return 1;
@@ -564,7 +540,6 @@ int32_t WelsInitPps (SWelsPPS* pPps,
   /* fill picture parameter set syntax */
   pPps->iPpsId = kuiPpsId;
   pPps->iSpsId = pUsedSps->uiSpsId;
-  pPps->bEntropyCodingModeFlag = kbEntropyCodingModeFlag;
 
   pPps->iPicInitQp = 26;
   pPps->iPicInitQs = 26;

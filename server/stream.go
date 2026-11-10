@@ -39,13 +39,9 @@ type viewer struct {
 	// gone is closed when a send fails: the viewer is dropped.
 	gone     chan struct{}
 	goneOnce sync.Once
-	mu       sync.Mutex
 	// out is what the writer sends, in order. Frames come from the shared
 	// pipeline, which must never wait on one viewer's socket.
 	out chan any
-	// link, when set, is the benchmarks' slow link: messages queue without
-	// bound and leave at its rate, like a router with a deep buffer.
-	link *slowLink
 	// joined: (re)joined the hub since the pipeline last greeted it; a viewer
 	// shown again after hiding missed frames and needs a keyframe.
 	joined atomic.Bool
@@ -64,9 +60,6 @@ const viewerQueue = 256
 var errViewerBehind = errors.New("viewer stopped reading")
 
 func (v *viewer) send(message any) error {
-	if v.link != nil {
-		return v.link.push(message)
-	}
 	select {
 	case <-v.gone:
 		return errViewerBehind
@@ -85,11 +78,8 @@ func (v *viewer) write() {
 		case <-v.gone:
 			return
 		case message := <-v.out:
-			v.mu.Lock()
 			_ = v.ws.SetWriteDeadline(time.Now().Add(viewerWrite))
-			err := websocket.Message.Send(v.ws, message)
-			v.mu.Unlock()
-			if err != nil {
+			if err := websocket.Message.Send(v.ws, message); err != nil {
 				v.fail()
 				return
 			}
@@ -161,11 +151,6 @@ func serve(ws *websocket.Conn, h *hub) {
 	defer v.fail()
 	go v.write()
 	v.f.acked = h.acked
-	v.f.off = os.Getenv("JUMPSEAT_FLOW") == "off"
-	if kbps, err := strconv.Atoi(os.Getenv("JUMPSEAT_LINK_KBPS")); err == nil && kbps > 0 {
-		v.link = newSlowLink(v, kbps)
-		defer v.link.close()
-	}
 	// Joined before the input reader starts, so a hide it reads leaves after.
 	h.join(v)
 	// Gone before it leaves: a late "v" from the input reader cannot join it again.
@@ -373,17 +358,6 @@ func (s *stageTimes) flush() {
 		per(s.grab), per(s.convert), per(s.encode), per(s.send), float64(s.bytes)/float64(s.frames)/1024)
 	*s = stageTimes{since: time.Now()}
 }
-
-// fpsCap is maxFPS unless JUMPSEAT_MAX_FPS overrides it (bench/README.md).
-func fpsCap() int {
-	if value, err := strconv.Atoi(os.Getenv("JUMPSEAT_MAX_FPS")); err == nil && value > 0 {
-		return value
-	}
-	return maxFPS
-}
-
-// encoderFPS is the frame rate the encoder's rate control assumes.
-const encoderFPS = 60
 
 // maxCapKbps is where an upward probe stops capping: far above what any
 // screen here needs (anim peaks near 4 Mbit/s).

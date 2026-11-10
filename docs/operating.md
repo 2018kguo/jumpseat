@@ -49,17 +49,13 @@ lag does not build.
 
 ## Environment
 
-For measurement and A/B runs; defaults are what the benchmarks measured.
+`JUMPSEAT_TOKEN` stands in for `--token`; the others are for measurement,
+and their defaults are what the benchmarks measured.
 
 | Variable | Use |
 |---|---|
 | `JUMPSEAT_TOKEN` | The token, instead of `--token`. |
 | `JUMPSEAT_TRACE=1` | Log each frame within 300 ms of a key press: when it was damaged, grabbed, encoded and sent, from the key reaching X. |
-| `JUMPSEAT_OH264` | Encoder settings, `key=value,…`: `qp` (the QP floor, default 17), `refs`, `vui` (0 drops the colour-space tags, which are written by default), `cabac` (0: CAVLC, constrained baseline, a quarter more bits; the bundled client asks its decoder for High profile). The rest of the configuration is fixed ([h264/](../h264/README.md)). |
-| `JUMPSEAT_MAX_FPS` | Pacing cap (default 90, above Chromium's 60 so early frames are not dropped). |
-| `JUMPSEAT_ENCODER_FPS` | The frame rate the rate control budgets for (default 60). |
-| `JUMPSEAT_LINK_KBPS` | Put a slow, deep-buffered link in front of the viewer, for testing flow control. |
-| `JUMPSEAT_FLOW=off` | Turn flow control off. |
 | `JUMPSEAT_TAIL` | Tiny messages sent after a keystroke-sized frame so a lost packet is retransmitted after a round trip, not TCP's tail timer (default 3, 0 off). |
 
 ## Limits

@@ -83,7 +83,6 @@ type flow struct {
 	lastAck   int64 // ms on the flow's clock
 	lastSent  int64
 	acked     chan struct{}
-	off       bool // JUMPSEAT_FLOW=off, for A/B runs
 }
 
 func newFlow() *flow { return &flow{epoch: time.Now(), acked: make(chan struct{}, 1)} }
@@ -188,7 +187,7 @@ func (f *flow) resume() {
 func (f *flow) stalled() bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	return f.acking && !f.off && f.lastSent > f.lastAck && f.now()-f.lastAck > stallAfter.Milliseconds()
+	return f.acking && f.lastSent > f.lastAck && f.now()-f.lastAck > stallAfter.Milliseconds()
 }
 
 // behind reports whether the oldest unshown frame has waited longer than the
@@ -196,7 +195,7 @@ func (f *flow) stalled() bool {
 func (f *flow) behind() bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if f.off || !f.acking {
+	if !f.acking {
 		return false
 	}
 	now := f.now()
@@ -219,7 +218,7 @@ func (f *flow) linkKbps() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.trim(f.now())
-	if f.off || len(f.holds) < limitedHolds || len(f.delivered) < 5 || !f.queueing() {
+	if len(f.holds) < limitedHolds || len(f.delivered) < 5 || !f.queueing() {
 		return 0
 	}
 	span := f.delivered[len(f.delivered)-1].at - f.delivered[0].at

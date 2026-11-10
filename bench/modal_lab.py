@@ -3,17 +3,18 @@ twin; perf does not run under gVisor, so profiles come from callgrind).
 
     python3 bench/modal_lab.py rd usage=1          BD-rate vs x264
     python3 bench/modal_lab.py run usage=1 qp=17   one point per workload
+    python3 bench/modal_lab.py ab main usage=1      the encoder at a git ref vs the working tree
     python3 bench/modal_lab.py ir qp=17 usage=1     CPU as instructions vs x264
     python3 bench/modal_lab.py callgrind scroll usage=1
     python3 bench/modal_lab.py sh 'any command'
 
-Each call syncs h264/ (jumpseat's encoder) and bench/ into the sandbox with
-their mtimes, so make rebuilds only what changed. LAB_SRC=stock measures the
+Each call syncs what changed in h264/ (jumpseat's encoder) and bench/ into
+the sandbox, so make rebuilds only that. LAB_SRC=stock measures the
 image's stock OpenH264 v2.6.0 instead.
 """
 from __future__ import annotations
 
-import io, json, os, subprocess, sys, tarfile
+import hashlib, io, json, os, subprocess, sys, tarfile
 
 import modal
 
@@ -59,19 +60,30 @@ def exec_(sb: modal.Sandbox, command: str, stdin: bytes | None = None, env: dict
 
 
 def sync(sb: modal.Sandbox) -> None:
-    files = subprocess.run(["git", "ls-files", "-co", "--exclude-standard", "h264", "bench"], cwd=REPO,
-                           capture_output=True, text=True, check=True).stdout.split()
+    """Sends h264/ and bench/ files whose content changed since the last sync,
+    stamped now so make rebuilds what depends on them (host mtimes could make
+    a changed file look older than the object built from it), and deletes
+    files deleted here, or make's wildcards would still build them."""
+    files = sorted(n for n in subprocess.run(["git", "ls-files", "-co", "--exclude-standard", "h264", "bench"], cwd=REPO,
+                                             capture_output=True, text=True, check=True).stdout.split()
+                   if os.path.exists(os.path.join(REPO, n)))
+    sums = {}
+    for name in files:
+        with open(os.path.join(REPO, name), "rb") as f:
+            sums[name] = hashlib.sha1(f.read()).hexdigest()
+    p = sb.exec("sh", "-c", "cat /tmp/synced 2>/dev/null || true")
+    synced = dict(line.split(" ", 1)[::-1] for line in p.stdout.read().splitlines() if " " in line)
+    p.wait()
+    changed = [n for n in files if synced.get(n) != sums[n]]
     buf = io.BytesIO()
     with tarfile.open(fileobj=buf, mode="w:gz") as tar:
-        for name in files:
-            if os.path.exists(os.path.join(REPO, name)):
-                tar.add(os.path.join(REPO, name), arcname=name)
-    # Extracted with their mtimes, so make rebuilds only what changed; files
-    # deleted here are deleted there, or make's wildcards would build them.
-    want = "\n".join(sorted(n for n in files if os.path.exists(os.path.join(REPO, n))))
-    exec_(sb, "tar -xzf - -C / && cd / && find h264 bench -type f ! -path 'h264/build/*' | sort > /tmp/have"
-              " && printf '%s\\n' \"$WANT\" | sort > /tmp/want && comm -23 /tmp/have /tmp/want | xargs -r rm -f",
-          stdin=buf.getvalue(), env={"WANT": want})
+        for name in changed:
+            tar.add(os.path.join(REPO, name), arcname=name)
+    manifest = "".join(f"{sums[n]} {n}\n" for n in files)
+    exec_(sb, "tar -xzmf - -C / && cd / && find h264 bench -type f ! -path 'h264/build/*' | sort > /tmp/have"
+              " && printf '%s\\n' \"$WANT\" | sort > /tmp/want && comm -23 /tmp/have /tmp/want | xargs -r rm -f"
+              " && printf '%s' \"$MANIFEST\" > /tmp/synced",
+          stdin=buf.getvalue(), env={"WANT": "\n".join(files), "MANIFEST": manifest})
 
 
 def main() -> int:
@@ -88,6 +100,10 @@ def main() -> int:
         return exec_(sb, build + f"sh /bench/sweep.sh {args} | tee /tmp/sweep.csv | python3 /bench/bdrate.py && echo && cat /tmp/sweep.csv")
     if cmd == "run":
         return exec_(sb, build + f"sh /bench/run.sh {args}")
+    if cmd == "ab":
+        archive = subprocess.run(["git", "archive", sys.argv[2], "h264"], cwd=REPO, capture_output=True, check=True).stdout
+        exec_(sb, "rm -rf /base && mkdir /base && tar -xf - -C /base", stdin=archive)
+        return exec_(sb, build + "sh /bench/ab.sh " + " ".join(f"'{a}'" for a in sys.argv[3:]))
     if cmd == "ir":
         return exec_(sb, build + f"sh /bench/ir.sh {args}")
     if cmd == "callgrind":

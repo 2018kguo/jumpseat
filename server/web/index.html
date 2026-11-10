@@ -20,7 +20,7 @@
 </header>
 <div id="screen"><div id="frame"></div><div class="pill" id="caption"></div><div class="pill" id="handoff"></div></div>
 <script type="module">
-  import { canDecodeDesktop, connect } from "./jumpseat.js";
+  import { connect } from "./jumpseat.js";
   // The demo viewer: ?token=… is the server's --token.
   const token = new URLSearchParams(location.search).get("token") ?? "";
   const $ = (id) => document.getElementById(id);
@@ -29,34 +29,30 @@
   let captionTimer;
   const answer = (reply) =>
     fetch("/agent/answer", { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ reply }) });
-  if (!canDecodeDesktop()) {
-    $("state").textContent = "This browser can't decode the stream (needs WebCodecs H.264).";
-  } else {
-    const view = connect($("screen"), socketUrl, {
-      connected: () => ($("state").textContent = "Agent in control"),
-      dropped: () => ($("state").textContent = "Disconnected — reload to retry"),
-      unsupported: () => ($("state").textContent = "This browser has no H.264 decoder: use Chrome, Edge, Safari or Firefox."),
-      status: ({ kind, text }) => {
-        $("handoff").style.display = kind === "handoff" ? "block" : "none";
-        $("handoff").textContent = kind === "handoff" ? `Your turn: ${text}` : "";
-        $("control").className = kind === "handoff" && !controlling ? "primary" : "";
-        clearTimeout(captionTimer);
-        if (kind === "acting" || kind === "waiting") {
-          $("caption").textContent = kind === "waiting" ? "Waiting for you" : text;
-          $("caption").style.display = "block";
-        } else {
-          captionTimer = setTimeout(() => ($("caption").style.display = "none"), 2500);
-        }
-      },
-    }, { resize: new URLSearchParams(location.search).has("resize") });
-    const setControlling = (next) => {
-      controlling = next;
-      view.setControlling(next);
-      $("frame").style.display = next ? "block" : "none";
-      $("control").textContent = next ? "Stop controlling" : "Take over";
-      $("state").textContent = next ? "You're in control" : "Agent in control";
-    };
-    $("control").onclick = () => setControlling(!controlling);
-    $("done").onclick = () => { setControlling(false); answer("done"); };
-  }
+  const view = connect($("screen"), socketUrl, {
+    connected: () => ($("state").textContent = "Agent in control"),
+    dropped: () => ($("state").textContent = "Disconnected — reload to retry"),
+    unsupported: () => ($("state").textContent = "This browser can't decode the stream: use Chrome, Edge, Safari or Firefox."),
+    status: ({ kind, text }) => {
+      $("handoff").style.display = kind === "handoff" ? "block" : "none";
+      $("handoff").textContent = kind === "handoff" ? `Your turn: ${text}` : "";
+      $("control").className = kind === "handoff" && !controlling ? "primary" : "";
+      clearTimeout(captionTimer);
+      if (kind === "acting" || kind === "waiting") {
+        $("caption").textContent = kind === "waiting" ? "Waiting for you" : text;
+        $("caption").style.display = "block";
+      } else {
+        captionTimer = setTimeout(() => ($("caption").style.display = "none"), 2500);
+      }
+    },
+  }, { resize: new URLSearchParams(location.search).has("resize") });
+  const setControlling = (next) => {
+    controlling = next;
+    view.setControlling(next);
+    $("frame").style.display = next ? "block" : "none";
+    $("control").textContent = next ? "Stop controlling" : "Take over";
+    $("state").textContent = next ? "You're in control" : "Agent in control";
+  };
+  $("control").onclick = () => setControlling(!controlling);
+  $("done").onclick = () => { setControlling(false); answer("done"); };
 </script>

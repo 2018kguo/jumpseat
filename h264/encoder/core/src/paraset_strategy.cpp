@@ -171,9 +171,8 @@ uint32_t CWelsParametersetIdConstant::InitPps (sWelsEncCtx* pCtx, uint32_t kiSps
     SSubsetSps* pSubsetSps,
     uint32_t kuiPpsId,
     const bool kbDeblockingFilterPresentFlag,
-    const bool kbUsingSubsetSps,
-    const bool kbEntropyCodingModeFlag) {
-  WelsInitPps (& pCtx->pPPSArray[kuiPpsId], pSps, pSubsetSps, kuiPpsId, true, kbUsingSubsetSps, kbEntropyCodingModeFlag);
+    const bool kbUsingSubsetSps) {
+  WelsInitPps (& pCtx->pPPSArray[kuiPpsId], pSps, pSubsetSps, kuiPpsId, true, kbUsingSubsetSps);
   SetUseSubsetFlag (kuiPpsId, kbUsingSubsetSps);
   return kuiPpsId;
 }

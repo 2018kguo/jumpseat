@@ -92,8 +92,6 @@ typedef bool (*PInterMdFirstIntraModeFunc) (sWelsEncCtx* pEncCtx, SWelsMD* pWels
 typedef void (*PFillInterNeighborCacheFunc) (SMbCache* pMbCache, SMB* pCurMb, int32_t iMbWidth, int8_t* pVaaBgMbFlag);
 typedef void (*PAccumulateSadFunc) (uint32_t* pSumDiff, int32_t* pGomForegroundBlockNum, int32_t* iSad8x8,
                                     int8_t* pVaaBgMbFlag);//for RC
-typedef bool (*PDynamicSlicingStepBackFunc) (sWelsEncCtx* pEncCtx, SSlice* pSlice, SSliceCtx* pSliceCtx, SMB* pCurMb,
-    SDynamicSlicingStack* pDynamicSlicingStack); // 2010.8.17
 
 typedef bool (*PInterMdBackgroundDecisionFunc) (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SSlice* slice, SMB* pCurMb,
     SMbCache* pMbCache, bool* pKeepPskip);
@@ -112,7 +110,6 @@ typedef int32_t (*PIntraPred16x16Combined3Func) (uint8_t*, int32_t, uint8_t*, in
 typedef int32_t (*PIntraPred8x8Combined3Func) (uint8_t*, int32_t, uint8_t*, int32_t, int32_t*, int32_t, uint8_t*,
     uint8_t*, uint8_t*);
 
-typedef uint32_t (*PSampleSadHor8Func) (uint8_t*, int32_t, uint8_t*, int32_t, uint16_t*, int32_t*);
 typedef void (*PMotionSearchFunc) (SWelsFuncPtrList* pFuncList, SDqLayer* pCurDqLayer, SWelsME* pMe,
                                    SSlice* pSlice);
 typedef void (*PSearchMethodFunc) (SWelsFuncPtrList* pFuncList, SWelsME* pMe, SSlice* pSlice, const int32_t kiEncStride,
@@ -122,11 +119,6 @@ typedef void (*PCalculateSatdFunc) (PSampleSadSatdCostFunc pSatd, SWelsME* pMe, 
 typedef bool (*PCheckDirectionalMv) (PSampleSadSatdCostFunc pSad, SWelsME* pMe,
                                      const SMVUnitXY ksMinMv, const SMVUnitXY ksMaxMv, const int32_t kiEncStride, const int32_t kiRefStride,
                                      int32_t& iBestSadCost);
-typedef void (*PLineFullSearchFunc) (SWelsFuncPtrList* pFuncList, SWelsME* pMe,
-                                     uint16_t* pMvdTable,
-                                     const int32_t kiEncStride, const int32_t kiRefStride,
-                                     const int16_t kiMinMv, const int16_t kiMaxMv,
-                                     const bool bVerticalSearch);
 typedef void (*PInitializeHashforFeatureFunc) (uint32_t* pTimesOfFeatureValue, uint16_t* pBuf, const int32_t kiListSize,
     uint16_t** pLocationOfFeature, uint16_t** pFeatureValuePointerList);
 typedef void (*PFillQpelLocationByFeatureValueFunc) (uint16_t* pFeatureOfBlock, const int32_t kiWidth,
@@ -166,12 +158,6 @@ typedef bool (*PUpdateRefListFunc) (sWelsEncCtx* pCtx);
 typedef void (*PEndofUpdateRefListFunc) (sWelsEncCtx* pCtx);
 typedef void (*PAfterBuildRefListFunc) (sWelsEncCtx* pCtx);
 
-typedef  int32_t (*PCavlcParamCalFunc) (int16_t* pCoff, uint8_t* pRun, int16_t* pLevel, int32_t* pTotalCoeffs,
-                                        int32_t iEndIdx);
-typedef int32_t (*PWelsSpatialWriteMbSyn) (sWelsEncCtx* pCtx, SSlice* pSlice, SMB* pCurMb);
-typedef void (*PStashMBStatus) (SDynamicSlicingStack* pDss, SSlice* pSlice, int32_t iMbSkipRun);
-typedef int32_t (*PStashPopMBStatus) (SDynamicSlicingStack* pDss, SSlice* pSlice);
-typedef int32_t (*PGetBsPosition)(SSlice *pSlice);
 class IWelsParametersetStrategy;
 
 struct TagWelsFuncPointerList {
@@ -197,15 +183,11 @@ struct TagWelsFuncPointerList {
   PGetIntraPredFunc     pfGetLumaI4x4Pred[I4_PRED_A];
   PGetIntraPredFunc     pfGetChromaPred[C_PRED_A];
 
-  PSampleSadHor8Func    pfSampleSadHor8[2];     // 1: for 16x16 square; 0: for 8x8 square
   PMotionSearchFunc
   pfMotionSearch[BLOCK_STATIC_IDC_ALL]; //svc_encode_slice.c svc_mode_decision.c svc_enhance_layer_md.c svc_base_layer_md.c
   PSearchMethodFunc pfSearchMethod[BLOCK_SIZE_ALL];
   PCalculateSatdFunc pfCalculateSatd;
   PCheckDirectionalMv pfCheckDirectionalMv;
-
-  PLineFullSearchFunc pfVerticalFullSearch;
-  PLineFullSearchFunc pfHorizontalFullSearch;
 
   PCopyFunc      pfCopy16x16Aligned;    //svc_encode_slice.c svc_mode_decision.c svc_base_layer_md.c
   PCopyFunc      pfCopy16x16NotAligned;  //md.c
@@ -241,19 +223,6 @@ struct TagWelsFuncPointerList {
   PIDctFunc                              pfIDctT4;
   PIDctFunc                              pfIDctI16x16Dc;
 
-  // OPTI: if MT under diff uiSliceMode, need change here
-  //PDynamicSlicingStepBackFunc  dynslc_funcpointer_stepback;//svc_encode_slice.c
-  //DYNSLC_LNGTH_CRTL    dynslc_funcpointer_slcsize_ctrl;
-
-  /* For Deblocking */
-
-
-
-  PCavlcParamCalFunc    pfCavlcParamCal;
-  PWelsSpatialWriteMbSyn pfWelsSpatialWriteMbSyn;
-  PGetBsPosition pfGetBsPosition;
-  PStashMBStatus pfStashMBStatus;
-  PStashPopMBStatus pfStashPopMBStatus;
 
   IWelsParametersetStrategy* pParametersetStrategy;
 };

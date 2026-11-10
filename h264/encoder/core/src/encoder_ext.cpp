@@ -112,23 +112,6 @@ int32_t WelsBitRateVerification (SLogContext* pLogCtx, SSpatialLayerConfig* pLay
   return ENC_RETURN_SUCCESS;
 }
 
-void CheckProfileSetting (SLogContext* pLogCtx, SWelsSvcCodingParam* pParam, int32_t iLayer, EProfileIdc uiProfileIdc) {
-  SSpatialLayerConfig* pLayerInfo = &pParam->sSpatialLayers[iLayer];
-  pLayerInfo->uiProfileIdc = uiProfileIdc;
-  if (iLayer == SPATIAL_LAYER_0) {
-    if ((uiProfileIdc != PRO_BASELINE) && (uiProfileIdc != PRO_MAIN) && (uiProfileIdc != PRO_HIGH)) {
-      WelsLog (pLogCtx, WELS_LOG_WARNING, "layerId(%d) doesn't support profile(%d), change to UNSPECIFIC profile", iLayer,
-               uiProfileIdc);
-      pLayerInfo->uiProfileIdc = PRO_UNKNOWN;
-    }
-  } else {
-    if ((uiProfileIdc != PRO_SCALABLE_BASELINE) && (uiProfileIdc != PRO_SCALABLE_HIGH)) {
-      pLayerInfo->uiProfileIdc = PRO_SCALABLE_BASELINE;
-      WelsLog (pLogCtx, WELS_LOG_WARNING, "layerId(%d) doesn't support profile(%d), change to scalable baseline profile",
-               iLayer, uiProfileIdc);
-    }
-  }
-}
 void CheckLevelSetting (SLogContext* pLogCtx, SWelsSvcCodingParam* pParam, int32_t iLayer, ELevelIdc uiLevelIdc) {
   SSpatialLayerConfig* pLayerInfo = &pParam->sSpatialLayers[iLayer];
   pLayerInfo->uiLevelIdc = LEVEL_UNKNOWN;
@@ -337,7 +320,6 @@ int32_t ParamValidationExt (SLogContext* pLogCtx, SWelsSvcCodingParam* pCodingPa
                "ParamValidationExt(), current layer %d uiSliceMode (%d) settings may not fulfill MaxNalSize = %d", i,
                pSpatialLayer->sSliceArgument.uiSliceMode, pCodingParam->uiMaxNalSize);
     }
-    CheckProfileSetting (pLogCtx, pCodingParam, i, pSpatialLayer->uiProfileIdc);
     CheckLevelSetting (pLogCtx, pCodingParam, i, pSpatialLayer->uiLevelIdc);
     //check pSlice settings under multi-pSlice
     if (kiPicWidth <= 16 && kiPicHeight <= 16) {
@@ -348,21 +330,6 @@ int32_t ParamValidationExt (SLogContext* pLogCtx, SWelsSvcCodingParam* pCodingPa
     pSpatialLayer->sSliceArgument.uiSliceSizeConstraint = 0;
     for (iIdx = 0; iIdx < MAX_SLICES_NUM; iIdx++) {
       pSpatialLayer->sSliceArgument.uiSliceMbNum[iIdx] = 0;
-    }
-  }
-  for (i = 0; i < pCodingParam->iSpatialLayerNum; ++ i) {
-    SSpatialLayerConfig* pLayerInfo = &pCodingParam->sSpatialLayers[i];
-    if ((pLayerInfo->uiProfileIdc == PRO_BASELINE) || (pLayerInfo->uiProfileIdc == PRO_SCALABLE_BASELINE)) {
-      if (pCodingParam->iEntropyCodingModeFlag != 0) {
-        pCodingParam->iEntropyCodingModeFlag = 0;
-        WelsLog (pLogCtx, WELS_LOG_WARNING, "layerId(%d) Profile is baseline, Change CABAC to CAVLC", i);
-      }
-    } else if (pLayerInfo->uiProfileIdc == PRO_UNKNOWN) {
-      if ((i == 0) || pCodingParam->bSimulcastAVC) {
-        pLayerInfo->uiProfileIdc = (pCodingParam->iEntropyCodingModeFlag) ? PRO_HIGH : PRO_BASELINE;
-      } else {
-        pLayerInfo->uiProfileIdc = PRO_SCALABLE_BASELINE;
-      }
     }
   }
   return ParamValidation (pLogCtx, pCodingParam);
@@ -820,7 +787,7 @@ static inline int32_t InitDqLayers (sWelsEncCtx** ppCtx, SExistingParasetList* p
     }
 
     iPpsId = (*ppCtx)->pFuncList->pParametersetStrategy->InitPps ((*ppCtx), iSpsId, pSps, pSubsetSps, iPpsId, true,
-             bUseSubsetSps, pParam->iEntropyCodingModeFlag != 0);
+             bUseSubsetSps);
     pPps = & ((*ppCtx)->pPPSArray[iPpsId]);
 
     // Not using FMO in SVC coding so far, come back if need FMO
@@ -1786,8 +1753,7 @@ int32_t WelsInitEncoderExt (sWelsEncCtx** ppCtx, SWelsSvcCodingParam* pCodingPar
     return iRet;
   }
 
-  if (pCodingParam->iEntropyCodingModeFlag)
-    WelsCabacInit (pCtx);
+  WelsCabacInit (pCtx);
   WelsRcInitModule (pCtx);
 
   pCtx->pVpp = CWelsPreProcess::CreatePreProcess (pCtx);

@@ -82,20 +82,6 @@ int32_t                 iMaxSliceNumConstraint; /* maximal number of slices cons
 
 } SSliceCtx;
 
-typedef struct TagDynamicSlicingStack {
-int32_t         iStartPos;
-int32_t         iCurrentPos;
-
-uint8_t*        pBsStackBufPtr; // current writing position
-uint32_t        uiBsStackCurBits;
-int32_t         iBsStackLeftBits;
-
-SCabacCtx       sStoredCabac;
-
-int32_t         iMbSkipRunStack;
-uint8_t         uiLastMbQp;
-uint8_t*        pRestoreBuffer;
-} SDynamicSlicingStack;
 
 /*!
  * \brief   Initialize Wels SSlice context (Single/multiple slices and FMO)

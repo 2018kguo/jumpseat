@@ -154,7 +154,6 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
     /* Rate Control */
     param.iRCMode                       = RC_QUALITY_MODE;
     param.iPaddingFlag                  = 0;
-    param.iEntropyCodingModeFlag        = 0;
     param.bEnableDenoise                = false;        // denoise control
     param.bEnableSceneChangeDetect      = true;         // scene change detection control
     param.bEnableBackgroundDetection    = true;         // background detection control
@@ -254,7 +253,6 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
     iLoopFilterDisableIdc       = 1; // jumpseat: no deblocking filter (removed), as x264 ultrafast
     iLoopFilterAlphaC0Offset    = pCodingParam.iLoopFilterAlphaC0Offset;   // AlphaOffset: valid range [-6, 6], default 0
     iLoopFilterBetaOffset       = pCodingParam.iLoopFilterBetaOffset;      // BetaOffset:  valid range [-6, 6], default 0
-    iEntropyCodingModeFlag      = pCodingParam.iEntropyCodingModeFlag;
     bEnableFrameCroppingFlag    = pCodingParam.bEnableFrameCroppingFlag;
 
     /* Rate Control */
@@ -328,11 +326,9 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
 
     SSpatialLayerInternal* pDlp        = &sDependencyLayers[0];
     SSpatialLayerConfig* pSpatialLayer = &sSpatialLayers[0];
-    EProfileIdc uiProfileIdc           = iEntropyCodingModeFlag ? PRO_HIGH : PRO_BASELINE;
     int8_t iIdxSpatial  = 0;
     while (iIdxSpatial < iSpatialLayerNum) {
-      pSpatialLayer->uiProfileIdc      = (pCodingParam.sSpatialLayers[iIdxSpatial].uiProfileIdc == PRO_UNKNOWN) ? uiProfileIdc :
-                                      pCodingParam.sSpatialLayers[iIdxSpatial].uiProfileIdc;
+      pSpatialLayer->uiProfileIdc      = PRO_HIGH; // jumpseat: CABAC, the only entropy coder (CAVLC removed)
       pSpatialLayer->uiLevelIdc        = pCodingParam.sSpatialLayers[iIdxSpatial].uiLevelIdc;
 
       float fLayerFrameRate     = WELS_CLIP3 (pCodingParam.sSpatialLayers[iIdxSpatial].fFrameRate,
@@ -387,7 +383,6 @@ typedef struct TagWelsSvcCodingParam: SEncParamExt {
       pSpatialLayer->sAspectRatioExtWidth = pCodingParam.sSpatialLayers[iIdxSpatial].sAspectRatioExtWidth;
       pSpatialLayer->sAspectRatioExtHeight = pCodingParam.sSpatialLayers[iIdxSpatial].sAspectRatioExtHeight;
 
-      uiProfileIdc = (!bSimulcastAVC) ? PRO_SCALABLE_BASELINE : uiProfileIdc; //it is used in the D>0 layer if SVC is applied, so set to PRO_SCALABLE_BASELINE
       ++ pDlp;
       ++ pSpatialLayer;
       ++ iIdxSpatial;
