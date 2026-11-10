@@ -88,9 +88,12 @@ against x264 ultrafast on one thread, the median of three alternating runs
 
 | | bits vs x264 | CPU vs x264 |
 |---|---|---|
-| scrolling text | **−61%** | **0.80x** |
-| typing | **−34%** | **0.67x** |
-| animation | **−36%** | **0.91x** |
+| scrolling text | **−61%** | **0.80x** (0.92x) |
+| typing | **−34%** | **0.67x** (0.73x) |
+| animation | **−36%** | **0.91x** (1.01x) |
+
+In parentheses: the same measurement on another sandbox, Nov 10 (the
+encoder no slower, by `ab`; how much x264 gains varies by host).
 
 At the streamer's settings (QP floor 17 against x264 crf 25), and once the
 motion stops (`rest=60`: the quality left on screen; CABAC codes the same

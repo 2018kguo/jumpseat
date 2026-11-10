@@ -43,7 +43,7 @@ harness, painted 24 fps at 14.8 Mbit/s scrolling.
 
 Its encoder is OpenH264's, changed for desktop content. On recorded desktop
 frames it needs 61% fewer bits than x264 ultrafast to scroll, 36% fewer to
-animate and 34% fewer to type at equal quality, for about 0.7–0.9x x264's CPU.
+animate and 34% fewer to type at equal quality, for about 0.7–1.0x x264's CPU.
 The method, the raw numbers and what did not help are in
 [bench/](bench/README.md).
 
@@ -89,12 +89,12 @@ jumpseat --listen unix:/run/jumpseat/stream.sock
 dependencies; the source is [client/jumpseat.ts](client/jumpseat.ts)):
 
 ```ts
-import { connect, supportsStream } from "@2018kguo/jumpseat";
+import { connect } from "@2018kguo/jumpseat";
 
-if (!(await supportsStream())) showFallback(); // no WebCodecs H.264 decoder
 const view = connect(element, `wss://host/stream?token=${token}`, {
   connected: () => {},
   dropped: () => {},
+  unsupported: () => {}, // no WebCodecs H.264 decoder in this browser
   status: ({ kind, text }) => {}, // "acting" | "waiting" | "handoff" | "idle"
 });
 view.setControlling(true); // the person's keys, pointer and scrolls reach the desktop
