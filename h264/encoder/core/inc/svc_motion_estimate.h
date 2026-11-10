@@ -160,30 +160,6 @@ bool CheckDirectionalMv (PSampleSadSatdCostFunc pSad, SWelsME* pMe,
                          const SMVUnitXY ksMinMv, const SMVUnitXY ksMaxMv, const int32_t kiEncStride, const int32_t kiRefStride,
                          int32_t& iBestSadCost);
 
-// Cross Search Basics
-void LineFullSearch_c (SWelsFuncPtrList* pFuncList, SWelsME* pMe,
-                       uint16_t* pMvdTable,
-                       const int32_t kiEncStride, const int32_t kiRefStride,
-                       const int16_t kiMinMv, const int16_t kiMaxMv,
-                       const bool bVerticalSearch);
-#ifdef X86_ASM
-extern "C"
-{
-uint32_t SampleSad8x8Hor8_sse41 (uint8_t*, int32_t, uint8_t*, int32_t, uint16_t*, int32_t*);
-uint32_t SampleSad16x16Hor8_sse41 (uint8_t*, int32_t, uint8_t*, int32_t, uint16_t*, int32_t*);
-}
-
-void VerticalFullSearchUsingSSE41 (SWelsFuncPtrList* pFuncList, SWelsME* pMe,
-                                   uint16_t* pMvdTable,
-                                   const int32_t kiEncStride, const int32_t kiRefStride,
-                                   const int16_t kiMinMv, const int16_t kiMaxMv,
-                                   const bool bVerticalSearch);
-void HorizontalFullSearchUsingSSE41 (SWelsFuncPtrList* pFuncList, SWelsME* pMe,
-                                     uint16_t* pMvdTable,
-                                     const int32_t kiEncStride, const int32_t kiRefStride,
-                                     const int16_t kiMinMv, const int16_t kiMaxMv,
-                                     const bool bVerticalSearch);
-#endif
 void WelsMotionCrossSearch (SWelsFuncPtrList* pFuncList, SWelsME* pMe, SSlice* pSlice,
                             const int32_t kiEncStride, const int32_t kiRefStride);
 void WelsDiamondCrossSearch (SWelsFuncPtrList* pFuncList, SWelsME* pMe, SSlice* pSlice,
