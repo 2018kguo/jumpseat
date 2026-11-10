@@ -46,7 +46,7 @@
       setTimeout(() => { this.readyState = 1; this.dispatchEvent(new Event("open")); }, 0);
       let i = 0;
       const tick = () => {
-        if (this.readyState !== 1) return;
+        if (this.readyState === 3) return;
         const now = performance.now() - start;
         while (i < records.length && records[i].ms <= now) {
           const r = records[i++];
