@@ -64,38 +64,34 @@
   }
   Replay.OPEN = 1;
   window.WebSocket = Replay;
-  const { canDecodeDesktop, connect } = await import("./jumpseat.js");
+  const { connect } = await import("./jumpseat.js");
   const $ = (id) => document.getElementById(id);
-  if (!canDecodeDesktop()) {
-    $("state").textContent = "This browser can't decode the stream (it needs WebCodecs H.264).";
-  } else {
-    let player, captionTimer;
-    const play = () => {
-      player?.close();
-      player = connect($("view"), "replay", {
-        connected: () => ($("state").textContent = "Playing"),
-        dropped: () => { $("state").textContent = "Replaying"; total = 0; setTimeout(play, 500); },
-        unsupported: () => ($("state").textContent = "This browser has no H.264 decoder."),
-        status: ({ kind, text }) => {
-          $("handoff").style.display = kind === "handoff" ? "block" : "none";
-          $("handoff").textContent = kind === "handoff" ? `Your turn: ${text}` : "";
-          clearTimeout(captionTimer);
-          if (kind === "acting" || kind === "waiting") {
-            $("caption").textContent = kind === "waiting" ? "Waiting for you" : text;
-            $("caption").style.display = "block";
-          } else {
-            captionTimer = setTimeout(() => ($("caption").style.display = "none"), 2500);
-          }
-        },
-      });
-    };
-    play();
-    setInterval(() => {
-      const now = performance.now();
-      received = received.filter((r) => now - r.t < 1000);
-      $("kbps").textContent = Math.round(received.reduce((s, r) => s + r.size, 0) * 8 / 1000);
-      $("fps").textContent = received.filter((r) => r.frame).length;
-      $("total").textContent = Math.round(total / 1024);
-    }, 250);
-  }
+  let player, captionTimer;
+  const play = () => {
+    player?.close();
+    player = connect($("view"), "replay", {
+      connected: () => ($("state").textContent = "Playing"),
+      dropped: () => { $("state").textContent = "Replaying"; total = 0; setTimeout(play, 500); },
+      unsupported: () => ($("state").textContent = "This browser can't decode the stream (it needs WebCodecs H.264)."),
+      status: ({ kind, text }) => {
+        $("handoff").style.display = kind === "handoff" ? "block" : "none";
+        $("handoff").textContent = kind === "handoff" ? `Your turn: ${text}` : "";
+        clearTimeout(captionTimer);
+        if (kind === "acting" || kind === "waiting") {
+          $("caption").textContent = kind === "waiting" ? "Waiting for you" : text;
+          $("caption").style.display = "block";
+        } else {
+          captionTimer = setTimeout(() => ($("caption").style.display = "none"), 2500);
+        }
+      },
+    });
+  };
+  play();
+  setInterval(() => {
+    const now = performance.now();
+    received = received.filter((r) => now - r.t < 1000);
+    $("kbps").textContent = Math.round(received.reduce((s, r) => s + r.size, 0) * 8 / 1000);
+    $("fps").textContent = received.filter((r) => r.frame).length;
+    $("total").textContent = Math.round(total / 1024);
+  }, 250);
 </script>

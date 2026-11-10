@@ -5,8 +5,8 @@
  */
 
 /** The desktop's size until the server says otherwise. */
-export const DESKTOP_WIDTH = 1280;
-export const DESKTOP_HEIGHT = 800;
+const DESKTOP_WIDTH = 1280;
+const DESKTOP_HEIGHT = 800;
 
 type Size = { height: number; width: number };
 
@@ -28,7 +28,7 @@ type Rect = { height: number; left: number; top: number; width: number };
  * canvas is letterboxed (object-fit: contain), so the picture is the largest
  * box of the desktop's size centered in the element.
  */
-export function desktopPoint(
+function desktopPoint(
   rect: Rect,
   clientX: number,
   clientY: number,
@@ -51,7 +51,7 @@ export function desktopPoint(
  * The key the VM gets for a KeyboardEvent.key. Meta is Control there, so
  * Cmd+A, Cmd+L and Cmd+C on a Mac do what they do at home.
  */
-export function desktopKey(
+function desktopKey(
   event: Pick<KeyboardEvent, "altKey" | "code" | "ctrlKey" | "key" | "metaKey">
 ): string {
   if (event.key === "Meta") {
@@ -131,20 +131,15 @@ const X_BUTTONS: Record<number, number> = { 0: 1, 1: 2, 2: 3 };
 const POINTER_ARROW =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20'%3E%3Cpath d='M1 1v15l4-4 3 7 3-1-3-7h6z' fill='white' stroke='black'/%3E%3C/svg%3E\")";
 
-/** Whether this browser can decode the stream (WebCodecs H.264). */
-export function canDecodeDesktop(): boolean {
-  return typeof window !== "undefined" && "VideoDecoder" in window;
-}
-
 /** The codec the server sends: H.264 High profile (CABAC, no B-frames). */
-export const STREAM_CODEC = "avc1.640029";
+const STREAM_CODEC = "avc1.640029";
 
 /**
  * Whether this browser decodes the stream: WebCodecs exists and has an H.264
  * decoder (some Linux Chromium builds ship without one).
  */
 export async function supportsStream(): Promise<boolean> {
-  if (!canDecodeDesktop()) {
+  if (typeof VideoDecoder === "undefined") {
     return false;
   }
   try {
@@ -154,7 +149,11 @@ export async function supportsStream(): Promise<boolean> {
   }
 }
 
-export function connectDesktopStream(
+/**
+ * Streams the desktop at socketUrl into container, which it fills. A browser
+ * that cannot decode the stream gets on.unsupported (or on.dropped) instead.
+ */
+export function connect(
   container: HTMLElement,
   socketUrl: string,
   on: {
@@ -170,6 +169,10 @@ export function connectDesktopStream(
    */
   options: { resize?: boolean } = {}
 ): DesktopStream {
+  if (typeof VideoDecoder === "undefined") {
+    setTimeout(on.unsupported ?? on.dropped);
+    return { close() {}, setControlling() {} };
+  }
   const canvas = document.createElement("canvas");
   // The desktop's size: the server sends it before each new stream's keyframe.
   const size: Size = { height: DESKTOP_HEIGHT, width: DESKTOP_WIDTH };
@@ -221,25 +224,20 @@ export function connectDesktopStream(
   const socket = new WebSocket(socketUrl);
   socket.binaryType = "arraybuffer";
 
-  // A browser without an H.264 decoder says so instead of looking like a
-  // dropped connection.
-  async function checkDecoderSupport() {
-    if (!(await supportsStream()) && !closed) {
-      closed = true;
-      socket.close();
-      (on.unsupported ?? on.dropped)();
-    }
-  }
-  function drop() {
+  function stop(notify: () => void) {
     if (!closed) {
       closed = true;
       clearInterval(heartbeat);
       clearTimeout(firstFrame);
       resizer?.disconnect();
       socket.close();
-      on.dropped();
+      notify();
     }
   }
+  const drop = () => stop(on.dropped);
+  // A browser without an H.264 decoder says so instead of looking like a
+  // dropped connection.
+  void supportsStream().then((ok) => ok || stop(on.unsupported ?? on.dropped));
   const sendAlways = (message: object) => {
     if (socket.readyState === WebSocket.OPEN) {
       socket.send(JSON.stringify(message));
@@ -315,7 +313,6 @@ export function connectDesktopStream(
       if (!key) {
         return;
       }
-      void checkDecoderSupport();
       decoder.configure({
         codec: STREAM_CODEC,
         optimizeForLatency: true,
@@ -652,5 +649,3 @@ function desktopPerCssPixel(canvas: HTMLCanvasElement) {
   return 1 / Math.min(rect.width / canvas.width, rect.height / canvas.height);
 }
 
-/** connect(container, url, handlers): the same as connectDesktopStream. */
-export const connect = connectDesktopStream;
