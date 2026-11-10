@@ -25,6 +25,9 @@ The "agent" is a script driving the desktop with xdotool and jumpseat's API;
 the person's input goes through the viewer. The white dot is the person's
 pointer, drawn for the recording.*
 
+[A 37-second film](https://kguo.dev/jumpseat/launch.mp4): the same scroll
+through noVNC and jumpseat side by side, then a handoff.
+
 ## How it compares
 
 On one 4-vCPU sandbox (gVisor, no GPU) at 1280×800, against noVNC (x11vnc),
