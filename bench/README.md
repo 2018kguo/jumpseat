@@ -176,6 +176,8 @@ writes the next 240 changed frames as raw BGRX. Keep them outside the repo
 docker build -t jumpseat-bench bench    # once: compilers, nasm, x264, FFmpeg's decoder
 bench/local.sh run usage=1              # one point per workload: ms/frame, kbit/s, PSNR
 bench/local.sh rd usage=1               # BD-rate against x264 (sweep.sh + bdrate.py)
+bench/local.sh ab main usage=1          # the encoder at a git ref vs the working tree: time, same output?
+python3 bench/modal_lab.py ab main usage=1           # the same on x86
 python3 bench/modal_lab.py ir qp=17 usage=1          # x86: instructions per frame, ours vs x264
 python3 bench/modal_lab.py callgrind scroll usage=1  # x86: where an encode's instructions go
 ```

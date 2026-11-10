@@ -71,8 +71,10 @@ header has the ffmpeg steps.
 Measure every change on [bench/](../bench/README.md) before keeping it:
 
 - A speed-up must leave the output identical to the byte (same bitrate and
-  PSNR on every workload) and cost fewer instructions
-  (`bench/modal_lab.py ir`).
+  PSNR on every workload) and take less time: `bench/local.sh ab main`
+  (and `bench/modal_lab.py ab main` for x86) times the encoder at a git ref
+  against the working tree's and checks both at once; `modal_lab.py ir`
+  counts instructions.
 - A change to what is encoded must win on BD-rate against x264
   (`bench/local.sh rd`) without costing instructions it does not earn back.
 
