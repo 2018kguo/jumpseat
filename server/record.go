@@ -1,13 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"os"
 	"time"
 
 	"github.com/jezek/xgb"
-	"github.com/jezek/xgb/damage"
-	"github.com/jezek/xgb/xfixes"
 	"github.com/jezek/xgb/xproto"
 )
 
@@ -20,14 +17,10 @@ func record(display, path string, n int) error {
 		return err
 	}
 	defer conn.Close()
-	if err := damage.Init(conn); err != nil {
+	changes := make(chan struct{}, 1)
+	if err := watchDamage(conn, changes); err != nil {
 		return err
 	}
-	if err := xfixes.Init(conn); err != nil {
-		return err
-	}
-	_, _ = xfixes.QueryVersion(conn, 5, 0).Reply()
-	_, _ = damage.QueryVersion(conn, 1, 1).Reply()
 	root := xproto.Setup(conn).DefaultScreen(conn).Root
 	geometry, err := xproto.GetGeometry(conn, xproto.Drawable(root)).Reply()
 	if err != nil {
@@ -38,24 +31,15 @@ func record(display, path string, n int) error {
 		return err
 	}
 	defer release()
-	dmg, _ := damage.NewDamageId(conn)
-	damage.Create(conn, dmg, xproto.Drawable(root), damage.ReportLevelNonEmpty)
 	out, err := os.Create(path)
 	if err != nil {
 		return err
 	}
 	defer out.Close()
-	interval := time.Second / maxFPS
-	for i := 0; i < n; {
-		event, xerr := conn.WaitForEvent()
-		if xerr != nil || event == nil {
-			return fmt.Errorf("x: %v", xerr)
-		}
-		if _, ok := event.(damage.NotifyEvent); !ok {
-			continue
-		}
-		time.Sleep(interval)
-		damage.Subtract(conn, dmg, 0, 0)
+	for range n {
+		<-changes
+		// Paced as the streamer grabs: a frame at most every interval.
+		time.Sleep(time.Second / maxFPS)
 		pixels, err := read()
 		if err != nil {
 			return err
@@ -63,7 +47,6 @@ func record(display, path string, n int) error {
 		if _, err := out.Write(pixels); err != nil {
 			return err
 		}
-		i++
 	}
 	return nil
 }

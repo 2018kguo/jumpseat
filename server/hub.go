@@ -3,9 +3,7 @@ package main
 import (
 	"errors"
 	"log"
-	"os"
 	"slices"
-	"strconv"
 	"sync"
 	"sync/atomic"
 	"time"
@@ -160,13 +158,7 @@ func (h *hub) capture() (bool, error) {
 		return false, err
 	}
 	defer release()
-	// The rate the encoder budgets for: Chromium's 60 Hz, not the pacing
-	// cap above it, so a bitrate cap allots each frame what a real frame gets.
-	budgetFPS := encoderFPS
-	if value, err := strconv.Atoi(os.Getenv("JUMPSEAT_ENCODER_FPS")); err == nil && value > 0 {
-		budgetFPS = value // A/B runs
-	}
-	enc, err := newEncoder(width, height, budgetFPS)
+	enc, err := newEncoder(width, height)
 	if err != nil {
 		return false, err
 	}
@@ -197,7 +189,7 @@ func (h *hub) capture() (bool, error) {
 
 	start := time.Now()
 	var last time.Time
-	interval := time.Second / time.Duration(fpsCap())
+	interval := time.Second / maxFPS
 	stages := &stageTimes{since: time.Now()}
 	defer stages.flush()
 	// Viewers that have not had a keyframe of this encoder: they get the
@@ -296,7 +288,7 @@ func (h *hub) capture() (bool, error) {
 		// A new encoder's first frame is a keyframe; the viewers already
 		// watching decode it like any other.
 		if encoded {
-			next, err := newEncoder(width, height, budgetFPS)
+			next, err := newEncoder(width, height)
 			if err != nil {
 				return err
 			}
@@ -381,7 +373,7 @@ const (
 
 // restDone is the size under which a frame changed nothing on screen, so a
 // still screen needs no more refining: an all-skip frame is headers plus a
-// skip flag a macroblock (61 bytes at 1280x800 with CABAC, 36 with CAVLC).
+// skip flag a macroblock (61 bytes at 1280x800).
 func restDone(width, height int) int {
 	return 32 + width*height/(256*64)
 }
