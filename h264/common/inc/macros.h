@@ -108,12 +108,6 @@
 #define WELS_DIV_ROUND64(x,y) ((int64_t)((y)==0?((x)/((y)+1)):(((y)/2+(x))/(y))))
 #endif//WELS_DIV_ROUND64
 
-#define WELS_NON_ZERO_COUNT_AVERAGE(nC,nA,nB) {         \
-  nC = nA + nB + 1;                                     \
-  nC >>= (uint8_t)( nA != -1 && nB != -1);              \
-  nC += (uint8_t)(nA == -1 && nB == -1);                \
-}
-
 static inline int32_t CeilLog2 (int32_t i) {
   int32_t s = 0;
   i--;

@@ -6,10 +6,9 @@ upstream: changes here are ordinary commits.
 
 It encodes one configuration, the streamer's, and the parameters force it
 (`param_svc.h`): screen content at low complexity, quality-mode rate control,
-CABAC (High profile; CAVLC behind `iEntropyCodingModeFlag = 0`), no
-deblocking, one thread, one slice, one spatial and temporal layer,
-constant SPS/PPS ids, no LTR, background detection, adaptive quantization or
-frame skipping. `SetOption` takes the data format, bitrate and max bitrate.
+CABAC (High profile), no deblocking, one thread, one slice, one spatial and
+temporal layer, constant SPS/PPS ids, no LTR, background detection, adaptive
+quantization or frame skipping. `SetOption` takes the data format, bitrate and max bitrate.
 
 Kept: `api/` (the encoder interface), `common/`, `encoder/` and `processing/`
 (scroll, scene-change and complexity analysis, frame SAD), with x86-64 (nasm,
@@ -28,6 +27,10 @@ bench output identical to the byte, uncapped and at 1000 kbps):
   SPS/PPS id strategies, LTR and temporal-layer reference strategies, SVC
   enhancement layers and prefix NALs, threads and the task manager,
   multi-slice and size-limited (dynamic) slicing.
+- CAVLC, once CABAC was the one that runs: its macroblock and residual
+  writers, VLC tables, `CavlcParamCal` (C and SSE4.2), the baseline-profile
+  fallbacks and the overflow re-encode only CAVLC could hit.
+  `iEntropyCodingModeFlag` stays in the API, ignored.
 - What the low-complexity screen path never reaches: sub-pel motion
   (six-tap filters, quarter-pel averaging; luma prediction is a copy), the
   feature-search index, 16x8/8x16 and smaller partition searches, intra 4x4

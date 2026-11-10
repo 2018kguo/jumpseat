@@ -47,6 +47,7 @@
 #include "encoder_context.h"
 #include "utils.h"
 #include "svc_enc_golomb.h"
+#include "svc_set_mb_syn.h"
 
 
 namespace WelsEnc {
@@ -1084,7 +1085,7 @@ void WelsRcMbInitGom (sWelsEncCtx* pEncCtx, SMB* pCurMb, SSlice* pSlice) {
   SDqLayer* pCurLayer           = pEncCtx->pCurDqLayer;
   const uint8_t kuiChromaQpIndexOffset = pCurLayer->sLayerInfo.pPpsP->uiChromaQpIndexOffset;
 
-  pSOverRc->iBsPosSlice = pEncCtx->pFuncList->pfGetBsPosition (pSlice);
+  pSOverRc->iBsPosSlice = GetBsPosCabac (pSlice);
   if (pWelsSvcRc->bEnableGomQp) {
     //calculate gom qp and target bits at the beginning of gom
     if (0 == (pCurMb->iMbXY % pWelsSvcRc->iNumberMbGom)) {
@@ -1108,7 +1109,7 @@ void WelsRcMbInfoUpdateGom (sWelsEncCtx* pEncCtx, SMB* pCurMb, int32_t iCostLuma
   SRCSlicing* pSOverRc              = &pSlice->sSlicingOverRc;
   const int32_t kiComplexityIndex   = pSOverRc->iComplexityIndexSlice;
 
-  int32_t iCurMbBits = pEncCtx->pFuncList->pfGetBsPosition (pSlice) - pSOverRc->iBsPosSlice;
+  int32_t iCurMbBits = GetBsPosCabac (pSlice) - pSOverRc->iBsPosSlice;
   pSOverRc->iFrameBitsSlice += iCurMbBits;
   pSOverRc->iGomBitsSlice += iCurMbBits;
 

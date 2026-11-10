@@ -190,7 +190,6 @@ into it, so a change rebuilds in seconds.
 | `crf`, `xthreads`, `qp` | x264's CRF and threads; the QP floor |
 | `kbps` | cap the bitrate, as a slow link does |
 | `capat=F` | apply the cap at frame F, as the streamer does once flow control has measured the link (so its first IDR is never capped) |
-| `cabac=0` | CAVLC (constrained baseline) instead of the streamer's CABAC |
 | `rest=N` | N still frames after the content, to measure the quality left at rest |
 | `perframe=1` | one line per frame |
 | `usage`, `complexity`, `rc`, … | only change stock OpenH264 (`LAB_SRC=stock`); `h264/` forces its configuration |

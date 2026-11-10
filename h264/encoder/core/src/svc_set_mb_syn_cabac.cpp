@@ -633,6 +633,11 @@ void WelsInitSliceCabac (sWelsEncCtx* pEncCtx, SSlice* pSlice) {
   WelsCabacEncodeInit (&pSlice->sCabacCtx, pBs->pCurBuf, pBs->pEndBuf);
 }
 
+int32_t GetBsPosCabac (SSlice* pSlice) {
+  return (int32_t) ((pSlice->sCabacCtx.m_pBufCur - pSlice->sCabacCtx.m_pBufStart) << 3) +
+         (pSlice->sCabacCtx.m_iLowBitCnt - 9);
+}
+
 int32_t WelsSpatialWriteMbSynCabac (sWelsEncCtx* pEncCtx, SSlice* pSlice, SMB* pCurMb) {
   SCabacCtx* pCabacCtx = &pSlice->sCabacCtx;
   SMbCache* pMbCache = &pSlice->sMbCacheInfo;

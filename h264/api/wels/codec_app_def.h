@@ -428,7 +428,7 @@ typedef struct TagEncParamExt {
   bool    bEnableSSEI;                 ///< false:not use SSEI; true: use SSEI -- TODO: planning to remove the interface of SSEI
   bool    bSimulcastAVC;               ///< (when encoding more than 1 spatial layer) false: use SVC syntax for higher layers; true: use Simulcast AVC
   int     iPaddingFlag;                ///< 0:disable padding;1:padding
-  int     iEntropyCodingModeFlag;      ///< 0:CAVLC  1:CABAC.
+  int     iEntropyCodingModeFlag;      ///< jumpseat: ignored, CABAC always (CAVLC removed); kept for stock OpenH264 callers
 
   /* rc control */
   bool    bEnableFrameSkip;            ///< False: don't skip frame even if VBV buffer overflow.True: allow skipping frames to keep the bitrate within limits

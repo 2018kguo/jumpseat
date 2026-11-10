@@ -94,7 +94,6 @@ int32_t ForceCodingIDR (sWelsEncCtx* pCtx,int32_t iLayerId);
  */
 int32_t WelsBitRateVerification(SLogContext* pLogCtx,SSpatialLayerConfig* pLayerParam,int32_t iLayerId);
 int32_t WelsEncoderApplyBitRate (SLogContext* pLogCtx, SWelsSvcCodingParam* pParam, int32_t iLayer);
-void CheckProfileSetting (SLogContext* pLogCtx,SWelsSvcCodingParam* pParam,int32_t iLayer, EProfileIdc uiProfileIdc);
 void CheckLevelSetting (SLogContext* pLogCtx,SWelsSvcCodingParam* pParam,int32_t iLayer, ELevelIdc uiLevelIdc);
 }
 

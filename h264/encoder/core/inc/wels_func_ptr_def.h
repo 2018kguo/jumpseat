@@ -92,8 +92,6 @@ typedef bool (*PInterMdFirstIntraModeFunc) (sWelsEncCtx* pEncCtx, SWelsMD* pWels
 typedef void (*PFillInterNeighborCacheFunc) (SMbCache* pMbCache, SMB* pCurMb, int32_t iMbWidth, int8_t* pVaaBgMbFlag);
 typedef void (*PAccumulateSadFunc) (uint32_t* pSumDiff, int32_t* pGomForegroundBlockNum, int32_t* iSad8x8,
                                     int8_t* pVaaBgMbFlag);//for RC
-typedef bool (*PDynamicSlicingStepBackFunc) (sWelsEncCtx* pEncCtx, SSlice* pSlice, SSliceCtx* pSliceCtx, SMB* pCurMb,
-    SDynamicSlicingStack* pDynamicSlicingStack); // 2010.8.17
 
 typedef bool (*PInterMdBackgroundDecisionFunc) (sWelsEncCtx* pEncCtx, SWelsMD* pWelsMd, SSlice* slice, SMB* pCurMb,
     SMbCache* pMbCache, bool* pKeepPskip);
@@ -160,12 +158,6 @@ typedef bool (*PUpdateRefListFunc) (sWelsEncCtx* pCtx);
 typedef void (*PEndofUpdateRefListFunc) (sWelsEncCtx* pCtx);
 typedef void (*PAfterBuildRefListFunc) (sWelsEncCtx* pCtx);
 
-typedef  int32_t (*PCavlcParamCalFunc) (int16_t* pCoff, uint8_t* pRun, int16_t* pLevel, int32_t* pTotalCoeffs,
-                                        int32_t iEndIdx);
-typedef int32_t (*PWelsSpatialWriteMbSyn) (sWelsEncCtx* pCtx, SSlice* pSlice, SMB* pCurMb);
-typedef void (*PStashMBStatus) (SDynamicSlicingStack* pDss, SSlice* pSlice, int32_t iMbSkipRun);
-typedef int32_t (*PStashPopMBStatus) (SDynamicSlicingStack* pDss, SSlice* pSlice);
-typedef int32_t (*PGetBsPosition)(SSlice *pSlice);
 class IWelsParametersetStrategy;
 
 struct TagWelsFuncPointerList {
@@ -231,19 +223,6 @@ struct TagWelsFuncPointerList {
   PIDctFunc                              pfIDctT4;
   PIDctFunc                              pfIDctI16x16Dc;
 
-  // OPTI: if MT under diff uiSliceMode, need change here
-  //PDynamicSlicingStepBackFunc  dynslc_funcpointer_stepback;//svc_encode_slice.c
-  //DYNSLC_LNGTH_CRTL    dynslc_funcpointer_slcsize_ctrl;
-
-  /* For Deblocking */
-
-
-
-  PCavlcParamCalFunc    pfCavlcParamCal;
-  PWelsSpatialWriteMbSyn pfWelsSpatialWriteMbSyn;
-  PGetBsPosition pfGetBsPosition;
-  PStashMBStatus pfStashMBStatus;
-  PStashPopMBStatus pfStashPopMBStatus;
 
   IWelsParametersetStrategy* pParametersetStrategy;
 };

@@ -92,10 +92,7 @@ uint8_t	uiTransferCharacteristics;	// ETransferCharacteristics; 8 bits in header
 uint8_t	uiColorMatrix;				// EColorMatrix; 8 bits in header (corresponds to FFmpeg "colorspace"); 0 - 10 => GBR, bt709,
                                     //   undef, ???, fcc, bt470bg, smpte170m, smpte240m, YCgCo, bt2020nc, bt2020c
 
-bool            bConstraintSet0Flag;
-bool            bConstraintSet1Flag;
 bool            bConstraintSet2Flag;
-bool            bConstraintSet3Flag;
 // bool            bSeparateColorPlaneFlag;  // =false,: only used in decoder, encoder in general_***; it can be removed when removed general up_sample
 
 // aspect ratio in VUI
@@ -148,7 +145,6 @@ uint8_t         uiChromaQpIndexOffset;
 // /* potential application for High profile */
 
 // bool            bPicOrderPresentFlag;
-bool    bEntropyCodingModeFlag;
 bool            bDeblockingFilterControlPresentFlag;
 
 // bool            bConstainedIntraPredFlag;

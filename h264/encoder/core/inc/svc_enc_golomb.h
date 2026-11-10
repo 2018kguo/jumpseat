@@ -93,17 +93,6 @@ if (0 == kiValue) {
 }
 }
 
-/*
- *  Write truncated exp golomb codes
- */
-static inline void BsWriteTE (SBitStringAux* pBs, const int32_t kiX, const uint32_t kuiValue) {
-if (1 == kiX) {
-  BsWriteOneBit (pBs, !kuiValue);
-} else {
-  BsWriteUE (pBs, kuiValue);
-}
-}
-
 static inline int32_t BsGetBitsPos (SBitStringAux* pBs) {
 return (int32_t) (((pBs->pCurBuf - pBs->pStartBuf) << 3) + 32 - pBs->iLeftBits);
 }
