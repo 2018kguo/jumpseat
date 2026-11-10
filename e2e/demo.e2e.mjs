@@ -174,5 +174,48 @@ await phone.touchscreen.tap(640, 500);
 await phone.waitForTimeout(1000);
 check(/^tap \d+/.test(windowTitle()), `a tap clicks the desktop (window: ${windowTitle()})`);
 
+// Sound: Chromium in the container plays a tone; a viewer that turns sound
+// on hears it, and with sound off nothing records.
+const parecRunning = () => {
+  try {
+    execFileSync("docker", ["exec", container, "pgrep", "-x", "parec"]);
+    return true;
+  } catch {
+    return false;
+  }
+};
+const tone = "data:text/html,<title>tone</title><script>const c=new AudioContext(),o=c.createOscillator();o.connect(c.destination);o.start()</script>";
+execFileSync("docker", ["exec", "-e", "DISPLAY=:0", container, "xdotool", "key", "ctrl+l", "type", tone]);
+execFileSync("docker", ["exec", "-e", "DISPLAY=:0", container, "xdotool", "key", "Return"]);
+const listener = await browser.newPage();
+// The loudest sample the viewer decodes.
+await listener.addInitScript(() => {
+  const Real = AudioDecoder;
+  window.__peak = 0;
+  window.AudioDecoder = class extends Real {
+    constructor(init) {
+      super({
+        ...init,
+        output: (data) => {
+          const samples = new Float32Array(data.numberOfFrames);
+          data.copyTo(samples, { planeIndex: 0, format: "f32-planar" });
+          for (const x of samples) window.__peak = Math.max(window.__peak, Math.abs(x));
+          init.output(data);
+        },
+      });
+    }
+  };
+});
+await listener.goto(`${base}/?token=${token}`);
+await listener.getByText("Agent in control").waitFor({ timeout: 30000 });
+check(!parecRunning(), "nothing records while every viewer has sound off");
+await listener.getByRole("button", { name: "Sound on" }).click();
+await listener.waitForTimeout(2000);
+const peak = await listener.evaluate(() => window.__peak);
+check(peak > 0.1 && parecRunning(), `a viewer with sound on hears the desktop (peak ${peak.toFixed(2)})`);
+await listener.getByRole("button", { name: "Sound off" }).click();
+await listener.waitForTimeout(500);
+check(!parecRunning(), "sound off stops recording");
+
 await browser.close();
 process.exit(failures ? 1 : 0);

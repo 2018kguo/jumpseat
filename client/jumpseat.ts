@@ -19,6 +19,11 @@ export type AgentStatus = {
 export type DesktopStream = {
   close(): void;
   setControlling(controlling: boolean): void;
+  /**
+   * Hear the desktop. Call it from a click or key press: browsers start
+   * sound only after one. Off by default, and nothing is sent while off.
+   */
+  setAudio(on: boolean): void;
 };
 
 type Rect = { height: number; left: number; top: number; width: number };
@@ -80,7 +85,8 @@ type StreamText =
   | { t: "c"; text: string }
   | { t: "status"; kind: AgentStatus["kind"]; text: string }
   | { t: "cursor"; png: string; x: number; y: number }
-  | { t: "size"; w: number; h: number };
+  | { t: "size"; w: number; h: number }
+  | { t: "s"; ok: boolean };
 
 const STATUS_KINDS = new Set(["idle", "acting", "waiting", "handoff"]);
 
@@ -114,6 +120,9 @@ function parseStreamText(raw: string): StreamText | null {
   if (m.t === "size" && num(m.w) && num(m.h) && (m.w as number) > 0 && (m.h as number) > 0) {
     return { t: "size", w: m.w as number, h: m.h as number };
   }
+  if (m.t === "s" && typeof m.ok === "boolean") {
+    return { t: "s", ok: m.ok };
+  }
   if (m.t === "cursor" && str(m.png) && num(m.x) && num(m.y)) {
     return { t: "cursor", png: m.png as string, x: m.x as number, y: m.y as number };
   }
@@ -130,6 +139,25 @@ const X_BUTTONS: Record<number, number> = { 0: 1, 1: 2, 2: 3 };
 
 const POINTER_ARROW =
   "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='20'%3E%3Cpath d='M1 1v15l4-4 3 7 3-1-3-7h6z' fill='white' stroke='black'/%3E%3C/svg%3E\")";
+
+/** The desktop's sound: Opus, 48 kHz stereo, 20 ms packets. */
+const AUDIO_CONFIG = { codec: "opus", numberOfChannels: 2, sampleRate: 48000 };
+// Sound plays this far behind the newest packet, to ride out network
+// jitter; when it falls further behind than AUDIO_MAX_S it skips ahead.
+const AUDIO_DELAY_S = 0.06;
+const AUDIO_MAX_S = 0.25;
+
+/** Whether this browser can play the desktop's sound (WebCodecs Opus). */
+export async function supportsAudio(): Promise<boolean> {
+  if (typeof AudioDecoder === "undefined") {
+    return false;
+  }
+  try {
+    return (await AudioDecoder.isConfigSupported(AUDIO_CONFIG)).supported === true;
+  } catch {
+    return false;
+  }
+}
 
 /** The codec the server sends: H.264 High profile (CABAC, no B-frames). */
 const STREAM_CODEC = "avc1.640029";
@@ -162,6 +190,8 @@ export function connect(
     status?: (status: AgentStatus) => void;
     /** The browser cannot decode H.264: the stream stops instead of dropping. */
     unsupported?: () => void;
+    /** setAudio(true) found no sound on the desktop: sound is off again. */
+    noAudio?: () => void;
   },
   /**
    * resize: ask the desktop to take the element's size, in CSS pixels, as it
@@ -171,7 +201,7 @@ export function connect(
 ): DesktopStream {
   if (typeof VideoDecoder === "undefined") {
     setTimeout(on.unsupported ?? on.dropped);
-    return { close() {}, setControlling() {} };
+    return { close() {}, setAudio() {}, setControlling() {} };
   }
   const canvas = document.createElement("canvas");
   // The desktop's size: the server sends it before each new stream's keyframe.
@@ -224,6 +254,94 @@ export function connect(
   const socket = new WebSocket(socketUrl);
   socket.binaryType = "arraybuffer";
 
+  // Sound, while the user has it on. serverAudio: whether the server said it
+  // has sound (its first message); an older server never says, and must not
+  // get "s", which it would count as the user driving.
+  let audio: {
+    context: AudioContext;
+    decoder: AudioDecoder;
+    draining: boolean;
+    playAt: number;
+    stamp: number;
+  } | null = null;
+  let serverAudio: boolean | undefined;
+  const stopAudio = () => {
+    if (audio) {
+      if (audio.decoder.state !== "closed") {
+        audio.decoder.close();
+      }
+      void audio.context.close();
+      audio = null;
+    }
+  };
+  // No sound after all: off on both ends, and the page is told.
+  const loseAudio = () => {
+    if (audio) {
+      stopAudio();
+      if (serverAudio) {
+        sendAlways({ on: false, t: "s" });
+      }
+      on.noAudio?.();
+    }
+  };
+  const setAudio = (on: boolean) => {
+    if (!on) {
+      stopAudio();
+      if (serverAudio) {
+        sendAlways({ on: false, t: "s" });
+      }
+      return;
+    }
+    if (audio || closed || typeof AudioDecoder === "undefined") {
+      return;
+    }
+    const context = new AudioContext({ latencyHint: "interactive", sampleRate: 48000 });
+    const state = {
+      context,
+      decoder: new AudioDecoder({
+        error: () => loseAudio(),
+        output: (data) => {
+          const buffer = context.createBuffer(data.numberOfChannels, data.numberOfFrames, data.sampleRate);
+          for (let channel = 0; channel < data.numberOfChannels; channel++) {
+            data.copyTo(buffer.getChannelData(channel), { format: "f32-planar", planeIndex: channel });
+          }
+          data.close();
+          const now = context.currentTime;
+          // Silence is not sent, so a gap restarts playback just behind now.
+          // After a burst (a stalled link catching up) packets are dropped
+          // until playback is back to that delay, not held a burst behind.
+          if (state.playAt < now) {
+            state.playAt = now + AUDIO_DELAY_S;
+            state.draining = false;
+          } else if (state.playAt > now + AUDIO_MAX_S) {
+            state.draining = true;
+          }
+          if (state.draining) {
+            if (state.playAt > now + AUDIO_DELAY_S) {
+              return;
+            }
+            state.draining = false;
+          }
+          const source = context.createBufferSource();
+          source.buffer = buffer;
+          source.connect(context.destination);
+          source.start(state.playAt);
+          state.playAt += buffer.duration;
+        },
+      }),
+      draining: false,
+      playAt: 0,
+      stamp: 0,
+    };
+    state.decoder.configure(AUDIO_CONFIG);
+    audio = state;
+    if (serverAudio) {
+      sendAlways({ on: true, t: "s" });
+    } else if (serverAudio === false || connected) {
+      loseAudio();
+    }
+  };
+
   function stop(notify: () => void) {
     if (!closed) {
       closed = true;
@@ -231,6 +349,7 @@ export function connect(
       clearTimeout(firstFrame);
       resizer?.disconnect();
       socket.close();
+      stopAudio();
       notify();
     }
   }
@@ -284,6 +403,14 @@ export function connect(
         if (controlling) {
           canvas.style.cursor = cursor.css;
         }
+      } else if (message.t === "s") {
+        const first = serverAudio === undefined;
+        serverAudio = message.ok;
+        if (!message.ok) {
+          loseAudio();
+        } else if (first && audio) {
+          sendAlways({ on: true, t: "s" });
+        }
       } else if (message.t === "status") {
         on.status?.({ kind: message.kind, text: message.text });
       } else if (message.t === "p") {
@@ -307,6 +434,13 @@ export function connect(
       return;
     }
     const data = new Uint8Array(event.data);
+    if (data[0] === 2) {
+      if (audio?.decoder.state === "configured") {
+        audio.stamp += 20_000;
+        audio.decoder.decode(new EncodedAudioChunk({ data: data.subarray(1), timestamp: audio.stamp, type: "key" }));
+      }
+      return;
+    }
     const key = data[0] === 1;
     const stamp = Number(new DataView(event.data).getBigUint64(1));
     if (!configured) {
@@ -328,6 +462,9 @@ export function connect(
     );
     if (!connected) {
       connected = true;
+      if (serverAudio === undefined) {
+        loseAudio(); // a server from before sound
+      }
       clearTimeout(firstFrame);
       on.connected();
     }
@@ -509,11 +646,13 @@ export function connect(
       if (decoder.state !== "closed") {
         decoder.close();
       }
+      stopAudio();
       document.removeEventListener("paste", onPaste);
       document.removeEventListener("visibilitychange", onVisibility);
       canvas.remove();
       pointer.remove();
     },
+    setAudio,
     setControlling(next) {
       if (!next) {
         send({ t: "r" });

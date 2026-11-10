@@ -15,23 +15,26 @@
 </style>
 <header>
   <span class="grow" id="state">Connecting…</span>
+  <button id="sound" hidden>Sound on</button>
   <button id="done">Done, continue</button>
   <button id="control">Take over</button>
 </header>
 <div id="screen"><div id="frame"></div><div class="pill" id="caption"></div><div class="pill" id="handoff"></div></div>
 <script type="module">
-  import { connect } from "./jumpseat.js";
+  import { connect, supportsAudio } from "./jumpseat.js";
   // The demo viewer: ?token=… is the server's --token.
   const token = new URLSearchParams(location.search).get("token") ?? "";
   const $ = (id) => document.getElementById(id);
   const socketUrl = `${location.protocol === "https:" ? "wss" : "ws"}://${location.host}/stream?token=${encodeURIComponent(token)}`;
   let controlling = false;
+  let sound = false;
   let captionTimer;
   const answer = (reply) =>
     fetch("/agent/answer", { method: "POST", headers: { authorization: `Bearer ${token}`, "content-type": "application/json" }, body: JSON.stringify({ reply }) });
   const view = connect($("screen"), socketUrl, {
     connected: () => ($("state").textContent = "Agent in control"),
     dropped: () => ($("state").textContent = "Disconnected — reload to retry"),
+    noAudio: () => { sound = false; $("sound").textContent = "No sound"; $("sound").disabled = true; },
     unsupported: () => ($("state").textContent = "This browser can't decode the stream: use Chrome, Edge, Safari or Firefox."),
     status: ({ kind, text }) => {
       $("handoff").style.display = kind === "handoff" ? "block" : "none";
@@ -52,6 +55,12 @@
     $("frame").style.display = next ? "block" : "none";
     $("control").textContent = next ? "Stop controlling" : "Take over";
     $("state").textContent = next ? "You're in control" : "Agent in control";
+  };
+  supportsAudio().then((ok) => ($("sound").hidden = !ok));
+  $("sound").onclick = () => {
+    sound = !sound;
+    view.setAudio(sound);
+    $("sound").textContent = sound ? "Sound off" : "Sound on";
   };
   $("control").onclick = () => setControlling(!controlling);
   $("done").onclick = () => { setControlling(false); answer("done"); };

@@ -48,6 +48,7 @@ func main() {
 	dir := flag.String("dir", "/run/jumpseat", "directory for the agent status and user-input files")
 	recordTo := flag.String("record", "", "record the next --frames changed frames (raw BGRX) to this file, for bench/, and exit")
 	frames := flag.Int("frames", 300, "how many frames --record writes")
+	sound := flag.String("audio", "@DEFAULT_MONITOR@", `PulseAudio source viewers hear when they turn sound on, through parec; "" for none`)
 	resize := flag.Bool("resize", false, "let viewers resize the desktop to their window (RandR; start Xvfb at the largest size to allow). Off by default: an agent's clicks assume the size it saw")
 	flag.Parse()
 	if *recordTo != "" {
@@ -87,6 +88,7 @@ func main() {
 	}
 	log.Printf("jumpseat on %s, display %s", *listen, *display)
 	h := newHub(*display)
+	h.audio = newAudio(*sound)
 	go primeScrolls(*display)
 	if *resize {
 		if h.screen, err = openScreen(*display); err != nil {

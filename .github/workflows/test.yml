@@ -10,7 +10,7 @@ jobs:
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
-      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends nasm libyuv-dev
+      - run: sudo apt-get update && sudo apt-get install -y --no-install-recommends nasm libyuv-dev libopus-dev
       - uses: actions/setup-go@v5
         with:
           go-version-file: server/go.mod

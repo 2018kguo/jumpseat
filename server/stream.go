@@ -150,11 +150,17 @@ func serve(ws *websocket.Conn, h *hub) {
 	v := &viewer{ws: ws, f: newFlow(), gone: make(chan struct{}), out: make(chan any, viewerQueue)}
 	defer v.fail()
 	go v.write()
+	// Whether this server has sound, ahead of any frame. A client asks for
+	// sound only after this: a server from before sound would take "s" for
+	// the user driving.
+	if err := v.text(map[string]any{"t": "s", "ok": h.audio.source != ""}); err != nil {
+		return
+	}
 	v.f.acked = h.acked
 	// Joined before the input reader starts, so a hide it reads leaves after.
 	h.join(v)
 	// Gone before it leaves: a late "v" from the input reader cannot join it again.
-	defer func() { v.fail(); h.leave(v) }()
+	defer func() { v.fail(); h.leave(v); h.audio.set(v, false) }()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
@@ -165,7 +171,7 @@ func serve(ws *websocket.Conn, h *hub) {
 			} else {
 				h.leave(v)
 			}
-		})
+		}, func(on bool) { h.audio.set(v, on) })
 		cancel()
 	}()
 

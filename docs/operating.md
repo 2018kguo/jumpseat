@@ -16,6 +16,9 @@ with the X server your agent drives.
 - `xclip` (the clipboard) and `xdotool` (typing characters that are not on
   the X keymap, such as "é") on `PATH`.
 - libyuv at run time. The encoder is linked in.
+- For sound, a PulseAudio or PipeWire server and `parec` (Debian:
+  `pulseaudio-utils`). Without them a viewer that turns sound on gets
+  `noAudio`. Opus is linked in.
 - A browser with WebCodecs and an H.264 decoder (Chrome, Edge, Safari,
   Firefox). Some Linux Chromium builds ship without one: `supportsStream()`
   says so before you connect.
@@ -60,6 +63,6 @@ and their defaults are what the benchmarks measured.
 
 ## Limits
 
-X11 only, one screen. No audio, clipboard images, file transfer, Wayland or
+X11 only, one screen. No microphone, clipboard images, file transfer, Wayland or
 per-window streaming yet. All viewers share one encoder, so the slowest link
 sets the pace for everyone.

@@ -5,7 +5,7 @@ The server, its HTTP and websocket protocol, and the browser client.
 ## Server
 
 ```sh
-jumpseat [--listen unix:/run/jumpseat/stream.sock | host:port] [--token T] [--display :0] [--dir /run/jumpseat] [--resize]
+jumpseat [--listen unix:/run/jumpseat/stream.sock | host:port] [--token T] [--display :0] [--dir /run/jumpseat] [--resize] [--audio SOURCE]
 jumpseat --record FILE [--frames 300] [--display :0]
 ```
 
@@ -16,6 +16,7 @@ jumpseat --record FILE [--frames 300] [--display :0]
 | `--display` | | `:0` | The X display to stream and drive. |
 | `--dir` | | `/run/jumpseat` | Where the agent status and user-input files live. |
 | `--resize` | | off | Let viewers resize the desktop to their window, through RandR, up to the size Xvfb started at. Off by default ([why](../README.md#how-it-works)). |
+| `--audio` | | `@DEFAULT_MONITOR@` | The PulseAudio (or PipeWire pulse) source viewers hear when they turn sound on, recorded through `parec`. `""` turns sound off. |
 | `--record` | | off | Write the next `--frames` changed frames as raw BGRX to this file, for [bench/](../bench/README.md), and exit. |
 
 Tuning and measurement knobs are in [operating.md](operating.md#environment).
@@ -48,17 +49,21 @@ One websocket carries the screen to the viewer and the viewer's input back.
 
 ### Server to viewer
 
-**Binary messages: one video frame each.**
+**Binary messages: one video frame or sound packet each.**
 
 | Bytes | Field |
 |---|---|
-| 0 | `1` if the frame is a keyframe, else `0` |
+| 0 | `1` if the frame is a keyframe, else `0`; `2` is a sound packet (below), not a frame |
 | 1–8 | frame id: big-endian uint64, ms since this connection began, echoed back in `a` |
 | 9– | one H.264 access unit, Annex B, High profile (`avc1.640029`: CABAC, no B-frames), at the size of the last `size` message |
 
 Every viewer shares one encoder. Each connection starts with a `size`
 message and a keyframe, and so does every change of the screen's size. The
 viewer acks every frame it shows ([flow control](operating.md#resources)).
+
+A viewer that sent `s` with `on: true` also gets sound: byte 0 is `2`, and
+the rest is one Opus packet, 48 kHz stereo, 20 ms. Silence is not sent, so
+packets stop and start; play each one as it comes, a little behind.
 
 **Text messages: JSON.** Ignore unknown ones.
 
@@ -69,6 +74,7 @@ viewer acks every frame it shows ([flow control](operating.md#resources)).
 | `cursor` | `png` (base64), `x`, `y` (hotspot) | The screen's cursor image, when it changes. |
 | `p` | `x`, `y` | The pointer moved. |
 | `c` | `text` | The desktop's clipboard changed. |
+| `s` | `ok` | First, before any frame: whether this server has sound (`--audio` is set). Later `ok: false`: recording failed or stopped (no `parec`, no such source); sound is off for this viewer. A server that never sends it has no sound; do not send it `s`. |
 | `n` | | Nothing: sent after a small frame so TCP notices a lost packet sooner. |
 
 ### Viewer to server
@@ -86,9 +92,10 @@ Text messages, JSON:
 | `c` | `text` (≤ 64 KiB) | Paste this into the desktop's clipboard. |
 | `r` | | Release every key and button this viewer holds. |
 | `v` | `hidden` | The page was hidden (a background tab, minimized) or shown again. A hidden viewer gets no frames, so nothing is encoded for it; shown, it gets a keyframe. While hidden, it may be silent for 3 minutes. |
+| `s` | `on` | Sound on or off for this viewer. Nothing records while every viewer has it off. |
 | `z` | `w`, `h` | Resize the desktop to this size (with `--resize`; otherwise ignored). The server rounds it to a size the screen can take. |
 
-Every message except `a`, `h`, `z`, `v` and `r` counts as the user driving; `r`
+Every message except `a`, `h`, `z`, `v`, `s` and `r` counts as the user driving; `r`
 ends it at once, so the agent need not wait out the 5 s.
 
 ## Browser client
@@ -97,20 +104,23 @@ ends it at once, so the agent need not wait out the 5 s.
 dependencies.
 
 ```ts
-import { connect, supportsStream } from "./jumpseat"; // or dist/ from `bun run build`
+import { connect, supportsAudio, supportsStream } from "./jumpseat"; // or dist/ from `bun run build`
 
 const view = connect(element, `wss://host/stream?token=${token}`, {
   connected: () => {},  // the first frame arrived
   dropped: () => {},    // the socket closed; connect again to retry
   status: ({ kind, text }) => {},
   unsupported: () => {}, // this browser cannot decode the stream (no WebCodecs H.264)
+  noAudio: () => {},     // setAudio(true), but the desktop has no sound
 }, { resize: false });   // true: the desktop takes the element's size (needs --resize)
 view.setControlling(true); // the user's input now reaches the desktop
+soundButton.onclick = () => view.setAudio(true); // from a click: browsers start sound only after one
 view.close();
 ```
 
 `connect` puts a letterboxed canvas in `element`. `supportsStream()` answers
-whether this browser can decode the stream without connecting. While `setControlling` is
+whether this browser can decode the stream without connecting, and
+`supportsAudio()` whether it can play the sound (WebCodecs Opus). While `setControlling` is
 false the viewer only watches, and shows the agent's pointer; while true,
 keys, pointer, wheel and paste go to the desktop. On a touch screen a tap
 clicks, a long press right-clicks, one finger drags and two fingers scroll.
