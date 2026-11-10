@@ -14,6 +14,7 @@ const view = connect(element, `wss://host/stream?token=${token}`, {
   status: ({ kind, text }) => {}, // "acting" | "waiting" | "handoff" | "idle"
 });
 view.setControlling(true); // the person's keys, pointer and scrolls reach the desktop
+view.setAudio(true);       // from a click: hear the desktop (Opus, off until asked)
 ```
 
 The server, the agent API and every option are in

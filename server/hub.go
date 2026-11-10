@@ -25,6 +25,7 @@ import (
 type hub struct {
 	display string
 	screen  *screen // nil: viewers cannot resize the desktop (--resize)
+	audio   *audio
 
 	mu      sync.Mutex
 	viewers map[*viewer]bool
@@ -39,7 +40,7 @@ type hub struct {
 }
 
 func newHub(display string) *hub {
-	return &hub{display: display, viewers: map[*viewer]bool{}, joined: make(chan struct{}, 1), acked: make(chan struct{}, 1)}
+	return &hub{display: display, audio: newAudio(""), viewers: map[*viewer]bool{}, joined: make(chan struct{}, 1), acked: make(chan struct{}, 1)}
 }
 
 func wake(c chan struct{}) {

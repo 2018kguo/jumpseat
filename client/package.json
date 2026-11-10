@@ -1,6 +1,6 @@
 {
   "name": "@2018kguo/jumpseat",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Watch and take over a computer-use agent's desktop: the browser client for jumpseat (H.264 over a websocket, WebCodecs).",
   "keywords": [
     "computer-use",

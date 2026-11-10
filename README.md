@@ -98,6 +98,7 @@ const view = connect(element, `wss://host/stream?token=${token}`, {
   status: ({ kind, text }) => {}, // "acting" | "waiting" | "handoff" | "idle"
 });
 view.setControlling(true); // the person's keys, pointer and scrolls reach the desktop
+view.setAudio(true);       // from a click: hear the desktop (Opus, off until asked)
 ```
 
 **From your agent:**
@@ -125,6 +126,12 @@ WebCodecs as it arrives and acks it, and the server holds capture while
 frames go unshown and caps the bitrate to what the link carries, so a slow
 link drops frames instead of building up seconds of lag. A viewer whose tab
 is hidden gets nothing, so nothing is encoded for it.
+
+Sound is off until a viewer turns it on. Then `parec` records the
+PulseAudio (or PipeWire) monitor, libopus encodes 20 ms packets on the same
+socket, and the browser plays them through WebCodecs about 60 ms behind.
+Silence is not sent; it costs about 0.02 cores and 65 kbit/s while
+something plays, and nothing records while every viewer has it off.
 
 The person's input comes back on the same socket and goes into X through
 XTest, with keys placed at the right keymap level so other keyboard layouts

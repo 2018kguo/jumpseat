@@ -154,7 +154,7 @@ func serve(ws *websocket.Conn, h *hub) {
 	// Joined before the input reader starts, so a hide it reads leaves after.
 	h.join(v)
 	// Gone before it leaves: a late "v" from the input reader cannot join it again.
-	defer func() { v.fail(); h.leave(v) }()
+	defer func() { v.fail(); h.leave(v); h.audio.set(v, false) }()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 	go func() {
@@ -165,7 +165,7 @@ func serve(ws *websocket.Conn, h *hub) {
 			} else {
 				h.leave(v)
 			}
-		})
+		}, func(on bool) { h.audio.set(v, on) })
 		cancel()
 	}()
 
