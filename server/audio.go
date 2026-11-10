@@ -12,6 +12,8 @@ static OpusEncoder *open_opus(int bitrate) {
 	opus_encoder_ctl(e, OPUS_SET_BITRATE(bitrate));
 	return e;
 }
+
+static void reset_opus(OpusEncoder *e) { opus_encoder_ctl(e, OPUS_RESET_STATE); }
 */
 import "C"
 
@@ -33,6 +35,9 @@ const (
 	// audioPacket marks an Opus packet: byte 0 of a binary message, where
 	// video frames have 0 or 1.
 	audioPacket = 2
+	// audioTail: silent frames still sent after a sound, so Opus's lookahead
+	// plays out instead of clipping the sound's end.
+	audioTail = 2
 )
 
 // audio is the desktop's sound for the viewers that turned it on ({"t":
@@ -52,13 +57,15 @@ func newAudio(source string) *audio {
 
 // set turns sound on or off for one viewer.
 func (a *audio) set(v *viewer, on bool) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	// Checked under the lock: serve closes gone before its set(v, false), so
+	// a late "s" from a viewer that left cannot keep parec running.
 	select {
-	case <-v.gone: // a late "s" from a viewer that left must not keep parec running
+	case <-v.gone:
 		on = false
 	default:
 	}
-	a.mu.Lock()
-	defer a.mu.Unlock()
 	if on {
 		a.listeners[v] = true
 	} else {
@@ -79,9 +86,14 @@ func (a *audio) set(v *viewer, on bool) {
 	}
 }
 
-func (a *audio) list() []*viewer {
+// listeners for cmd's packets: none once cmd is stopped, so a capture being
+// replaced does not send what is left in its pipe.
+func (a *audio) list(cmd *exec.Cmd) []*viewer {
 	a.mu.Lock()
 	defer a.mu.Unlock()
+	if a.parec != cmd {
+		return nil
+	}
 	list := make([]*viewer, 0, len(a.listeners))
 	for v := range a.listeners {
 		list = append(list, v)
@@ -105,7 +117,7 @@ func (a *audio) capture() (*exec.Cmd, error) {
 		return nil, err
 	}
 	go func() {
-		err := a.encode(stdout)
+		err := a.encode(stdout, cmd)
 		_ = cmd.Process.Kill() // a failed encoder leaves parec blocked on its pipe
 		_ = cmd.Wait()
 		a.mu.Lock()
@@ -127,7 +139,7 @@ func (a *audio) failLocked() {
 	a.parec = nil
 }
 
-func (a *audio) encode(pcm io.Reader) error {
+func (a *audio) encode(pcm io.Reader, cmd *exec.Cmd) error {
 	enc := C.open_opus(audioBitrate)
 	if enc == nil {
 		return errors.New("opus encoder")
@@ -136,11 +148,18 @@ func (a *audio) encode(pcm io.Reader) error {
 	frame := make([]byte, audioFrameBytes)
 	packet := make([]byte, 1+4000)
 	packet[0] = audioPacket
+	quiet := audioTail // silent frames in a row
 	for {
 		if _, err := io.ReadFull(pcm, frame); err != nil {
 			return err
 		}
-		if silent(frame) {
+		if !silent(frame) {
+			if quiet > audioTail {
+				// Fresh after a gap: no leftover state from the last sound.
+				C.reset_opus(enc)
+			}
+			quiet = 0
+		} else if quiet++; quiet > audioTail {
 			continue
 		}
 		n := C.opus_encode(enc, (*C.opus_int16)(unsafe.Pointer(&frame[0])), audioFrameSamples,
@@ -149,7 +168,7 @@ func (a *audio) encode(pcm io.Reader) error {
 			return errors.New("opus_encode failed")
 		}
 		message := bytes.Clone(packet[:1+n])
-		for _, v := range a.list() {
+		for _, v := range a.list(cmd) {
 			_ = v.send(message)
 		}
 	}

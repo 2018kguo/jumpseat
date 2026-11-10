@@ -53,7 +53,7 @@ One websocket carries the screen to the viewer and the viewer's input back.
 
 | Bytes | Field |
 |---|---|
-| 0 | `1` if the frame is a keyframe, else `0` |
+| 0 | `1` if the frame is a keyframe, else `0`; `2` is a sound packet (below), not a frame |
 | 1–8 | frame id: big-endian uint64, ms since this connection began, echoed back in `a` |
 | 9– | one H.264 access unit, Annex B, High profile (`avc1.640029`: CABAC, no B-frames), at the size of the last `size` message |
 
@@ -74,7 +74,7 @@ packets stop and start; play each one as it comes, a little behind.
 | `cursor` | `png` (base64), `x`, `y` (hotspot) | The screen's cursor image, when it changes. |
 | `p` | `x`, `y` | The pointer moved. |
 | `c` | `text` | The desktop's clipboard changed. |
-| `s` | `ok: false` | Sound was asked for but the desktop has none (no `parec`, no source, or `--audio ""`). Sound is off again. |
+| `s` | `ok` | First, before any frame: whether this server has sound (`--audio` is set). Later `ok: false`: recording failed or stopped (no `parec`, no such source); sound is off for this viewer. A server that never sends it has no sound; do not send it `s`. |
 | `n` | | Nothing: sent after a small frame so TCP notices a lost packet sooner. |
 
 ### Viewer to server

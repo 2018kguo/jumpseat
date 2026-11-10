@@ -4,11 +4,12 @@ import (
 	"bytes"
 	"encoding/binary"
 	"math"
+	"os/exec"
 	"testing"
 	"time"
 )
 
-// A tone becomes Opus packets for listeners; silence sends nothing.
+// A tone becomes Opus packets for listeners; silence after its tail sends nothing.
 func TestAudioEncode(t *testing.T) {
 	pcm := make([]byte, 0, audioFrameBytes*10)
 	for i := 0; i < audioFrameSamples*5; i++ { // 100 ms of 440 Hz
@@ -21,11 +22,13 @@ func TestAudioEncode(t *testing.T) {
 	a := newAudio("test")
 	v := &viewer{gone: make(chan struct{}), out: make(chan any, 64)}
 	a.listeners[v] = true
-	_ = a.encode(bytes.NewReader(pcm))
-	if len(v.out) != 5 {
-		t.Fatalf("got %d packets, want 5 (one per 20 ms of tone, none for silence)", len(v.out))
+	a.parec = &exec.Cmd{}
+	_ = a.encode(bytes.NewReader(pcm), a.parec)
+	want := 5 + audioTail // the tone, then its tail; no more silence
+	if len(v.out) != want {
+		t.Fatalf("got %d packets, want %d", len(v.out), want)
 	}
-	for range 5 {
+	for range want {
 		p := (<-v.out).([]byte)
 		if p[0] != audioPacket || len(p) < 10 {
 			t.Fatalf("bad packet: % x", p[:min(len(p), 8)])

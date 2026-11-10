@@ -254,8 +254,17 @@ export function connect(
   const socket = new WebSocket(socketUrl);
   socket.binaryType = "arraybuffer";
 
-  // Sound, while the user has it on.
-  let audio: { context: AudioContext; decoder: AudioDecoder; playAt: number; stamp: number } | null = null;
+  // Sound, while the user has it on. serverAudio: whether the server said it
+  // has sound (its first message); an older server never says, and must not
+  // get "s", which it would count as the user driving.
+  let audio: {
+    context: AudioContext;
+    decoder: AudioDecoder;
+    draining: boolean;
+    playAt: number;
+    stamp: number;
+  } | null = null;
+  let serverAudio: boolean | undefined;
   const stopAudio = () => {
     if (audio) {
       if (audio.decoder.state !== "closed") {
@@ -265,10 +274,22 @@ export function connect(
       audio = null;
     }
   };
+  // No sound after all: off on both ends, and the page is told.
+  const loseAudio = () => {
+    if (audio) {
+      stopAudio();
+      if (serverAudio) {
+        sendAlways({ on: false, t: "s" });
+      }
+      on.noAudio?.();
+    }
+  };
   const setAudio = (on: boolean) => {
     if (!on) {
       stopAudio();
-      sendAlways({ on: false, t: "s" });
+      if (serverAudio) {
+        sendAlways({ on: false, t: "s" });
+      }
       return;
     }
     if (audio || closed || typeof AudioDecoder === "undefined") {
@@ -278,7 +299,7 @@ export function connect(
     const state = {
       context,
       decoder: new AudioDecoder({
-        error: () => setAudio(false),
+        error: () => loseAudio(),
         output: (data) => {
           const buffer = context.createBuffer(data.numberOfChannels, data.numberOfFrames, data.sampleRate);
           for (let channel = 0; channel < data.numberOfChannels; channel++) {
@@ -287,10 +308,19 @@ export function connect(
           data.close();
           const now = context.currentTime;
           // Silence is not sent, so a gap restarts playback just behind now.
+          // After a burst (a stalled link catching up) packets are dropped
+          // until playback is back to that delay, not held a burst behind.
           if (state.playAt < now) {
             state.playAt = now + AUDIO_DELAY_S;
+            state.draining = false;
           } else if (state.playAt > now + AUDIO_MAX_S) {
-            return;
+            state.draining = true;
+          }
+          if (state.draining) {
+            if (state.playAt > now + AUDIO_DELAY_S) {
+              return;
+            }
+            state.draining = false;
           }
           const source = context.createBufferSource();
           source.buffer = buffer;
@@ -299,14 +329,18 @@ export function connect(
           state.playAt += buffer.duration;
         },
       }),
+      draining: false,
       playAt: 0,
       stamp: 0,
     };
     state.decoder.configure(AUDIO_CONFIG);
     audio = state;
-    sendAlways({ on: true, t: "s" });
+    if (serverAudio) {
+      sendAlways({ on: true, t: "s" });
+    } else if (serverAudio === false || connected) {
+      loseAudio();
+    }
   };
-  socket.addEventListener("open", () => audio && sendAlways({ on: true, t: "s" }));
 
   function stop(notify: () => void) {
     if (!closed) {
@@ -370,9 +404,12 @@ export function connect(
           canvas.style.cursor = cursor.css;
         }
       } else if (message.t === "s") {
-        if (!message.ok && audio) {
-          stopAudio();
-          on.noAudio?.();
+        const first = serverAudio === undefined;
+        serverAudio = message.ok;
+        if (!message.ok) {
+          loseAudio();
+        } else if (first && audio) {
+          sendAlways({ on: true, t: "s" });
         }
       } else if (message.t === "status") {
         on.status?.({ kind: message.kind, text: message.text });
@@ -425,6 +462,9 @@ export function connect(
     );
     if (!connected) {
       connected = true;
+      if (serverAudio === undefined) {
+        loseAudio(); // a server from before sound
+      }
       clearTimeout(firstFrame);
       on.connected();
     }
