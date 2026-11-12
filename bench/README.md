@@ -224,10 +224,11 @@ sandbox kind as above:
 
 | | main | now |
 |---|---|---|
-| B alone, animating | 5 fps, no key press shown within 10 s | **44 fps, key p50 195 ms** |
-| B alone, scrolling | 53 fps, 158 ms | 51 fps, 193 ms |
-| B alone, typing | 123 ms | 119 ms |
-| A beside B, animating | 65 fps, 14 Mbit/s; B as above | 47 fps, 0.85 Mbit/s; B 47 fps, 150 ms |
+| B alone, animating | 5 fps, no key press shown within 10 s | **42 fps, key p50 209 ms** |
+| B alone, scrolling | 53 fps, 158 ms | 50 fps, 179 ms |
+| B alone, typing | 123 ms | 121 ms |
+| A alone, animating / scrolling | 63 / 62 fps | 65 / 64 fps |
+| A beside B, animating | 65 fps, 14 Mbit/s; B as above | 43 fps, 0.93 Mbit/s; B 43 fps, 219 ms |
 
 On main a viewer slower than the stream never held capture: it was not
 held until its first ack, and the keyframe took 1.65 s to cross, so seconds
