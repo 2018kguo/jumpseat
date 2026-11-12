@@ -19,9 +19,12 @@ const flowSlack = 100 * time.Millisecond
 // as queueing forever.
 const rttWindow = 10 * time.Second
 
-// lostAfter is when an unshown frame is given up on (a decoder that dropped
-// it, a draw that threw): capture must never wait on an ack that will not
-// come.
+// lostAfter is when unshown frames are given up on once no ack has come for
+// that long (a decoder that dropped the last frame, a draw that threw):
+// capture must never wait on an ack that will not come. Acks cover every
+// older frame, so a dropped frame with any frame shown after it is covered;
+// while acks still arrive the link is slow, not losing frames, and giving
+// up on its oldest frames at 2 s let it queue seconds deep.
 const lostAfter = 2 * time.Second
 
 // stallAfter is when a viewer that acks no frame while frames are out is
@@ -42,10 +45,22 @@ const limitedHolds = 3
 // every round trip alike, so it does not widen the slack.
 const jitterSamples = 30
 
+// maxJitter bounds what jitter adds to the slack. A link slower than the
+// stream makes each round trip longer than the last, and that spread is the
+// queue, not jitter: uncapped, it widened the slack as fast as the queue grew
+// and capture never waited (1 Mbit/s, animating: 5 fps, key presses seconds
+// late). Wifi's spread is well under it (+-30 ms: ~60 ms).
+const maxJitter = 100 * time.Millisecond
+
 // queueSamples is how many of the latest round trips must all stand above
 // the floor before the link counts as the bottleneck: a standing queue, not
 // a late frame or two.
 const queueSamples = 10
+
+// minDeliveries is how many acks within rateWindow time the link. Few: a
+// link slower than the stream may deliver only ~5 frames a second until the
+// cap it sets makes them smaller (25 KB animation frames at 1 Mbit/s).
+const minDeliveries = 3
 
 // rateWindow is how much limited delivery the link's speed is averaged
 // over: an average, not a per-ack peak, because the browser hands over
@@ -69,9 +84,10 @@ type rttSample struct {
 // flow tracks frames sent but not yet shown, from the viewer's acks (each
 // frame's ts once decoded). Capture waits while the oldest unshown frame has
 // queued longer than flowSlack, and linkKbps tells the encoder what the link
-// carries once it is the bottleneck. A viewer that never acks (built before
-// acks) is not held back. Times are monotonic ms since the flow began, so a
-// VM clock step cannot confuse it.
+// carries once it is the bottleneck. Every client acks, so a viewer is held
+// from its first frame: waiting for its first ack let a slow link queue
+// seconds of video behind the keyframe. Times are monotonic ms since the
+// flow began, so a VM clock step cannot confuse it.
 type flow struct {
 	mu        sync.Mutex
 	epoch     time.Time
@@ -82,10 +98,11 @@ type flow struct {
 	acking    bool
 	lastAck   int64 // ms on the flow's clock
 	lastSent  int64
+	firstSent int64 // -1 until a frame goes out
 	acked     chan struct{}
 }
 
-func newFlow() *flow { return &flow{epoch: time.Now(), acked: make(chan struct{}, 1)} }
+func newFlow() *flow { return &flow{epoch: time.Now(), firstSent: -1, acked: make(chan struct{}, 1)} }
 
 // now is the flow's clock, and the ts frames are stamped with.
 func (f *flow) now() int64 { return time.Since(f.epoch).Milliseconds() }
@@ -94,6 +111,9 @@ func (f *flow) sent(ts int64, bytes int) {
 	f.mu.Lock()
 	f.inFlight = append(f.inFlight, sentFrame{ts: ts, bytes: bytes})
 	f.lastSent = ts
+	if f.firstSent < 0 {
+		f.firstSent = ts
+	}
 	f.mu.Unlock()
 }
 
@@ -110,12 +130,7 @@ func (f *flow) ack(ts int64) {
 		}
 	}
 	f.inFlight = kept
-	if rtt := now - ts; rtt >= 0 {
-		f.rtts = append(f.rtts, rttSample{at: now, rtt: rtt})
-	}
-	for len(f.rtts) > 1 && now-f.rtts[0].at > rttWindow.Milliseconds() {
-		f.rtts = f.rtts[1:]
-	}
+	f.addRTT(now, now-ts)
 	f.trim(now)
 	if len(f.holds) >= limitedHolds {
 		f.delivered = append(f.delivered, delivery{at: now, bytes: bytes})
@@ -126,6 +141,26 @@ func (f *flow) ack(ts int64) {
 	select {
 	case f.acked <- struct{}{}:
 	default:
+	}
+}
+
+// pong is the viewer answering ping ts: a round trip without a frame's own
+// transfer time (only whatever is queued ahead of it; the ping before the
+// first frame has nothing). A frame's ack has it: a keyframe takes seconds
+// to cross a slow link (1.65 s at 1 Mbit/s), and as the floor that let
+// seconds of video queue before capture waited.
+func (f *flow) pong(ts int64) {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.addRTT(f.now(), f.now()-ts)
+}
+
+func (f *flow) addRTT(now, rtt int64) {
+	if rtt >= 0 {
+		f.rtts = append(f.rtts, rttSample{at: now, rtt: rtt})
+	}
+	for len(f.rtts) > 1 && now-f.rtts[0].at > rttWindow.Milliseconds() {
+		f.rtts = f.rtts[1:]
 	}
 }
 
@@ -154,9 +189,9 @@ func (f *flow) rttQuantile(n int, q float64) int64 {
 	return recent[int(q*float64(n-1))]
 }
 
-// jitter is the spread of the latest round trips.
+// jitter is the spread of the latest round trips, up to maxJitter.
 func (f *flow) jitter() int64 {
-	return f.rttQuantile(jitterSamples, 0.9) - f.rttQuantile(jitterSamples, 0.1)
+	return min(f.rttQuantile(jitterSamples, 0.9)-f.rttQuantile(jitterSamples, 0.1), maxJitter.Milliseconds())
 }
 
 // queueing reports whether even the fastest of the latest round trips stands
@@ -195,12 +230,21 @@ func (f *flow) stalled() bool {
 func (f *flow) behind() bool {
 	f.mu.Lock()
 	defer f.mu.Unlock()
-	if !f.acking {
-		return false
-	}
 	now := f.now()
-	for len(f.inFlight) > 0 && now-f.inFlight[0].ts > lostAfter.Milliseconds() {
+	// A frame is lost after lostAfter with no ack at all, and after
+	// stallAfter even while acks come: a link that slow (well under the
+	// lowest cap) must not hold every viewer to a frame every few seconds.
+	giveUp := stallAfter.Milliseconds()
+	if now-f.lastAck > lostAfter.Milliseconds() {
+		giveUp = lostAfter.Milliseconds()
+	}
+	for len(f.inFlight) > 0 && now-f.inFlight[0].ts > giveUp {
 		f.inFlight = f.inFlight[1:]
+	}
+	// A viewer that has not acked by then never will (a client without acks,
+	// a decoder that outputs nothing): ignored, not waited on.
+	if !f.acking && f.firstSent >= 0 && now-f.firstSent > lostAfter.Milliseconds() {
+		return false
 	}
 	if len(f.inFlight) == 0 || now-f.inFlight[0].ts <= f.minRTT()+flowSlack.Milliseconds()+f.jitter() {
 		return false
@@ -211,6 +255,15 @@ func (f *flow) behind() bool {
 	return true
 }
 
+// held reports whether this viewer held capture within rateWindow behind a
+// standing queue: its link, not its decoder, is what is slow.
+func (f *flow) held() bool {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	f.trim(f.now())
+	return len(f.holds) > 0 && f.queueing()
+}
+
 // linkKbps is what the link carried while it kept holding capture back over
 // the last rateWindow with a queue standing, or 0 when it has not been the
 // bottleneck.
@@ -218,7 +271,7 @@ func (f *flow) linkKbps() int {
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	f.trim(f.now())
-	if len(f.holds) < limitedHolds || len(f.delivered) < 5 || !f.queueing() {
+	if len(f.holds) < limitedHolds || len(f.delivered) < minDeliveries || !f.queueing() {
 		return 0
 	}
 	span := f.delivered[len(f.delivered)-1].at - f.delivered[0].at

@@ -214,6 +214,51 @@ screen is sharp again in about the time the link takes to carry one
 full-quality frame: 51 dB at 20 frames and 54.5 dB at 40 at 1000 kbit/s,
 54 dB at 80 at 500 kbit/s (uncapped: 5 frames).
 
+## Two viewers, one slow (bench/compare/viewers.mjs)
+
+Viewer A on this machine's own link; viewer B through a shaping proxy in
+the probe (1 Mbit/s from the server behind a 256 KB buffer, +40 ms each
+way, so TCP pushes back as a slow link's does). Per workload: A alone, B
+alone, both (A presses the keys). Medians of two rounds, Nov 2026, the same
+sandbox kind as above:
+
+| | main | now |
+|---|---|---|
+| B alone, animating | 5 fps, no key press shown within 10 s | **42 fps, key p50 209 ms** |
+| B alone, scrolling | 53 fps, 158 ms | 50 fps, 179 ms |
+| B alone, typing | 123 ms | 121 ms |
+| A alone, animating / scrolling | 63 / 62 fps | 65 / 64 fps |
+| A beside B, animating | 65 fps, 14 Mbit/s; B as above | 43 fps, 0.93 Mbit/s; B 43 fps, 219 ms |
+
+On main a viewer slower than the stream never held capture: it was not
+held until its first ack, and the keyframe took 1.65 s to cross, so seconds
+of video were queued by then; that keyframe's round trip became the link's
+floor; the growing queue read as jitter and widened the slack; frames
+waiting 2 s were given up as lost; and the bitrate cap needed 5 acks a
+second the link could not deliver. Now a ping (`q`) times the bare link,
+viewers are held from their first frame, jitter adds at most 100 ms, frames
+are given up only when acks stop (or after 5 s), and the cap holds while a
+link is queueing. The fast viewer now gets the slow one's pace instead,
+the one-encoder limit in [operating.md](../docs/operating.md#limits).
+
+CPU while scrolling, alternating on one sandbox: the 3 tail messages after
+every small frame (`JUMPSEAT_TAIL`) cost 0.37 → 0.23 cores; they now follow
+only a frame after 50 ms of stillness (a keystroke's), where they help:
+at 3% loss (bench/wifi), 800 keystrokes each, ABBA, over 150 ms 19 → 2 and
+p99 170 → 87 ms with them, as before.
+The rest of the server's time scrolling (Go profile, `GOFLAGS=-tags=pprof`
+on the lab, then `/debug/pprof/profile` on the sandbox's 127.0.0.1:6060):
+half the encoder, the rest websocket writes, X replies and goroutine
+wakeups, which gVisor makes dear.
+
+```sh
+python3 bench/compare/lab.py
+cd bench/compare && npm i && node viewers.mjs 10 2 [kbps=1000] [delay=40]
+```
+
+The probe's own frame counting follows its browser's frame rate: on
+battery, macOS runs headless Chrome at 30 Hz and every fps here halves.
+
 ## On a bad connection (bench/wifi)
 
 The streamer in a Modal sandbox (`bench/wifi/lab.py`, us-east) and a

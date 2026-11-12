@@ -86,7 +86,8 @@ type StreamText =
   | { t: "status"; kind: AgentStatus["kind"]; text: string }
   | { t: "cursor"; png: string; x: number; y: number }
   | { t: "size"; w: number; h: number }
-  | { t: "s"; ok: boolean };
+  | { t: "s"; ok: boolean }
+  | { t: "q"; ts: number };
 
 const STATUS_KINDS = new Set(["idle", "acting", "waiting", "handoff"]);
 
@@ -122,6 +123,9 @@ function parseStreamText(raw: string): StreamText | null {
   }
   if (m.t === "s" && typeof m.ok === "boolean") {
     return { t: "s", ok: m.ok };
+  }
+  if (m.t === "q" && num(m.ts)) {
+    return { t: "q", ts: m.ts as number };
   }
   if (m.t === "cursor" && str(m.png) && num(m.x) && num(m.y)) {
     return { t: "cursor", png: m.png as string, x: m.x as number, y: m.y as number };
@@ -376,7 +380,11 @@ export function connect(
       if (!message) {
         return;
       }
-      if (message.t === "size") {
+      if (message.t === "q") {
+        // The server's ping: answered at once, it times the link's round
+        // trip without a frame's own transfer time in it.
+        sendAlways({ t: "q", ts: message.ts });
+      } else if (message.t === "size") {
         // The keyframe that follows starts a stream of the new size. The
         // canvas changes size when that frame is drawn: resizing it now
         // would blank the picture until then.
