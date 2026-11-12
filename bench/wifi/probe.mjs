@@ -12,7 +12,11 @@ const arrivals = []; // [t, bytes, key]
 let firstFrame;
 const opened = new Promise((r, j) => { ws.onopen = r; ws.onerror = () => j(new Error("socket error")); });
 ws.onmessage = (e) => {
-  if (typeof e.data === "string") return;
+  if (typeof e.data === "string") {
+    const m = JSON.parse(e.data);
+    if (m.t === "q") ws.send(JSON.stringify({ t: "q", ts: m.ts })); // the server's ping, as the client answers it
+    return;
+  }
   const b = new Uint8Array(e.data), t = performance.now();
   const id = new DataView(e.data).getBigUint64(1);
   arrivals.push([t, b.length, b[0]]);

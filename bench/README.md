@@ -242,7 +242,9 @@ the one-encoder limit in [operating.md](../docs/operating.md#limits).
 
 CPU while scrolling, alternating on one sandbox: the 3 tail messages after
 every small frame (`JUMPSEAT_TAIL`) cost 0.37 → 0.23 cores; they now follow
-only a frame after 50 ms of stillness (a keystroke's), where they help.
+only a frame after 50 ms of stillness (a keystroke's), where they help:
+at 3% loss (bench/wifi), 800 keystrokes each, ABBA, over 150 ms 19 → 2 and
+p99 170 → 87 ms with them, as before.
 The rest of the server's time scrolling (Go profile, `GOFLAGS=-tags=pprof`
 on the lab, then `/debug/pprof/profile` on the sandbox's 127.0.0.1:6060):
 half the encoder, the rest websocket writes, X replies and goroutine
