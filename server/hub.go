@@ -189,7 +189,7 @@ func (h *hub) capture() (bool, error) {
 	damage.Create(conn, dmg, xproto.Drawable(root), damage.ReportLevelNonEmpty)
 
 	start := time.Now()
-	var last time.Time
+	var last, sentAt time.Time
 	interval := time.Second / maxFPS
 	stages := &stageTimes{since: time.Now()}
 	defer stages.flush()
@@ -248,6 +248,12 @@ func (h *hub) capture() (bool, error) {
 			}
 		}
 		encoded = true
+		// Refining frames are not motion: a keystroke after them still probes.
+		probe := false
+		if refines == 0 {
+			probe = tailProbes > 0 && len(au) < 1200 && time.Since(sentAt) >= tailQuiet
+			sentAt = time.Now()
+		}
 		for _, v := range h.list() {
 			if !greeted[v] || (waiting[v] && !key) {
 				continue
@@ -257,7 +263,7 @@ func (h *hub) capture() (bool, error) {
 			v.f.sent(ts, len(au))
 			if v.frame(au, key, ts) != nil {
 				v.fail()
-			} else if tailProbes > 0 && len(au) < 1200 {
+			} else if probe {
 				v.tail()
 			}
 		}
@@ -398,16 +404,22 @@ func (h *hub) behind() bool {
 // adaptBitrate returns the encoder's new bitrate cap (0: none) given its
 // current one.
 func (h *hub) adaptBitrate(enc *encoder, capKbps int) int {
-	target := 0
+	target, held := 0, false
 	for _, v := range h.list() {
 		if kbps := v.f.linkKbps() * 8 / 10; kbps > 0 && (target == 0 || kbps < target) {
 			target = kbps
 		}
+		held = held || v.f.held()
 	}
 	if target > 0 && target < minCapKbps {
 		target = minCapKbps
 	}
-	if target == 0 && capKbps > 0 {
+	if target == 0 && capKbps > 0 && held {
+		// A link still holding capture with no acks back to time it: keep
+		// the cap. Probing then ran it 500 -> 12000 kbit/s in 2 s on a
+		// 1 Mbit/s link.
+		target = capKbps
+	} else if target == 0 && capKbps > 0 {
 		// Under the cap the link is too quick to time: probe upward (like
 		// BBR), lifting the cap once it is past any real link.
 		target = capKbps * 3 / 2

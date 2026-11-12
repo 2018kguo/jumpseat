@@ -108,7 +108,13 @@ func (v *viewer) text(message any) error {
 // a round trip instead of waiting for its tail-loss timer. With 3% loss
 // (bench/wifi): keystrokes over 150 ms 30 -> 3 in 800, p99 281 -> 93 ms.
 // JUMPSEAT_TAIL sets the count (0: off).
+//
+// Only after a frame that follows tailQuiet of stillness: in motion the next
+// frame, 16 ms on, does the same, and probing every small frame cost 40% of
+// the server's CPU scrolling (0.37 -> 0.23 cores, bench/compare).
 var tailProbes = envInt("JUMPSEAT_TAIL", 3)
+
+const tailQuiet = 50 * time.Millisecond
 
 func envInt(name string, fallback int) int {
 	if n, err := strconv.Atoi(os.Getenv(name)); err == nil {
@@ -116,6 +122,9 @@ func envInt(name string, fallback int) int {
 	}
 	return fallback
 }
+
+// ping asks the viewer to answer "q" at once (flow.pong).
+func (v *viewer) ping() error { return v.text(map[string]any{"t": "q", "ts": v.f.now()}) }
 
 func (v *viewer) tail() {
 	for i := 1; i <= tailProbes; i++ {
@@ -157,6 +166,10 @@ func serve(ws *websocket.Conn, h *hub) {
 		return
 	}
 	v.f.acked = h.acked
+	// A ping ahead of the first frame times the bare link (flow.pong).
+	if err := v.ping(); err != nil {
+		return
+	}
 	// Joined before the input reader starts, so a hide it reads leaves after.
 	h.join(v)
 	// Gone before it leaves: a late "v" from the input reader cannot join it again.
@@ -223,6 +236,9 @@ func serve(ws *websocket.Conn, h *hub) {
 	agent := &agentStatusWatch{}
 	statusTick := time.NewTicker(statusPoll)
 	defer statusTick.Stop()
+	// Pinged again within rttWindow, so the floor stays the bare link's.
+	pings := time.NewTicker(time.Second)
+	defer pings.Stop()
 	var px, py int16 = -1, -1
 	for {
 		var err error
@@ -246,6 +262,8 @@ func serve(ws *websocket.Conn, h *hub) {
 			err = v.text(map[string]any{"t": "c", "text": text})
 		case <-reshaped:
 			err = sendCursor()
+		case <-pings.C:
+			err = v.ping()
 		case <-statusTick.C:
 			if status, changed := agent.changed(); changed {
 				err = v.text(map[string]any{"t": "status", "kind": status.Kind, "text": status.Text})

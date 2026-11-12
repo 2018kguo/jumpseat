@@ -10,8 +10,8 @@ func TestFlowHoldsCaptureOnlyForAQueueingViewer(t *testing.T) {
 	f.epoch = time.Now().Add(-10 * time.Second)
 	now := f.now()
 	f.sent(now-500, 1000)
-	if f.behind() {
-		t.Fatal("a viewer that has never acked (an old client) must not be held back")
+	if !f.behind() {
+		t.Fatal("a viewer is held from its first frame, before any ack: a slow link would queue seconds behind the keyframe")
 	}
 	f.sent(now-20, 1000)
 	f.ack(now - 20) // a 20 ms link; covers the older frame too
@@ -27,8 +27,13 @@ func TestFlowHoldsCaptureOnlyForAQueueingViewer(t *testing.T) {
 		t.Fatal("200 ms unshown on a 20 ms link is queueing")
 	}
 	f.inFlight[0].ts = now - 3000
+	f.lastAck = now - 1000
+	if !f.behind() {
+		t.Fatal("acks still arriving: the link is slow, and its oldest frame is not lost")
+	}
+	f.lastAck = now - 3000
 	if f.behind() || len(f.inFlight) != 0 {
-		t.Fatal("a frame unacked for 3 s is lost, not a reason to wait forever")
+		t.Fatal("no ack for 3 s: the frame is lost, not a reason to wait forever")
 	}
 }
 
@@ -144,5 +149,76 @@ func TestAStalledViewerIsNoticed(t *testing.T) {
 	f.lastAck = now - 6000
 	if !f.stalled() {
 		t.Fatal("6 s of frames with no ack is stalled")
+	}
+}
+
+// A link slower than the stream: each round trip longer than the last as the
+// queue grows. That spread is the queue, not jitter, and must not widen the
+// slack past it (1 Mbit/s, animating: frames queued seconds deep and key
+// presses never showed, bench/compare/viewers.mjs).
+func TestAGrowingQueueIsNotJitter(t *testing.T) {
+	f := newFlow()
+	f.epoch = time.Now().Add(-10 * time.Second)
+	now := f.now()
+	f.acking = true
+	f.rtts = []rttSample{{at: now - 3000, rtt: 50}}
+	for i := 0; i < jitterSamples; i++ {
+		f.rtts = append(f.rtts, rttSample{at: now - 1500 + int64(i)*50, rtt: 100 + int64(i)*60})
+	}
+	f.sent(now-400, 1000)
+	if !f.behind() {
+		t.Fatalf("a frame 400 ms out on a 50 ms link held nothing (slack widened by %d ms of 'jitter')", f.jitter())
+	}
+}
+
+// The floor is the bare link's round trip, from pings, not a frame's ack:
+// a keyframe's ack carries its own transfer time (1.65 s at 1 Mbit/s).
+func TestPingsSetTheFloorNotAKeyframe(t *testing.T) {
+	f := newFlow()
+	f.epoch = time.Now().Add(-10 * time.Second)
+	now := f.now()
+	f.pong(now - 60)
+	f.sent(now-1700, 250_000)
+	f.ack(now - 1700) // the keyframe, 1.7 s to cross the link
+	if got := f.minRTT(); got != 60 {
+		t.Fatalf("floor %d ms, want the ping's 60", got)
+	}
+	f.sent(now-400, 25_000)
+	if !f.behind() {
+		t.Fatal("a frame 400 ms out on a 60 ms link must hold capture")
+	}
+}
+
+// A viewer that never acks (a client without acks, a decoder that outputs
+// nothing) holds capture for its first frame at most, then is ignored.
+func TestAViewerThatNeverAcksIsIgnored(t *testing.T) {
+	f := newFlow()
+	f.epoch = time.Now().Add(-10 * time.Second)
+	now := f.now()
+	f.lastAck = now // a fresh flow: no ack, but not long without one either
+	f.sent(now-1000, 100_000)
+	if !f.behind() {
+		t.Fatal("a slow first keyframe holds capture")
+	}
+	f.sent(now-300, 1000)
+	f.firstSent = now - 2500
+	if f.behind() {
+		t.Fatal("no ack 2.5 s after its first frame: ignored, as before acks")
+	}
+}
+
+// Acks still arriving keep frames from being given up, but not past
+// stallAfter: a link far below the lowest cap must not hold every viewer to
+// a frame every few seconds.
+func TestNoFrameIsWaitedOnPastStallAfter(t *testing.T) {
+	f := newFlow()
+	f.epoch = time.Now().Add(-20 * time.Second)
+	now := f.now()
+	f.sent(now-6000, 100_000)
+	f.sent(now-100, 1000)
+	f.ack(now - 7000)
+	f.lastAck = now - 500
+	if f.behind() {
+		t.Fatal("a frame 6 s out was still waited on")
 	}
 }

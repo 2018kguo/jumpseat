@@ -76,7 +76,7 @@ func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, h 
 			continue
 		}
 		switch in.T {
-		case "a", "h", "z", "v", "s":
+		case "a", "h", "z", "v", "s", "q":
 		case "r":
 			// The user let go (Stop controlling, or left the view): the
 			// agent need not wait out the lease.
@@ -115,6 +115,9 @@ func readInput(ctx context.Context, ws *websocket.Conn, k *keyboard, f *flow, h 
 			k.releaseAll()
 		case "a":
 			f.ack(in.TS)
+			continue
+		case "q":
+			f.pong(in.TS)
 			continue
 		case "v":
 			if in.Hidden != hidden {

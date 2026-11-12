@@ -59,10 +59,11 @@ and their defaults are what the benchmarks measured.
 |---|---|
 | `JUMPSEAT_TOKEN` | The token, instead of `--token`. |
 | `JUMPSEAT_TRACE=1` | Log each frame within 300 ms of a key press: when it was damaged, grabbed, encoded and sent, from the key reaching X. |
-| `JUMPSEAT_TAIL` | Tiny messages sent after a keystroke-sized frame so a lost packet is retransmitted after a round trip, not TCP's tail timer (default 3, 0 off). |
+| `JUMPSEAT_TAIL` | Tiny messages sent after a keystroke-sized frame that follows a still screen, so a lost packet is retransmitted after a round trip, not TCP's tail timer (default 3, 0 off). |
 
 ## Limits
 
 X11 only, one screen. No microphone, clipboard images, file transfer, Wayland or
 per-window streaming yet. All viewers share one encoder, so the slowest link
-sets the pace for everyone.
+sets the pace for everyone: beside a viewer on 1 Mbit/s, a fast one gets its
+frame rate and bitrate ([bench](../bench/README.md#two-viewers-one-slow-benchcompareviewersmjs)).

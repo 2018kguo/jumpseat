@@ -76,6 +76,7 @@ packets stop and start; play each one as it comes, a little behind.
 | `c` | `text` | The desktop's clipboard changed. |
 | `s` | `ok` | First, before any frame: whether this server has sound (`--audio` is set). Later `ok: false`: recording failed or stopped (no `parec`, no such source); sound is off for this viewer. A server that never sends it has no sound; do not send it `s`. |
 | `n` | | Nothing: sent after a small frame so TCP notices a lost packet sooner. |
+| `q` | `ts` | A ping, before the first frame and every second: answer `q` with the same `ts` at once. It times the link without a frame's own transfer time; a viewer that never answers is paced by its acks alone, which on a slow link lets video queue. |
 
 ### Viewer to server
 
@@ -84,6 +85,7 @@ Text messages, JSON:
 | `t` | Fields | Meaning |
 |---|---|---|
 | `a` | `ts` | Frame `ts` was shown (the flow-control ack). |
+| `q` | `ts` | The answer to the server's ping `q`. |
 | `h` | | Heartbeat every 5 s; a viewer silent for 20 s is dropped. |
 | `k` | `key` (`KeyboardEvent.key`), `down` | A key, pressed at the right keymap level. |
 | `m` | `x`, `y` | Move the pointer. |
@@ -95,7 +97,7 @@ Text messages, JSON:
 | `s` | `on` | Sound on or off for this viewer. Nothing records while every viewer has it off. |
 | `z` | `w`, `h` | Resize the desktop to this size (with `--resize`; otherwise ignored). The server rounds it to a size the screen can take. |
 
-Every message except `a`, `h`, `z`, `v`, `s` and `r` counts as the user driving; `r`
+Every message except `a`, `q`, `h`, `z`, `v`, `s` and `r` counts as the user driving; `r`
 ends it at once, so the agent need not wait out the 5 s.
 
 ## Browser client
