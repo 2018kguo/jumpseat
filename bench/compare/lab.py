@@ -6,6 +6,7 @@ probe.mjs watches it from a real browser across the network.
     python3 bench/compare/lab.py serve jumpseat  # or novnc: switch the server
     python3 bench/compare/lab.py page scroll     # or anim, type: the workload
     python3 bench/compare/lab.py cpu             # utime+stime ticks per process name
+    python3 bench/compare/lab.py env 'K=V ...'   # restart jumpseat with this environment
     python3 bench/compare/lab.py sh 'cmd'        # run a command on the sandbox
     python3 bench/compare/lab.py stop
 """
@@ -49,6 +50,9 @@ def main():
         # The boot loop restarts Chromium on whatever /tmp/page names.
         sh(sandbox(), f"echo 'file:///bench/page.html#{sys.argv[2]}' > /tmp/page; pkill -x chromium; sleep 5")
         return
+    if cmd == ["env"]:
+        sh(sandbox(), f"echo '{sys.argv[2]}' > /tmp/env; pkill -x jumpseat; sleep 3")
+        return
     if cmd == ["sh"]:
         print(sh(sandbox(), sys.argv[2]), end="")
         return
@@ -65,7 +69,9 @@ def main():
     except Exception:
         pass
     token = secrets.token_hex(16)
+    # GOFLAGS=-tags=pprof: the Go profiler on the sandbox's 127.0.0.1:6060.
     image = (modal.Image.from_dockerfile(os.path.join(REPO, "docker/Dockerfile"), context_dir=REPO,
+                                         build_args={"GOFLAGS": os.environ.get("GOFLAGS", "")},
                                          ignore=["h264/build", "**/node_modules", ".git", ".bench"])
              .apt_install("x11vnc", "novnc", "websockify")
              .add_local_file(os.path.join(HERE, "page.html"), "/bench/page.html"))
@@ -74,9 +80,9 @@ def main():
             "echo file:///bench/page.html#type > /tmp/page; "
             "while true; do rm -rf /tmp/chromium; chromium --no-sandbox --test-type --disable-dev-shm-usage --no-first-run --start-maximized "
             "--disable-features=ChromeWhatsNewUI,SigninInterceptBubble --user-data-dir=/tmp/chromium \"$(cat /tmp/page)\" "
-            ">/dev/null 2>&1; sleep 0.5; done & echo jumpseat > /tmp/server; "
+            ">/dev/null 2>&1; sleep 0.5; done & echo jumpseat > /tmp/server; touch /tmp/env; "
             "while true; do case $(cat /tmp/server) in "
-            f"jumpseat) JUMPSEAT_TOKEN={token} {SERVERS['jumpseat']} ;; "
+            f"jumpseat) env $(cat /tmp/env) JUMPSEAT_TOKEN={token} {SERVERS['jumpseat']} ;; "
             f"novnc) {SERVERS['novnc']} ; pkill -x x11vnc ;; esac >>/tmp/server.log 2>&1; sleep 0.5; done")
     # The same machine size as the README's numbers: 4 vCPU, gVisor, no GPU.
     sb = modal.Sandbox.create("sh", "-c", boot, app=app, image=image, cpu=4, memory=8192, timeout=4 * 3600,

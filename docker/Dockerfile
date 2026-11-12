@@ -16,6 +16,8 @@ RUN make -C /src/h264 -j"$(nproc)" -s
 WORKDIR /src
 COPY server server
 COPY --from=client /out/jumpseat.js server/web/jumpseat.js
+# bench/ builds with GOFLAGS=-tags=pprof for the Go profiler.
+ARG GOFLAGS=""
 RUN cd server && go test ./... && go build -ldflags='-s -w' -o /jumpseat .
 
 # The bare binary, for releases: docker build --target bin -o out .
