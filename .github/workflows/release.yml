@@ -6,6 +6,7 @@ on:
 permissions:
   contents: write
   packages: write
+  id-token: write # npm trusted publishing (npmjs.com → @2018kguo/jumpseat → Trusted publishing)
 
 jobs:
   build:
@@ -41,3 +42,18 @@ jobs:
           i=ghcr.io/${{ github.repository }}
           docker buildx imagetools create -t $i:${{ github.ref_name }} -t $i:latest \
             $i:${{ github.ref_name }}-amd64 $i:${{ github.ref_name }}-arm64
+
+  npm:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          registry-url: https://registry.npmjs.org
+      - working-directory: client
+        run: |
+          v=$(node -p 'require("./package.json").version')
+          npm view "@2018kguo/jumpseat@$v" version && exit 0
+          bun run build && npm publish --provenance --access public
